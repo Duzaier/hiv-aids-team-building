@@ -44,9 +44,11 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between gap-3 mb-5">
           {/* Logo / Brand */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-black text-sm tracking-wider shadow-sm shrink-0">
-              TB
-            </div>
+            <img
+              src="/logo.png"
+              alt="Logo Team Building"
+              className="w-10 h-10 rounded-xl object-cover shrink-0 shadow-sm border border-slate-800/80"
+            />
             <div className="min-w-0">
               <span className="text-base sm:text-lg font-black text-white tracking-tight block truncate">
                 Đăng Ký Team Building 2026
