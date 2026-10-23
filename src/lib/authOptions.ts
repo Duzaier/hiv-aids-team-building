@@ -1,4 +1,4 @@
-﻿import { NextAuthOptions } from 'next-auth';
+import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from './prisma';
@@ -88,6 +88,7 @@ export const authOptions: NextAuthOptions = {
     }
   },
   pages: {
+    signIn: '/',
     error: '/'
   },
   secret: process.env.NEXTAUTH_SECRET || 'hiv-team-building-super-secret-key-2026',
