@@ -52,10 +52,10 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role;
+        token.role = (user as any).role || 'USER';
       }
       return token;
     },
@@ -88,9 +88,6 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     }
-  },
-  pages: {
-    signIn: '/'
   },
   secret: process.env.NEXTAUTH_SECRET || 'hiv-team-building-super-secret-key-2026',
   session: {
