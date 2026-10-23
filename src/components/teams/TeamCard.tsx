@@ -167,38 +167,25 @@ export const TeamCard: React.FC<TeamCardProps> = ({
             </div>
           </div>
         ) : (
-          /* Available Empty State */
-          <div className="flex-1 flex flex-col justify-between py-2">
-            <div>
-              <h4 className="text-sm sm:text-base font-semibold text-slate-300 mb-1">
-                Vị trí sẵn sàng nhận đăng ký
-              </h4>
-              <p className="text-xs text-slate-400 leading-relaxed mb-3 italic break-words">
-                "{meta.motto}"
-              </p>
-
-              <p className="text-[11px] text-slate-500 bg-slate-950 p-2.5 rounded-lg border border-slate-800/60">
-                Quy định: 1 đội trưởng + 2 đến 4 thành viên (tổng 3 - 5 người). Người đăng ký có thể tự chọn đội trưởng là bất kỳ ai trong đội.
-              </p>
-            </div>
-
+          /* Available Empty State - Clean & Minimal */
+          <div className="flex-1 flex flex-col justify-end pt-12 pb-1">
             {/* CTA Button */}
-            <div className="pt-4">
+            <div>
               {currentRole === 'GUEST' ? (
                 <button
                   onClick={onLoginPrompt}
-                  className="w-full py-2 px-3 rounded-lg font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-white transition-colors"
+                  className="w-full py-2.5 px-3 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-white transition-colors text-center"
                 >
                   Đăng nhập để đăng ký Slot #{slotNumber}
                 </button>
               ) : userAlreadyOwnsTeam ? (
-                <div className="w-full py-2 px-3 rounded-lg text-center bg-slate-900 border border-slate-800 text-[11px] text-slate-400">
+                <div className="w-full py-2.5 px-3 rounded-xl text-center bg-slate-900 border border-slate-800 text-xs text-slate-400 font-medium">
                   Tài khoản đã có đội
                 </div>
               ) : (
                 <button
                   onClick={() => onRegisterClick(slotNumber)}
-                  className="w-full py-2 px-3 rounded-lg font-bold text-xs bg-red-600 hover:bg-red-500 text-white shadow-sm transition-colors"
+                  className="w-full py-2.5 px-3 rounded-xl font-bold text-xs bg-red-600 hover:bg-red-500 text-white shadow-sm transition-colors text-center"
                 >
                   Đăng ký vào Vị trí #{slotNumber}
                 </button>
