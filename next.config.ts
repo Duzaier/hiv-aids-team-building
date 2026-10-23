@@ -1,7 +1,8 @@
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /* Tắt thanh công cụ lập trình viên Next.js ở góc màn hình */
+  devIndicators: false,
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
