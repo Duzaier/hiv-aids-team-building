@@ -23,7 +23,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   onClose,
   onSubmit
 }) => {
-  const [members, setMembers] = useState<string[]>(['', '', '']);
+  const [members, setMembers] = useState<string[]>(['', '']);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -35,11 +35,11 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       setError(null);
       setIsSubmitting(false);
 
-      // Pre-fill member 1 with current user if logged in
+      // Pre-fill member 1 with current user if logged in (minimum 2 members)
       if (currentUser?.name) {
-        setMembers([currentUser.name, '', '']);
+        setMembers([currentUser.name, '']);
       } else {
-        setMembers(['', '', '']);
+        setMembers(['', '']);
       }
     }
   }, [isOpen, currentUser]);
@@ -60,7 +60,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   };
 
   const removeMember = (index: number) => {
-    if (members.length > 3) {
+    if (members.length > 2) {
       const updated = members.filter((_, i) => i !== index);
       setMembers(updated);
     }
@@ -84,8 +84,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       return;
     }
 
-    if (cleanMembers.length < 3) {
-      setError('Đội thi đấu bắt buộc phải có tối thiểu 3 thành viên');
+    if (cleanMembers.length < 2) {
+      setError('Đội thi đấu bắt buộc phải có tối thiểu 2 thành viên');
       return;
     }
 
@@ -162,7 +162,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                 <span className="text-red-400">*</span>
               </label>
               <span className="text-[11px] text-slate-400">
-                Tối thiểu 3, tối đa 5 người
+                Tối thiểu 2, tối đa 5 người
               </span>
             </div>
 
@@ -190,7 +190,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       )}
 
                       {/* Remove button */}
-                      {members.length > 3 && (
+                      {members.length > 2 && (
                         <button
                           type="button"
                           onClick={() => removeMember(idx)}

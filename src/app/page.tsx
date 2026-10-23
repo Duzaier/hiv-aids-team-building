@@ -337,18 +337,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* Header with Skeleton State */}
+      {/* Header */}
       <Header
         currentUser={currentUser}
-        currentRole={currentRole}
-        occupiedCount={occupiedCount}
-        totalSlots={6}
-        isLoading={isLoadingTeams}
         onLoginClick={() => setIsLoginModalOpen(true)}
         onLogoutClick={() => signOut()}
-        onOpenRegisterHero={() => (activeTab === 'teams' ? handleOpenRegister() : setIsIndividualModalOpen(true))}
-        onOpenMyTeamEdit={() => userOwnedTeam && handleEditClick(userOwnedTeam)}
-        hasTeam={hasTeam}
       />
 
       {/* Main Content Area */}

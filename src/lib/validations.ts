@@ -12,7 +12,7 @@ export const teamRegistrationSchema = z.object({
         .min(2, 'Họ tên thành viên phải có ít nhất 2 ký tự')
         .max(50, 'Họ tên không được vượt quá 50 ký tự')
     )
-    .min(3, 'Đội thi đấu phải có tối thiểu 3 thành viên')
+    .min(2, 'Đội thi đấu phải có tối thiểu 2 thành viên')
     .max(5, 'Đội thi đấu tối đa 5 thành viên')
     .refine(
       (items) => {
