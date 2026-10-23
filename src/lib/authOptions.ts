@@ -2,6 +2,7 @@
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from './prisma';
+import { isAdminEmail } from './auth';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -24,15 +25,14 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email) return null;
         const email = credentials.email.trim().toLowerCase();
         const name = credentials.name?.trim() || email.split('@')[0];
-        const adminList = (process.env.ADMIN_EMAILS || '')
-          .split(',')
-          .map((e) => e.trim().toLowerCase())
-          .filter(Boolean);
-        const role = adminList.includes(email) ? 'ADMIN' : 'USER';
+        const role = isAdminEmail(email) ? 'ADMIN' : 'USER';
 
         const user = await prisma.user.upsert({
           where: { email },
-          update: { name },
+          update: { 
+            name,
+            role
+          },
           create: {
             email,
             name,
@@ -52,28 +52,27 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role || 'USER';
+      }
+      if (token.email) {
+        token.role = isAdminEmail(token.email) ? 'ADMIN' : 'USER';
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.email) {
-        const adminList = (process.env.ADMIN_EMAILS || '')
-          .split(',')
-          .map((e) => e.trim().toLowerCase())
-          .filter(Boolean);
-
         const email = token.email.toLowerCase();
-        const role = adminList.includes(email) ? 'ADMIN' : (token.role as string) || 'USER';
+        const role = isAdminEmail(email) ? 'ADMIN' : 'USER';
 
         const dbUser = await prisma.user.upsert({
           where: { email },
           update: {
             name: session.user.name || undefined,
-            image: session.user.image || undefined
+            image: session.user.image || undefined,
+            role
           },
           create: {
             email,
@@ -84,7 +83,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         (session.user as any).id = dbUser.id;
-        (session.user as any).role = dbUser.role;
+        (session.user as any).role = role;
       }
       return session;
     }

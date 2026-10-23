@@ -1,4 +1,4 @@
-import { getServerSession as getNextAuthSession } from 'next-auth';
+﻿import { getServerSession as getNextAuthSession } from 'next-auth';
 import { authOptions } from './authOptions';
 import { prisma } from './prisma';
 
@@ -12,19 +12,39 @@ export interface AuthSession {
   } | null;
 }
 
+export const DEFAULT_ADMIN_EMAILS = [
+  'phudt.ce192043@gmail.com',
+  'admin.teambuilding@central.org'
+];
+
+export function getAdminEmails(): string[] {
+  const envAdmins = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return Array.from(new Set([...DEFAULT_ADMIN_EMAILS.map((e) => e.toLowerCase()), ...envAdmins]));
+}
+
+export function isAdminEmail(email: string): boolean {
+  if (!email) return false;
+  return getAdminEmails().includes(email.trim().toLowerCase());
+}
+
 export async function getServerSession(req?: Request): Promise<AuthSession> {
   // 1. Try real NextAuth session first
   try {
     const nextAuthSession = await getNextAuthSession(authOptions);
     if (nextAuthSession?.user) {
       const user = nextAuthSession.user as any;
+      const email = (user.email || '').toLowerCase();
+      const role = isAdminEmail(email) ? 'ADMIN' : 'USER';
       return {
         user: {
           id: user.id || '',
-          email: user.email || '',
+          email,
           name: user.name || null,
           image: user.image || null,
-          role: user.role === 'ADMIN' ? 'ADMIN' : 'USER'
+          role
         }
       };
     }
@@ -45,7 +65,9 @@ export async function getServerSession(req?: Request): Promise<AuthSession> {
       if (!user && overrideEmail) {
         user = await prisma.user.upsert({
           where: { email: overrideEmail },
-          update: {},
+          update: {
+            role: isAdminEmail(overrideEmail) ? 'ADMIN' : 'USER'
+          },
           create: {
             id: overrideUserId,
             email: overrideEmail,
@@ -64,7 +86,7 @@ export async function getServerSession(req?: Request): Promise<AuthSession> {
             email: user.email,
             name: user.name,
             image: user.image,
-            role: user.role as 'USER' | 'ADMIN'
+            role: isAdminEmail(user.email) ? 'ADMIN' : 'USER'
           }
         };
       }
@@ -73,14 +95,6 @@ export async function getServerSession(req?: Request): Promise<AuthSession> {
 
   // 3. Default: Unauthenticated
   return { user: null };
-}
-
-export function isAdminEmail(email: string): boolean {
-  const adminEmails = (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  return adminEmails.includes(email.toLowerCase());
 }
 
 export async function requireAdmin(req?: Request) {
