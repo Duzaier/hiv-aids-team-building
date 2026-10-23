@@ -1,3 +1,5 @@
+import { getServerSession as getNextAuthSession } from 'next-auth';
+import { authOptions } from './authOptions';
 import { prisma } from './prisma';
 
 export interface AuthSession {
@@ -11,7 +13,26 @@ export interface AuthSession {
 }
 
 export async function getServerSession(req?: Request): Promise<AuthSession> {
-  // 1. Check for request header override (useful for testing & development persona switching)
+  // 1. Try real NextAuth session first
+  try {
+    const nextAuthSession = await getNextAuthSession(authOptions);
+    if (nextAuthSession?.user) {
+      const user = nextAuthSession.user as any;
+      return {
+        user: {
+          id: user.id || '',
+          email: user.email || '',
+          name: user.name || null,
+          image: user.image || null,
+          role: user.role === 'ADMIN' ? 'ADMIN' : 'USER'
+        }
+      };
+    }
+  } catch (err) {
+    // NextAuth session lookup fallback
+  }
+
+  // 2. Check for request header override (useful for API testing)
   if (req) {
     const overrideUserId = req.headers.get('x-user-id');
     const overrideEmail = req.headers.get('x-user-email');
@@ -28,7 +49,9 @@ export async function getServerSession(req?: Request): Promise<AuthSession> {
           create: {
             id: overrideUserId,
             email: overrideEmail,
-            name: req.headers.get('x-user-name') ? decodeURIComponent(req.headers.get('x-user-name')!) : overrideEmail.split('@')[0],
+            name: req.headers.get('x-user-name')
+              ? decodeURIComponent(req.headers.get('x-user-name')!)
+              : overrideEmail.split('@')[0],
             role: isAdminEmail(overrideEmail) ? 'ADMIN' : 'USER'
           }
         });
@@ -48,7 +71,7 @@ export async function getServerSession(req?: Request): Promise<AuthSession> {
     }
   }
 
-  // 2. Default: Unauthenticated
+  // 3. Default: Unauthenticated
   return { user: null };
 }
 

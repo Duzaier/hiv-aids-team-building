@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Team, Persona } from '@/types';
-import { INITIAL_TEAMS, MOCK_PERSONAS, SLOT_METADATA } from '@/data/initialData';
-import { PersonaSwitcher } from '@/components/demo/PersonaSwitcher';
+import { useSession, signOut } from 'next-auth/react';
+import { Team, User, Role } from '@/types';
+import { INITIAL_TEAMS, SLOT_METADATA } from '@/data/initialData';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { TeamGrid } from '@/components/teams/TeamGrid';
@@ -11,15 +11,14 @@ import { RegistrationModal } from '@/components/teams/RegistrationModal';
 import { EditTeamModal } from '@/components/teams/EditTeamModal';
 import { AdminManagementPanel } from '@/components/admin/AdminManagementPanel';
 import { DeleteConfirmModal } from '@/components/admin/DeleteConfirmModal';
+import { LoginModal } from '@/components/auth/LoginModal';
 import { X } from 'lucide-react';
 
 export default function Home() {
+  const { data: session, status } = useSession();
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
-  const [currentPersona, setCurrentPersona] = useState<Persona>(MOCK_PERSONAS[0]);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>({
-    type: 'info',
-    message: 'Nền tảng vận hành với cơ chế phân bổ slot tự động 1 đến 6 và cho phép chọn bất kỳ thành viên nào làm Đội trưởng.'
-  });
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
   // Modal states
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
@@ -31,6 +30,17 @@ export default function Home() {
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+
+  // Convert NextAuth session to app User object
+  const currentUser: User | null = session?.user
+    ? {
+        id: (session.user as any).id || session.user.email || 'user',
+        name: session.user.name || session.user.email?.split('@')[0] || 'Người dùng',
+        email: session.user.email || '',
+        avatar: session.user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.user.name || 'User')}`,
+        role: ((session.user as any).role as 'USER' | 'ADMIN') || 'USER'
+      }
+    : null;
 
   // Sync teams with API on load
   const fetchTeams = async () => {
@@ -71,8 +81,16 @@ export default function Home() {
   const isFull = occupiedCount >= 6;
 
   // Determine if current user owns a team
-  const userOwnedTeam = teams.find((t) => t.ownerId === currentPersona.user?.id);
+  const userOwnedTeam = teams.find((t) => t.ownerId === currentUser?.id || (currentUser?.email && t.ownerEmail === currentUser.email));
   const hasTeam = !!userOwnedTeam;
+
+  const currentRole: Role = currentUser
+    ? currentUser.role === 'ADMIN'
+      ? 'ADMIN'
+      : hasTeam
+      ? 'OWNER'
+      : 'USER'
+    : 'GUEST';
 
   // Notification helper
   const showNotice = (type: 'success' | 'error' | 'info', message: string) => {
@@ -84,12 +102,12 @@ export default function Home() {
 
   // Handlers
   const handleOpenRegister = (slotNum?: number) => {
-    if (!currentPersona.user) {
-      showNotice('info', 'Vui lòng chọn vai trò "Tài khoản Google mới" để thử nghiệm đăng ký đội');
+    if (!currentUser) {
+      setIsLoginModalOpen(true);
       return;
     }
     if (hasTeam) {
-      showNotice('error', `Tài khoản đã sở hữu "${userOwnedTeam.name}" (Slot #${userOwnedTeam.slotNumber}). Không thể đăng ký thêm.`);
+      showNotice('error', `Tài khoản đã sở hữu "${userOwnedTeam?.name}" (Slot #${userOwnedTeam?.slotNumber}). Không thể đăng ký thêm.`);
       return;
     }
     if (isFull) {
@@ -109,17 +127,17 @@ export default function Home() {
     members: string[];
     slotNumber: number;
   }) => {
-    if (!currentPersona.user) return;
+    if (!currentUser) return;
 
     try {
       const res = await fetch('/api/teams', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': currentPersona.user.id,
-          'x-user-email': currentPersona.user.email,
-          'x-user-name': encodeURIComponent(currentPersona.user.name),
-          'x-user-role': currentPersona.user.role
+          'x-user-id': currentUser.id,
+          'x-user-email': currentUser.email,
+          'x-user-name': encodeURIComponent(currentUser.name),
+          'x-user-role': currentUser.role
         },
         body: JSON.stringify({
           teamName: teamData.teamName,
@@ -137,29 +155,8 @@ export default function Home() {
         showNotice('error', result.error || 'Đăng ký thất bại');
       }
     } catch {
-      // Fallback local registration
-      const meta = SLOT_METADATA.find((m) => m.slotNumber === teamData.slotNumber) || SLOT_METADATA[0];
-      const newTeam: Team = {
-        id: `team-${Date.now()}`,
-        slotNumber: teamData.slotNumber,
-        name: teamData.teamName,
-        captainName: teamData.captainName,
-        ownerId: currentPersona.user.id,
-        ownerName: currentPersona.user.name,
-        ownerEmail: currentPersona.user.email,
-        registeredAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-        accentColor: meta.accentColor,
-        badgeTitle: meta.badgeTitle,
-        members: teamData.members.map((name, idx) => ({
-          id: `m-${Date.now()}-${idx}`,
-          name,
-          isCaptain: name.toLowerCase().trim() === teamData.captainName.toLowerCase().trim()
-        }))
-      };
-
-      setTeams([...teams, newTeam]);
+      fetchTeams();
       setIsRegisterOpen(false);
-      showNotice('success', `Đăng ký thành công Đội "${teamData.teamName}" (Slot #${teamData.slotNumber}). Đội trưởng: ${teamData.captainName}`);
     }
   };
 
@@ -181,7 +178,7 @@ export default function Home() {
     captainName: string;
     members: string[];
   }) => {
-    if (!currentPersona.user) return;
+    if (!currentUser) return;
 
     try {
       const url = isAdminEdit
@@ -192,10 +189,10 @@ export default function Home() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': currentPersona.user.id,
-          'x-user-email': currentPersona.user.email,
-          'x-user-name': encodeURIComponent(currentPersona.user.name),
-          'x-user-role': currentPersona.user.role
+          'x-user-id': currentUser.id,
+          'x-user-email': currentUser.email,
+          'x-user-name': encodeURIComponent(currentUser.name),
+          'x-user-role': currentUser.role
         },
         body: JSON.stringify({
           teamName: updatedData.teamName,
@@ -213,26 +210,8 @@ export default function Home() {
         showNotice('error', result.error || 'Cập nhật thất bại');
       }
     } catch {
-      // Local fallback
-      setTeams(
-        teams.map((t) => {
-          if (t.id === updatedData.teamId) {
-            return {
-              ...t,
-              name: updatedData.teamName,
-              captainName: updatedData.captainName,
-              members: updatedData.members.map((name, idx) => ({
-                id: `m-edit-${idx}`,
-                name,
-                isCaptain: name.toLowerCase().trim() === updatedData.captainName.toLowerCase().trim()
-              }))
-            };
-          }
-          return t;
-        })
-      );
+      fetchTeams();
       setIsEditOpen(false);
-      showNotice('success', 'Đã lưu thay đổi thông tin đội');
     }
   };
 
@@ -242,16 +221,16 @@ export default function Home() {
   };
 
   const handleDeleteConfirm = async (teamId: string, slotNumber: number) => {
-    if (!teamToDelete || !currentPersona.user) return;
+    if (!teamToDelete || !currentUser) return;
 
     try {
       const res = await fetch(`/api/admin/teams/${teamToDelete.id}`, {
         method: 'DELETE',
         headers: {
-          'x-user-id': currentPersona.user.id,
-          'x-user-email': currentPersona.user.email,
-          'x-user-name': encodeURIComponent(currentPersona.user.name),
-          'x-user-role': currentPersona.user.role
+          'x-user-id': currentUser.id,
+          'x-user-email': currentUser.email,
+          'x-user-name': encodeURIComponent(currentUser.name),
+          'x-user-role': currentUser.role
         }
       });
 
@@ -264,33 +243,13 @@ export default function Home() {
         showNotice('error', result.error || 'Xóa thất bại');
       }
     } catch {
-      // Local fallback
-      setTeams(teams.filter((t) => t.id !== teamToDelete.id));
+      fetchTeams();
       setIsDeleteOpen(false);
-      showNotice('success', `Đã xóa Đội "${teamToDelete.name}" và giải phóng Slot #${teamToDelete.slotNumber}`);
     }
-  };
-
-  const handleFillAllSlots = () => {
-    showNotice('info', 'Đã tạo 6/6 đội hoàn tất');
-  };
-
-  const handleResetData = async () => {
-    await fetchTeams();
-    showNotice('info', 'Đã làm mới dữ liệu từ hệ thống');
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-red-600 selection:text-white">
-      {/* Top Interactive Persona Switcher */}
-      <PersonaSwitcher
-        currentPersona={currentPersona}
-        onSelectPersona={setCurrentPersona}
-        onFillAllSlots={handleFillAllSlots}
-        onResetData={handleResetData}
-        occupiedCount={occupiedCount}
-      />
-
       {/* Global Toast Notification */}
       {notification && (
         <div className="bg-slate-900/95 border-b border-slate-800 px-4 py-2 text-xs flex items-center justify-between gap-3 text-slate-200">
@@ -318,20 +277,20 @@ export default function Home() {
 
       {/* Header */}
       <Header
-        currentUser={currentPersona.user}
-        currentRole={currentPersona.role}
+        currentUser={currentUser}
+        currentRole={currentRole}
         occupiedCount={occupiedCount}
         totalSlots={6}
-        onLoginClick={() => setCurrentPersona(MOCK_PERSONAS[1])}
-        onLogoutClick={() => setCurrentPersona(MOCK_PERSONAS[0])}
+        onLoginClick={() => setIsLoginModalOpen(true)}
+        onLogoutClick={() => signOut()}
         onOpenRegisterHero={() => handleOpenRegister()}
         onOpenMyTeamEdit={() => userOwnedTeam && handleEditClick(userOwnedTeam)}
         hasTeam={hasTeam}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10">
-        {currentPersona.role === 'ADMIN' && (
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {currentRole === 'ADMIN' && (
           <AdminManagementPanel
             teams={teams}
             onEditTeam={handleAdminEditClick}
@@ -372,24 +331,30 @@ export default function Home() {
         {/* 6-Slot Grid */}
         <TeamGrid
           teams={teams}
-          currentUser={currentPersona.user}
-          currentRole={currentPersona.role}
+          currentUser={currentUser}
+          currentRole={currentRole}
           ownedTeamId={userOwnedTeam?.id}
           onRegisterClick={handleOpenRegister}
           onEditClick={handleEditClick}
           onAdminClick={handleAdminEditClick}
-          onLoginPrompt={() => setCurrentPersona(MOCK_PERSONAS[1])}
+          onLoginPrompt={() => setIsLoginModalOpen(true)}
         />
       </main>
 
       {/* Footer */}
       <Footer />
 
+      {/* Real Login Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
+
       {/* Registration Modal */}
       <RegistrationModal
         isOpen={isRegisterOpen}
         targetSlot={targetSlot}
-        currentUser={currentPersona.user}
+        currentUser={currentUser}
         onClose={() => setIsRegisterOpen(false)}
         onSubmit={handleRegisterSubmit}
       />

@@ -31,10 +31,10 @@ export const Header: React.FC<HeaderProps> = ({
   const availableCount = Math.max(0, totalSlots - occupiedCount);
 
   return (
-    <header className="relative pt-4 pb-5 px-3 sm:px-6 lg:px-8 border-b border-slate-800/80 bg-slate-950/40">
+    <header className="relative pt-5 pb-6 px-3 sm:px-6 lg:px-8 border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
       <div className="max-w-7xl mx-auto">
         {/* Top Navbar: Brand & Auth */}
-        <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center justify-between gap-3 mb-5">
           {/* Logo / Brand */}
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-black text-sm tracking-wider shadow-sm shrink-0">
@@ -50,18 +50,23 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* User Profile / Google Auth Status */}
+          {/* User Profile / Real Auth Status */}
           <div className="flex items-center gap-2 shrink-0">
             {currentUser ? (
               <div className="flex items-center gap-2 sm:gap-3 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
                 <img
-                  src={currentUser.avatar}
+                  src={currentUser.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'}
                   alt={currentUser.name}
                   className="w-6 h-6 rounded-full border border-slate-700 object-cover"
                 />
                 <span className="text-xs font-semibold text-slate-200 hidden sm:inline">
                   {currentUser.name}
                 </span>
+                {currentUser.role === 'ADMIN' && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-950 border border-purple-500/40 text-purple-300 font-bold">
+                    Admin
+                  </span>
+                )}
                 <button
                   onClick={onLogoutClick}
                   className="p-1 rounded text-slate-400 hover:text-slate-200 transition-colors"

@@ -2,6 +2,7 @@
 
 import { Be_Vietnam_Pro } from 'next/font/google';
 import './globals.css';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 
 const beVietnamPro = Be_Vietnam_Pro({
   weight: ['300', '400', '500', '600', '700', '800', '900'],
@@ -26,7 +27,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${beVietnamPro.className} min-h-full flex flex-col bg-slate-950 antialiased selection:bg-red-500 selection:text-white`}>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
