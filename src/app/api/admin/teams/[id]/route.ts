@@ -45,25 +45,30 @@ export async function PATCH(
           where: { teamId: existingTeam.id }
         });
 
-        const activeCaptain = (captainName || existingTeam.captainName || members[0]).trim().toLowerCase();
-
         await tx.teamMember.createMany({
-          data: members.map((name, idx) => ({
-            teamId: existingTeam.id,
-            name: name.trim(),
-            orderIndex: idx + 1,
-            isCaptain: name.trim().toLowerCase() === activeCaptain
-          }))
+          data: members.map((mem: any, idx: number) => {
+            const name = typeof mem === 'string' ? mem : mem.name;
+            const studentId = typeof mem === 'object' ? mem.studentId || '' : '';
+            const email = typeof mem === 'object' ? mem.email || '' : '';
+            const phone = typeof mem === 'object' ? mem.phone || '' : '';
+            return {
+              teamId: existingTeam.id,
+              name: name.trim(),
+              studentId: studentId.trim(),
+              email: email.trim(),
+              phone: phone.trim(),
+              orderIndex: idx + 1,
+              isCaptain: false
+            };
+          })
         });
       }
-
-      const newCapName = captainName ? captainName.trim() : (members ? members[0] : existingTeam.captainName);
 
       const saved = await tx.team.update({
         where: { id: existingTeam.id },
         data: {
           name: teamName || existingTeam.name,
-          captainName: newCapName,
+          captainName: '',
           version: { increment: 1 }
         },
         include: {
@@ -80,10 +85,10 @@ export async function PATCH(
       await tx.auditLog.create({
         data: {
           adminId: adminUser.id,
-          action: 'ADMIN_UPDATE_TEAM',
+          action: 'TEAM_UPDATED',
           targetSlot: saved.slotNumber,
           targetTeamName: saved.name,
-          details: `Admin cập nhật tên hoặc thành viên đội ${saved.name} (Đội trưởng: ${saved.captainName})`
+          details: `Admin ${adminUser.email} đã cập nhật thông tin thành viên Đội ${saved.slotNumber}`
         }
       });
 
@@ -92,26 +97,36 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      message: `Admin đã cập nhật thành công Đội "${updatedTeam.name}"`,
-      team: updatedTeam
+      message: 'Cập nhật thông tin đội thành công',
+      team: {
+        id: updatedTeam.id,
+        slotNumber: updatedTeam.slotNumber,
+        name: updatedTeam.name,
+        captainName: '',
+        ownerName: updatedTeam.owner.name,
+        ownerEmail: updatedTeam.owner.email,
+        members: updatedTeam.members.map((m) => ({
+          id: m.id,
+          name: m.name,
+          studentId: m.studentId || '',
+          email: m.email || '',
+          phone: m.phone || '',
+          orderIndex: m.orderIndex,
+          isCaptain: false,
+          isFromIndividual: m.isFromIndividual
+        }))
+      }
     });
   } catch (error: any) {
-    if (error.message === 'UNAUTHORIZED_ADMIN') {
-      return NextResponse.json(
-        { success: false, error: 'Chỉ Quản trị viên mới có quyền thực hiện' },
-        { status: 403 }
-      );
-    }
-
-    console.error('Admin edit error:', error);
+    console.error('Admin Edit Team Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Lỗi máy chủ khi admin cập nhật thông tin đội' },
+      { success: false, error: error.message || 'Lỗi máy chủ khi cập nhật đội' },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/admin/teams/[id] — Admin release slot
+// DELETE /api/admin/teams/[id] — Free team slot
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -121,25 +136,26 @@ export async function DELETE(
     const { id } = await params;
 
     const existingTeam = await prisma.team.findUnique({
-      where: { id }
+      where: { id },
+      include: { members: true }
     });
 
     if (!existingTeam) {
       return NextResponse.json(
-        { success: false, error: 'Không tìm thấy đội để giải phóng slot' },
+        { success: false, error: 'Không tìm thấy đội để giải phóng' },
         { status: 404 }
       );
     }
 
     await prisma.$transaction(async (tx) => {
       await tx.team.delete({
-        where: { id }
+        where: { id: existingTeam.id }
       });
 
       await tx.auditLog.create({
         data: {
           adminId: adminUser.id,
-          action: 'ADMIN_RELEASE_SLOT',
+          action: 'SLOT_FREED',
           targetSlot: existingTeam.slotNumber,
           targetTeamName: existingTeam.name,
           details: `Admin đã giải phóng Slot #${existingTeam.slotNumber} (trước đó là ${existingTeam.name})`
@@ -150,19 +166,12 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       message: `Đã xóa Đội "${existingTeam.name}" và giải phóng Vị trí Slot #${existingTeam.slotNumber}`,
-      releasedSlot: existingTeam.slotNumber
+      freedSlotNumber: existingTeam.slotNumber
     });
   } catch (error: any) {
-    if (error.message === 'UNAUTHORIZED_ADMIN') {
-      return NextResponse.json(
-        { success: false, error: 'Chỉ Quản trị viên mới có quyền thực hiện' },
-        { status: 403 }
-      );
-    }
-
-    console.error('Admin delete error:', error);
+    console.error('Admin Free Slot Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Lỗi máy chủ khi giải phóng slot' },
+      { success: false, error: error.message || 'Lỗi máy chủ khi giải phóng slot' },
       { status: 500 }
     );
   }

@@ -65,11 +65,14 @@ export async function POST(req: NextRequest) {
           individualIndex++;
           currentCount++;
 
-          // Create TeamMember
+          // Create TeamMember with MSSV, email, phone
           await tx.teamMember.create({
             data: {
               teamId: team.id,
               name: person.name,
+              studentId: person.studentId || '',
+              email: person.email || '',
+              phone: person.phone || '',
               orderIndex: currentCount,
               isCaptain: false,
               isFromIndividual: true,

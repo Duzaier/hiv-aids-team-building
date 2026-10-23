@@ -214,7 +214,7 @@ export default function Home() {
 
   const handleRegisterSubmit = async (teamData: {
     teamName?: string;
-    members: string[];
+    members: any[];
     slotNumber: number;
   }) => {
     if (!currentUser) {
@@ -267,7 +267,7 @@ export default function Home() {
     setIsEditOpen(true);
   };
 
-  const handleEditSubmit = async (updatedData: { teamName: string; captainName: string; members: string[] }) => {
+  const handleEditSubmit = async (updatedData: { teamName: string; captainName: string; members: any[] }) => {
     if (!teamToEdit) return;
 
     try {

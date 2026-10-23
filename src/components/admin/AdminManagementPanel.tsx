@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Team, TeamMatchRequest } from '@/types';
+import { Users, ChevronDown, ChevronUp, Phone, Mail, GraduationCap } from 'lucide-react';
 
 interface AdminManagementPanelProps {
   teams: Team[];
@@ -20,7 +21,12 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
   onAcceptMatch,
   onRejectMatch
 }) => {
+  const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const pendingMatches = matches.filter((m) => m.status === 'PENDING');
+
+  const toggleExpand = (teamId: string) => {
+    setExpandedTeamId(expandedTeamId === teamId ? null : teamId);
+  };
 
   return (
     <div className="mb-8 p-4 sm:p-6 rounded-2xl bg-slate-900 border border-purple-500/30 shadow-lg space-y-6">
@@ -30,7 +36,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
             Bảng Quản Trị Viên (Admin Privileges)
           </span>
           <h3 className="text-lg sm:text-xl font-black text-white">
-            Kiểm Soát 6 Vị Trí Đăng Ký & Ghép Đội
+            Quản Lý 6 Đội Thi Đấu & Ghép Đội
           </h3>
         </div>
         <div className="px-3 py-1 rounded-full bg-purple-950/60 border border-purple-500/30 text-purple-300 text-xs font-semibold self-start sm:self-auto">
@@ -98,7 +104,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
             <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-semibold text-[11px]">
               <th className="py-2.5 px-3">Slot</th>
               <th className="py-2.5 px-3">Tên Đội</th>
-              <th className="py-2.5 px-3">Người Đại Diện Đăng Ký</th>
+              <th className="py-2.5 px-3">Người Đại Diện</th>
               <th className="py-2.5 px-3">Sĩ Số</th>
               <th className="py-2.5 px-3">Trạng Thái Slot</th>
               <th className="py-2.5 px-3 text-right">Thao Tác</th>
@@ -114,50 +120,106 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
             ) : (
               teams.map((team) => {
                 const isNeedMembers = team.members.length < 5;
+                const isExpanded = expandedTeamId === team.id;
 
                 return (
-                  <tr key={team.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="py-3 px-3">
-                      <span className="font-bold text-slate-200">
-                        Slot #{team.slotNumber}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="font-semibold text-white block">{team.name}</span>
-                    </td>
-                    <td className="py-3 px-3 text-slate-300">
-                      <span>{team.ownerName}</span>
-                      <span className="text-[10px] text-slate-500 block">{team.ownerEmail}</span>
-                    </td>
-                    <td className="py-3 px-3 text-slate-300">
-                      <span className="font-semibold">{team.members.length}/5 người</span>
-                    </td>
-                    <td className="py-3 px-3">
-                      {isNeedMembers ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-cyan-950/50 text-cyan-300 border border-cyan-500/30 font-medium">
-                          Còn trống {5 - team.members.length} slot (Có thể ghép)
+                  <React.Fragment key={team.id}>
+                    <tr className="hover:bg-slate-800/30 transition-colors">
+                      <td className="py-3 px-3">
+                        <span className="font-bold text-slate-200">
+                          Slot #{team.slotNumber}
                         </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950/50 text-emerald-300 border border-emerald-500/30 font-medium">
-                          Đã đủ 5/5 người
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-right space-x-2">
-                      <button
-                        onClick={() => onEditTeam(team)}
-                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-semibold transition-colors"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => onDeleteTeam(team)}
-                        className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-[11px] font-semibold transition-colors"
-                      >
-                        Giải phóng slot
-                      </button>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="font-semibold text-white block">{team.name}</span>
+                      </td>
+                      <td className="py-3 px-3 text-slate-300">
+                        <span>{team.ownerName}</span>
+                        <span className="text-[10px] text-slate-500 block">{team.ownerEmail}</span>
+                      </td>
+                      <td className="py-3 px-3 text-slate-300">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{team.members.length}/5 người</span>
+                          <button
+                            onClick={() => toggleExpand(team.id)}
+                            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-colors flex items-center gap-0.5 text-[10px] text-purple-300"
+                            title="Xem chi tiết MSSV, Gmail, SĐT các thành viên"
+                          >
+                            <span>Chi tiết</span>
+                            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3">
+                        {isNeedMembers ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-cyan-950/50 text-cyan-300 border border-cyan-500/30 font-medium">
+                            Còn trống {5 - team.members.length} slot
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950/50 text-emerald-300 border border-emerald-500/30 font-medium">
+                            Đã đủ 5/5 người
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right space-x-2">
+                        <button
+                          onClick={() => onEditTeam(team)}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-semibold transition-colors"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          onClick={() => onDeleteTeam(team)}
+                          className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-[11px] font-semibold transition-colors"
+                        >
+                          Giải phóng slot
+                        </button>
+                      </td>
+                    </tr>
+
+                    {/* Expanded Members Contact Details for Admin */}
+                    {isExpanded && (
+                      <tr className="bg-slate-950/90">
+                        <td colSpan={6} className="p-4 border-t border-b border-purple-500/20">
+                          <div className="text-xs font-bold text-purple-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <Users className="w-4 h-4" />
+                            <span>Danh Sách Chi Tiết Thành Viên {team.name} (Để Quản Lý & Liên Hệ)</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                            {team.members.map((m, idx) => (
+                              <div
+                                key={m.id || idx}
+                                className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1 text-xs"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-white">
+                                    #{idx + 1}. {m.name}
+                                  </span>
+                                  {m.isFromIndividual && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-900/60 text-purple-300">
+                                      Ghép
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-slate-300 flex items-center gap-1.5">
+                                  <GraduationCap className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                  <span>MSSV: <strong className="text-blue-300 font-mono">{m.studentId || 'Chưa cập nhật'}</strong></span>
+                                </div>
+                                <div className="text-[11px] text-slate-300 flex items-center gap-1.5 truncate">
+                                  <Mail className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                                  <span className="truncate">{m.email || 'Chưa cập nhật'}</span>
+                                </div>
+                                <div className="text-[11px] text-slate-300 flex items-center gap-1.5">
+                                  <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                  <span>SĐT (Zalo): <strong className="text-emerald-300">{m.phone || 'Chưa cập nhật'}</strong></span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })
             )}

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User } from '@/types';
-import { X, UserCheck } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface IndividualRegistrationModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
   onSuccess
 }) => {
   const [name, setName] = useState('');
+  const [studentId, setStudentId] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +27,7 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
   useEffect(() => {
     if (isOpen) {
       setName(currentUser?.name || '');
+      setStudentId('');
       setEmail(currentUser?.email || '');
       setPhone('');
       setError(null);
@@ -40,15 +42,24 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
     setError(null);
 
     const cleanName = name.trim();
+    const cleanStudentId = studentId.trim();
     const cleanEmail = email.trim();
     const cleanPhone = phone.trim();
 
     if (!cleanName) {
-      setError('Vui lòng nhập họ và tên của bạn');
+      setError('Vui lòng nhập Họ và tên của bạn');
       return;
     }
-    if (!cleanEmail) {
-      setError('Vui lòng nhập địa chỉ email liên hệ');
+    if (!cleanStudentId) {
+      setError('Vui lòng nhập MSSV (Mã số sinh viên)');
+      return;
+    }
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError('Vui lòng nhập địa chỉ Gmail hợp lệ');
+      return;
+    }
+    if (!cleanPhone || cleanPhone.length < 8) {
+      setError('Vui lòng nhập Số điện thoại (Zalo) hợp lệ để Ban Tổ Chức liên hệ');
       return;
     }
 
@@ -61,8 +72,9 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
         },
         body: JSON.stringify({
           name: cleanName,
+          studentId: cleanStudentId,
           email: cleanEmail,
-          phone: cleanPhone || undefined
+          phone: cleanPhone
         })
       });
 
@@ -100,10 +112,10 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
         </div>
 
         <div className="mb-4 p-3 rounded-xl bg-purple-950/40 border border-purple-500/30 text-xs text-purple-200 leading-relaxed">
-          Bạn sẽ được đưa vào danh sách chờ ghép đội tự do. Ban tổ chức (Admin) sẽ bấm nút <strong>RANDOM</strong> để phân bổ ngẫu nhiên bạn vào các đội còn thiếu người (dưới 5 thành viên).
+          Bạn sẽ được đưa vào danh sách chờ ghép đội tự do. Ban Tổ Chức sẽ ghép ngẫu nhiên bạn vào các đội còn trống slot (dưới 5 thành viên).
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-3 text-xs">
           {error && (
             <div className="p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 flex items-start gap-2">
               <span className="font-bold text-red-400">⚠️ Lỗi:</span>
@@ -122,16 +134,34 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
                 setName(e.target.value);
                 if (error) setError(null);
               }}
-              placeholder="Nguyễn Văn A"
+              placeholder="VD: Nguyễn Văn An"
               required
               maxLength={50}
-              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-purple-500 focus:outline-hidden text-white placeholder-slate-600"
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-purple-500 focus:outline-none text-white placeholder-slate-600"
             />
           </div>
 
           <div>
             <label className="block text-slate-200 font-semibold mb-1">
-              Địa chỉ Email <span className="text-red-400">*</span>
+              MSSV (Mã số sinh viên) <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={studentId}
+              onChange={(e) => {
+                setStudentId(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="VD: SE170123"
+              required
+              maxLength={20}
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-purple-500 focus:outline-none text-white placeholder-slate-600"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-200 font-semibold mb-1">
+              Địa chỉ Gmail <span className="text-red-400">*</span>
             </label>
             <input
               type="email"
@@ -140,49 +170,51 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
                 setEmail(e.target.value);
                 if (error) setError(null);
               }}
-              placeholder="tenban@gmail.com"
+              placeholder="VD: an.nv@gmail.com"
               required
-              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-purple-500 focus:outline-hidden text-white placeholder-slate-600"
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-purple-500 focus:outline-none text-white placeholder-slate-600"
             />
           </div>
 
           <div>
             <label className="block text-slate-200 font-semibold mb-1">
-              Số điện thoại / Zalo <span className="text-slate-500 font-normal">(không bắt buộc)</span>
+              Số điện thoại (Zalo) <span className="text-red-400">*</span>
             </label>
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="0912345678"
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="VD: 0912345678"
+              required
               maxLength={20}
-              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-purple-500 focus:outline-hidden text-white placeholder-slate-600"
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-purple-500 focus:outline-none text-white placeholder-slate-600"
             />
           </div>
 
-          <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+          <div className="pt-2 flex items-center justify-end gap-2">
             <button
               type="button"
-              disabled={isSubmitting}
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-colors"
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors font-semibold"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 ${
-                isSubmitting ? 'bg-purple-800 cursor-wait opacity-80' : 'bg-purple-600 hover:bg-purple-500 text-white'
-              }`}
+              className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all shadow-md shadow-purple-600/30 flex items-center gap-1.5 disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
                   <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Đang ghi danh...
+                  Đang gửi...
                 </>
               ) : (
-                'Xác nhận đăng ký cá nhân'
+                'ĐĂNG KÝ'
               )}
             </button>
           </div>

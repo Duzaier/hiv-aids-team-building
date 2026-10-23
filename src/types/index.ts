@@ -11,6 +11,9 @@ export interface User {
 export interface TeamMember {
   id: string;
   name: string;
+  studentId?: string; // MSSV
+  email?: string;     // Gmail
+  phone?: string;     // SĐT (Zalo)
   orderIndex?: number;
   isCaptain?: boolean;
   isFromIndividual?: boolean;
@@ -52,6 +55,7 @@ export interface IndividualRegistration {
   id: string;
   userId?: string | null;
   name: string;
+  studentId?: string; // MSSV
   email: string;
   phone?: string | null;
   assignedTeamId?: string | null;

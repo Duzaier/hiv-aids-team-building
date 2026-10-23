@@ -39,13 +39,22 @@ export async function GET(req: NextRequest) {
         id: team.id,
         slotNumber: team.slotNumber,
         name: team.name,
-        captainName: team.captainName || team.members.find(m => m.isCaptain)?.name || team.owner.name,
+        captainName: '',
         ownerId: team.ownerId,
         ownerName: team.owner.name,
         ownerEmail: team.owner.email,
         version: team.version,
         registeredAt: team.registeredAt.toISOString().replace('T', ' ').substring(0, 16),
-        members: team.members
+        members: team.members.map((m) => ({
+          id: m.id,
+          name: m.name,
+          studentId: m.studentId || '',
+          email: m.email || '',
+          phone: m.phone || '',
+          orderIndex: m.orderIndex,
+          isCaptain: false,
+          isFromIndividual: m.isFromIndividual
+        }))
       }
     });
   } catch (error) {
@@ -57,7 +66,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PATCH /api/teams/me — Edit team name, captain, or member list
+// PATCH /api/teams/me — Edit team member list
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(req);
@@ -93,7 +102,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const { teamName, captainName, members } = parseResult.data;
+    const { teamName, members } = parseResult.data;
 
     const updatedTeam = await prisma.$transaction(async (tx) => {
       if (members && members.length > 0) {
@@ -101,25 +110,30 @@ export async function PATCH(req: NextRequest) {
           where: { teamId: existingTeam.id }
         });
 
-        const activeCaptain = (captainName || existingTeam.captainName || members[0]).trim().toLowerCase();
-
         await tx.teamMember.createMany({
-          data: members.map((name, idx) => ({
-            teamId: existingTeam.id,
-            name: name.trim(),
-            orderIndex: idx + 1,
-            isCaptain: name.trim().toLowerCase() === activeCaptain
-          }))
+          data: members.map((mem: any, idx: number) => {
+            const name = typeof mem === 'string' ? mem : mem.name;
+            const studentId = typeof mem === 'object' ? mem.studentId || '' : '';
+            const email = typeof mem === 'object' ? mem.email || '' : '';
+            const phone = typeof mem === 'object' ? mem.phone || '' : '';
+            return {
+              teamId: existingTeam.id,
+              name: name.trim(),
+              studentId: studentId.trim(),
+              email: email.trim(),
+              phone: phone.trim(),
+              orderIndex: idx + 1,
+              isCaptain: false
+            };
+          })
         });
       }
-
-      const newCapName = captainName ? captainName.trim() : (members ? members[0] : existingTeam.captainName);
 
       return tx.team.update({
         where: { id: existingTeam.id },
         data: {
           name: teamName || existingTeam.name,
-          captainName: newCapName,
+          captainName: '',
           version: { increment: 1 }
         },
         include: {
@@ -140,11 +154,20 @@ export async function PATCH(req: NextRequest) {
         id: updatedTeam.id,
         slotNumber: updatedTeam.slotNumber,
         name: updatedTeam.name,
-        captainName: updatedTeam.captainName,
+        captainName: '',
         ownerId: updatedTeam.ownerId,
         ownerName: updatedTeam.owner.name,
         version: updatedTeam.version,
-        members: updatedTeam.members
+        members: updatedTeam.members.map((m) => ({
+          id: m.id,
+          name: m.name,
+          studentId: m.studentId || '',
+          email: m.email || '',
+          phone: m.phone || '',
+          orderIndex: m.orderIndex,
+          isCaptain: false,
+          isFromIndividual: m.isFromIndividual
+        }))
       }
     });
   } catch (error) {

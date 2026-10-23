@@ -23,6 +23,7 @@ export async function GET() {
         id: i.id,
         userId: i.userId,
         name: i.name,
+        studentId: i.studentId || '',
         email: i.email,
         phone: i.phone || '',
         assignedTeamId: i.assignedTeamId,
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, email, phone } = parseResult.data;
+    const { name, studentId, email, phone } = parseResult.data;
     const cleanEmail = email.toLowerCase().trim();
 
     // Check if user already registered individually
@@ -97,12 +98,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Create record
     const newInd = await prisma.individualRegistration.create({
       data: {
         userId: session?.user?.id || null,
         name: name.trim(),
+        studentId: studentId.trim(),
         email: cleanEmail,
-        phone: phone?.trim() || null
+        phone: phone.trim()
       }
     });
 
@@ -113,16 +116,16 @@ export async function POST(req: NextRequest) {
         individual: {
           id: newInd.id,
           name: newInd.name,
+          studentId: newInd.studentId,
           email: newInd.email,
           phone: newInd.phone,
-          assignedSlot: null,
           registeredAt: newInd.registeredAt.toISOString().replace('T', ' ').substring(0, 16)
         }
       },
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error in individual registration:', error);
+    console.error('Error creating individual registration:', error);
     return NextResponse.json(
       { success: false, error: 'Lỗi máy chủ khi đăng ký cá nhân' },
       { status: 500 }

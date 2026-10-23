@@ -39,6 +39,9 @@ export async function GET() {
         members: t.members.map((m) => ({
           id: m.id,
           name: m.name,
+          studentId: m.studentId || '',
+          email: m.email || '',
+          phone: m.phone || '',
           orderIndex: m.orderIndex,
           isCaptain: false,
           isFromIndividual: m.isFromIndividual || false
@@ -54,7 +57,7 @@ export async function GET() {
   }
 }
 
-// POST /api/teams - Concurrency-safe atomic registration (default team name: Đội 1..6, no captain)
+// POST /api/teams - Concurrency-safe atomic registration
 export async function POST(req: NextRequest) {
   try {
     // 1. Check Authentication
@@ -150,12 +153,21 @@ export async function POST(req: NextRequest) {
           captainName: '',
           ownerId: userId,
           members: {
-            create: members.map((name, idx) => ({
-              name: name.trim(),
-              orderIndex: idx + 1,
-              isCaptain: false,
-              isFromIndividual: false
-            }))
+            create: members.map((mem: any, idx: number) => {
+              const name = typeof mem === 'string' ? mem : mem.name;
+              const studentId = typeof mem === 'object' ? mem.studentId || '' : '';
+              const memEmail = typeof mem === 'object' ? mem.email || '' : '';
+              const phone = typeof mem === 'object' ? mem.phone || '' : '';
+              return {
+                name: name.trim(),
+                studentId: studentId.trim(),
+                email: memEmail.trim(),
+                phone: phone.trim(),
+                orderIndex: idx + 1,
+                isCaptain: false,
+                isFromIndividual: false
+              };
+            })
           }
         },
         include: {
@@ -187,6 +199,9 @@ export async function POST(req: NextRequest) {
           members: newTeam.members.map((m) => ({
             id: m.id,
             name: m.name,
+            studentId: m.studentId || '',
+            email: m.email || '',
+            phone: m.phone || '',
             orderIndex: m.orderIndex,
             isCaptain: false,
             isFromIndividual: false

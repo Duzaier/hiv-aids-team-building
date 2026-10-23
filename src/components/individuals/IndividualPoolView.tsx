@@ -258,10 +258,15 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                     </span>
 
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <strong className="text-white text-xs sm:text-sm font-bold truncate">
                           {person.name}
                         </strong>
+                        {person.studentId && (
+                          <span className="px-1.5 py-0.5 rounded bg-blue-950/70 border border-blue-500/40 text-blue-300 font-mono text-[10px]">
+                            MSSV: {person.studentId}
+                          </span>
+                        )}
                         {isAssigned ? (
                           <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 shrink-0">
                             ✓ Ghép vào Đội {person.assignedSlot}

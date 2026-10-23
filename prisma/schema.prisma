@@ -41,6 +41,9 @@ model TeamMember {
   teamId           String
   team             Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   name             String
+  studentId        String?  @default("")
+  email            String?  @default("")
+  phone            String?  @default("")
   orderIndex       Int      @default(0)
   isCaptain        Boolean  @default(false)
   isFromIndividual Boolean  @default(false)
@@ -63,6 +66,7 @@ model IndividualRegistration {
   id             String    @id @default(cuid())
   userId         String?   @unique
   name           String
+  studentId      String?   @default("")
   email          String
   phone          String?
   assignedTeamId String?
