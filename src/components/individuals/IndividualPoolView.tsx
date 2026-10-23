@@ -10,6 +10,7 @@ import {
   Shuffle,
   RotateCcw,
   Pencil,
+  Edit3,
   CheckCircle2,
   Clock,
   Search,
@@ -73,7 +74,6 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
     return (
       i.name.toLowerCase().includes(q) ||
       i.email.toLowerCase().includes(q) ||
-      (i.studentId && i.studentId.toLowerCase().includes(q)) ||
       (i.phone && i.phone.includes(q))
     );
   });
@@ -81,7 +81,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
   const handleRandomize = async () => {
     if (!isAdmin) return;
     if (waitingCount === 0) {
-      onShowNotice('info', 'Hi?n kh?ng c? c? nh?n n?o trong h?ng ch? gh?p ??i.');
+      onShowNotice('info', 'Hiện không có cá nhân nào trong hàng chờ ghép đội.');
       return;
     }
 
@@ -99,13 +99,13 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
 
       const result = await res.json();
       if (result.success) {
-        onShowNotice('success', result.message || `?? ph?n b? ng?u nhi?n ${result.assignedCount} c? nh?n v?o c?c ??i!`);
+        onShowNotice('success', result.message || `Đã phân bổ ngẫu nhiên ${result.assignedCount} cá nhân vào các đội!`);
         onRefresh();
       } else {
-        onShowNotice('error', result.error || 'Ph?n b? ng?u nhi?n th?t b?i');
+        onShowNotice('error', result.error || 'Phân bổ ngẫu nhiên thất bại');
       }
     } catch (err: any) {
-      onShowNotice('error', err?.message || 'C? l?i k?t n?i m?y ch?');
+      onShowNotice('error', err?.message || 'Có lỗi kết nối máy chủ');
     } finally {
       setIsRandomizing(false);
     }
@@ -114,11 +114,11 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
   const handleReset = async () => {
     if (!isAdmin) return;
     if (assignedCount === 0) {
-      onShowNotice('info', 'Ch?a c? c? nh?n n?o ???c gh?p ??i ?? ho?n t?c.');
+      onShowNotice('info', 'Chưa có cá nhân nào được ghép đội để hoàn tác.');
       return;
     }
 
-    if (!confirm('B?n c? ch?c ch?n mu?n ho?n t?c t?t c? c?c l??t gh?p c? nh?n v?o ??i kh?ng?')) {
+    if (!confirm('Bạn có chắc chắn muốn hoàn tác tất cả các lượt ghép cá nhân vào đội không?')) {
       return;
     }
 
@@ -136,13 +136,13 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
 
       const result = await res.json();
       if (result.success) {
-        onShowNotice('success', result.message || '?? ho?n t?c v? tr? t?t c? c? nh?n v? danh s?ch ch?.');
+        onShowNotice('success', result.message || 'Đã hoàn tác và trả tất cả cá nhân về danh sách chờ.');
         onRefresh();
       } else {
-        onShowNotice('error', result.error || 'Ho?n t?c th?t b?i');
+        onShowNotice('error', result.error || 'Hoàn tác thất bại');
       }
     } catch (err: any) {
-      onShowNotice('error', err?.message || 'C? l?i k?t n?i m?y ch?');
+      onShowNotice('error', err?.message || 'Có lỗi kết nối máy chủ');
     } finally {
       setIsResetting(false);
     }
@@ -151,7 +151,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Action & Stat Banner */}
-      <div className="p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-slate-950/95 border border-slate-800/90 shadow-xl backdrop-blur-md">
+      <div className="p-4 sm:p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-md">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
@@ -159,11 +159,11 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                 <HeartHandshake className="w-4 h-4" />
               </span>
               <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Danh S?ch ??ng K? C? Nh?n
+                Danh Sách Đăng Ký Cá Nhân
               </h3>
             </div>
             <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-              D?nh cho nh?ng ng??i tham gia ch?a c? ??i nh?m ri?ng. Khi m?t ??i thi ??u ch?a ?? 5 th?nh vi?n, Ban T? Ch?c s? gh?p ng?u nhi?n b?n v?o c?c ??i c?n tr?ng slot.
+              Dành cho những người tham gia chưa có đội nhóm riêng. Khi một đội thi đấu chưa đủ 5 thành viên, Ban Tổ Chức sẽ ghép ngẫu nhiên bạn vào các đội còn trống slot.
             </p>
           </div>
 
@@ -171,22 +171,22 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
           <div className="flex flex-wrap items-center gap-2.5">
             {myRegistration ? (
               <button
-                id="btn-edit-my-individual"
+                id='btn-edit-my-individual'
                 onClick={() => onOpenEditIndividual && onOpenEditIndividual(myRegistration)}
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/20 transition-all flex items-center gap-2 cursor-pointer border border-amber-400/30"
-                title="Ch?nh s?a th?ng tin c? nh?n ?? ??ng k?"
+                title="Chỉnh sửa thông tin cá nhân đã đăng ký"
               >
                 <Pencil className="w-4 h-4" />
-                <span>Ch?nh S?a ??ng K? C?a B?n</span>
+                <span>Chỉnh Sửa Đăng Ký Của Bạn</span>
               </button>
             ) : (
               <button
-                id="btn-open-register-individual"
+                id='btn-open-register-individual'
                 onClick={onOpenRegisterIndividual}
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-pink-600 to-purple-600 hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-rose-600/25 transition-all flex items-center gap-2 cursor-pointer border border-rose-500/40"
               >
                 <UserPlus className="w-4 h-4" />
-                <span>??ng K? C? Nh?n</span>
+                <span>Đăng Ký Cá Nhân</span>
               </button>
             )}
 
@@ -195,26 +195,26 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                 <button
                   onClick={handleRandomize}
                   disabled={isRandomizing || waitingCount === 0}
-                  className={`px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer ${
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-2 ${
                     isRandomizing || waitingCount === 0
                       ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/60'
-                      : 'bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:opacity-95 text-white shadow-purple-600/30 border border-purple-500/40'
+                      : 'bg-linear-to-r from-red-600 via-purple-600 to-indigo-600 hover:opacity-95 text-white shadow-purple-600/30 animate-pulse'
                   }`}
-                  title="Random ph?n b? c?c c? nh?n ?ang ch? v?o c?c ??i ch?a ?? 5 ng??i"
+                  title="Random phân bổ các cá nhân đang chờ vào các đội chưa đủ 5 người"
                 >
                   <Shuffle className={`w-4 h-4 ${isRandomizing ? 'animate-spin' : ''}`} />
-                  <span>{isRandomizing ? '?ang quay ng?u nhi?n...' : `T? ??ng Gh?p ??i (${waitingCount})`}</span>
+                  <span>{isRandomizing ? 'Đang quay ngẫu nhiên...' : `Tự Động Ghép Đội (${waitingCount})`}</span>
                 </button>
 
                 {assignedCount > 0 && (
                   <button
                     onClick={handleReset}
                     disabled={isResetting}
-                    className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-                    title="Ho?n t?c ??a c? nh?n tr? l?i danh s?ch ch?"
+                    className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5"
+                    title="Hoàn tác đưa cá nhân trở lại danh sách chờ"
                   >
                     <RotateCcw className={`w-3.5 h-3.5 ${isResetting ? 'animate-spin' : ''}`} />
-                    <span>Ho?n t?c</span>
+                    <span>Hoàn tác</span>
                   </button>
                 )}
               </>
@@ -222,136 +222,114 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
           </div>
         </div>
 
-        {/* Current User Registration Spotlight */}
         {myRegistration && (
-          <div className="p-4 rounded-xl bg-gradient-to-r from-purple-950/40 via-rose-950/30 to-slate-950/70 border border-purple-500/40 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+          <div className="p-4 rounded-xl bg-purple-950/40 border border-purple-500/40 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="px-2.5 py-0.5 rounded-md bg-gradient-to-r from-rose-600 to-purple-600 text-white font-bold text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-xs">
-                  <Sparkles className="w-3 h-3" />
-                  ??ng k? c?a b?n
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="px-2 py-0.5 rounded-md bg-purple-600 text-white font-bold text-[10px] uppercase tracking-wider">
+                  Đăng ký của bạn
                 </span>
                 {myRegistration.assignedTeamId ? (
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                    ?? gh?p v?o ??i {myRegistration.assignedSlot}
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold">
+                    ✓ Đã ghép vào Đội ${myRegistration.assignedSlot}
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[10px] font-semibold flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-amber-400" />
-                    ?ang trong danh s?ch ch? gh?p
+                  <span className="px-2 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[10px] font-semibold">
+                    ⏳ Đang trong danh sách chờ ghép
                   </span>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-300">
-                <strong className="text-white text-sm font-bold">{myRegistration.name}</strong>
-                {myRegistration.studentId && (
-                  <span className="text-blue-300 font-mono text-[11px] flex items-center gap-1">
-                    <GraduationCap className="w-3 h-3 text-blue-400" />
-                    MSSV: {myRegistration.studentId}
-                  </span>
-                )}
-                <span className="text-slate-400 flex items-center gap-1">
-                  <Mail className="w-3 h-3 text-slate-500" />
-                  {myRegistration.email}
-                </span>
-                {myRegistration.phone && (
-                  <span className="text-slate-400 flex items-center gap-1">
-                    <Phone className="w-3 h-3 text-slate-500" />
-                    {myRegistration.phone}
-                  </span>
-                )}
+                <span>Họ tên: <strong className="text-white font-bold">${myRegistration.name}</strong></span>
+                <span>MSSV: <strong className="text-blue-300 font-mono">${myRegistration.studentId || 'Chưa cập nhật'}</strong></span>
+                <span>Gmail: <strong className="text-white">${myRegistration.email}</strong></span>
+                <span>SĐT (Zalo): <strong className="text-white">${myRegistration.phone || 'Chưa cập nhật'}</strong></span>
               </div>
             </div>
-
             <button
               onClick={() => onOpenEditIndividual && onOpenEditIndividual(myRegistration)}
-              className="px-3.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-colors flex items-center gap-1.5 self-start md:self-center shrink-0 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
             >
-              <Pencil className="w-3.5 h-3.5 text-amber-400" />
-              <span>Ch?nh s?a th?ng tin</span>
+              <Edit3 className="w-3.5 h-3.5" />
+              Chỉnh sửa thông tin
             </button>
           </div>
         )}
 
         {/* 3 Metrics Strip */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-800/90 flex items-center justify-center text-slate-300 shrink-0 border border-slate-700/60">
-              <Users className="w-5 h-5 text-rose-400" />
+          <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-slate-800/80 flex items-center justify-center text-slate-300 shrink-0">
+              <Users className="w-4 h-4" />
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                T?ng C? Nh?n
+                Tổng Cá Nhân
               </span>
-              <span className="text-lg font-black text-white">{totalCount} ng??i</span>
+              <span className="text-lg font-black text-white">{totalCount} người</span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-amber-950/25 border border-amber-500/30 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 border border-amber-500/30">
-              <Clock className="w-5 h-5" />
+          <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <Clock className="w-4 h-4" />
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-amber-400 block tracking-wider">
-                ?ang Ch? Gh?p ??i
+                Đang Chờ Ghép Đội
               </span>
-              <span className="text-lg font-black text-amber-300">{waitingCount} ng??i</span>
+              <span className="text-lg font-black text-amber-300">{waitingCount} người</span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-emerald-950/25 border border-emerald-500/30 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 border border-emerald-500/30">
-              <CheckCircle2 className="w-5 h-5" />
+          <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+              <CheckCircle2 className="w-4 h-4" />
             </div>
             <div>
               <span className="text-[10px] uppercase font-bold text-emerald-400 block tracking-wider">
-                ?? Ph?n B? V?o ??i
+                Đã Phân Bổ Vào Đội
               </span>
-              <span className="text-lg font-black text-emerald-300">{assignedCount} ng??i</span>
+              <span className="text-lg font-black text-emerald-300">{assignedCount} người</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Search Bar & List */}
-      <div className="rounded-2xl bg-slate-900/60 border border-slate-800/80 overflow-hidden shadow-lg backdrop-blur-sm">
+      <div className="rounded-2xl bg-slate-900/60 border border-slate-800/80 overflow-hidden shadow-sm">
         <div className="p-3 sm:p-4 border-b border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
             <span className="font-bold text-slate-200 text-xs sm:text-sm">
-              Danh s?ch c? nh?n ??ng k? ({filtered.length})
+              Danh sách cá nhân đăng ký ({filtered.length})
             </span>
           </div>
 
-          {/* Search Input with Search Icon */}
           <div className="relative w-full sm:w-72">
             <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="T?m theo t?n, MSSV, email..."
+              placeholder="Tìm theo tên, MSSV, email..."
               className="pl-9 pr-3 py-1.5 rounded-xl bg-slate-950/90 border border-slate-800 text-white placeholder-slate-500 text-xs focus:border-rose-500 focus:outline-hidden focus:ring-1 focus:ring-rose-500/40 w-full transition-all"
             />
           </div>
         </div>
 
         {isLoading ? (
-          <div className="p-10 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-            <span className="w-4 h-4 border-2 border-slate-500/30 border-t-rose-400 rounded-full animate-spin" />
-            <span>?ang t?i danh s?ch c? nh?n...</span>
+          <div className="p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+            <span className="w-4 h-4 border-2 border-slate-500/30 border-t-purple-400 rounded-full animate-spin" />
+            Đang tải danh sách cá nhân...
           </div>
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-xs text-slate-500 space-y-2.5">
-            <div className="w-12 h-12 mx-auto rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center text-slate-500 mb-2">
-              <HeartHandshake className="w-6 h-6 text-slate-400" />
-            </div>
-            <p className="font-semibold text-slate-300 text-sm">
-              {searchTerm ? 'Kh?ng t?m th?y k?t qu? ph? h?p' : 'Ch?a c? ai ??ng k? di?n c? nh?n'}
+          <div className="p-10 text-center text-xs text-slate-500 space-y-2">
+            <Users className="w-8 h-8 mx-auto text-slate-600 mb-1" />
+            <p className="font-medium text-slate-400">
+              {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có ai đăng ký diện cá nhân'}
             </p>
-            <p className="text-[11px] text-slate-500 max-w-md mx-auto leading-relaxed">
-              N?u b?n ch?a c? nh?m, h?y b?m n?t <strong className="text-rose-400">"??ng K? C? Nh?n"</strong> ?? ???c gh?p ??i ng?u nhi?n c?ng c?c th?nh vi?n kh?c!
+            <p className="text-[11px] text-slate-600">
+              Nếu bạn chưa có nhóm, hãy bấm nút <strong>"Đăng Ký Cá Nhân"</strong> để được ghép đội ngẫu nhiên!
             </p>
           </div>
         ) : (
@@ -365,7 +343,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                   className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-900/40 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-6 h-6 rounded-md bg-slate-800/80 text-slate-400 text-[11px] font-bold flex items-center justify-center shrink-0 border border-slate-700/40">
+                    <span className="w-6 h-6 rounded-md bg-slate-800/80 text-slate-400 text-[11px] font-bold flex items-center justify-center shrink-0">
                       {index + 1}
                     </span>
 
@@ -375,33 +353,26 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                           {person.name}
                         </strong>
                         {person.studentId && (
-                          <span className="px-1.5 py-0.5 rounded bg-blue-950/70 border border-blue-500/40 text-blue-300 font-mono text-[10px] flex items-center gap-1">
-                            <GraduationCap className="w-3 h-3 text-blue-400" />
+                          <span className="px-1.5 py-0.5 rounded bg-blue-950/70 border border-blue-500/40 text-blue-300 font-mono text-[10px]">
                             MSSV: {person.studentId}
                           </span>
                         )}
                         {isAssigned ? (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 shrink-0 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                            Gh?p v?o ??i {person.assignedSlot}
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 shrink-0">
+                            ✓ Ghép vào Đội {person.assignedSlot}
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-950/50 text-amber-300 border border-amber-500/30 shrink-0 flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-amber-400" />
-                            Ch? gh?p ??i
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-950/40 text-amber-300 border border-amber-500/30 shrink-0">
+                            ⏳ Chờ ghép đội
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-1">
-                        <span className="truncate flex items-center gap-1">
-                          <Mail className="w-3 h-3 text-slate-500 shrink-0" />
-                          {person.email}
-                        </span>
+                      <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-0.5">
+                        <span className="truncate">{person.email}</span>
                         {person.phone && (
-                          <span className="text-slate-400 truncate hidden sm:flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-slate-500 shrink-0" />
-                            {isAdmin ? person.phone : `${person.phone.substring(0, 4)}***`}
+                          <span className="text-slate-500 truncate hidden sm:inline">
+                            SĐT: {isAdmin ? person.phone : `${person.phone.substring(0, 4)}***`}
                           </span>
                         )}
                         <span className="text-slate-500 text-[10px] shrink-0">
@@ -415,16 +386,16 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                     {(isAdmin || (myRegistration && myRegistration.id === person.id) || (currentUser && currentUser.email && person.email.toLowerCase() === currentUser.email.toLowerCase())) && (
                       <button
                         onClick={() => onOpenEditIndividual && onOpenEditIndividual(person)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white border border-slate-700 hover:border-rose-500 text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer shadow-xs"
-                        title="Ch?nh s?a th?ng tin n?u ?i?n sai"
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-purple-600 text-slate-300 hover:text-white border border-slate-700 hover:border-purple-500 text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer"
+                        title="Chỉnh sửa thông tin nếu điền sai"
                       >
-                        <Pencil className="w-3 h-3" />
-                        <span>S?a</span>
+                        <Edit3 className="w-3 h-3" />
+                        <span>Sửa</span>
                       </button>
                     )}
                     {isAssigned && (
-                      <span className="text-[11px] font-bold text-rose-300 bg-rose-950/60 border border-rose-500/40 px-2.5 py-1 rounded-lg inline-block">
-                        Slot #{person.assignedSlot}
+                      <span className="text-[11px] font-bold text-purple-300 bg-purple-950/60 border border-purple-500/40 px-2.5 py-1 rounded-lg inline-block">
+                        Slot #${person.assignedSlot}
                       </span>
                     )}
                   </div>

@@ -2,17 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, IndividualRegistration } from '@/types';
-import {
-  X,
-  Edit3,
-  UserPlus,
-  User as UserIcon,
-  GraduationCap,
-  Mail,
-  Phone,
-  AlertCircle,
-  Sparkles
-} from 'lucide-react';
+import { X, Edit3, UserPlus } from 'lucide-react';
 
 interface IndividualRegistrationModalProps {
   isOpen: boolean;
@@ -67,19 +57,19 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
     const cleanPhone = phone.trim();
 
     if (!cleanName) {
-      setError('Vui l?ng nh?p H? v? t?n c?a b?n');
+      setError('Vui lòng nhập Họ và tên của bạn');
       return;
     }
     if (!cleanStudentId) {
-      setError('Vui l?ng nh?p MSSV (M? s? sinh vi?n)');
+      setError('Vui lòng nhập MSSV (Mã số sinh viên)');
       return;
     }
     if (!cleanEmail || !cleanEmail.includes('@')) {
-      setError('Vui l?ng nh?p ??a ch? Gmail h?p l?');
+      setError('Vui lòng nhập địa chỉ Gmail hợp lệ');
       return;
     }
     if (!cleanPhone || cleanPhone.length < 8) {
-      setError('Vui l?ng nh?p S? ?i?n tho?i (Zalo) h?p l? ?? Ban T? Ch?c li?n h?');
+      setError('Vui lòng nhập Số điện thoại (Zalo) hợp lệ để Ban Tổ Chức liên hệ');
       return;
     }
 
@@ -106,65 +96,51 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
           } catch (e) {}
         }
         onClose();
-        onSuccess(result.message || (isEdit ? 'C?p nh?t th?ng tin th?nh c?ng!' : '??ng k? di?n c? nh?n th?nh c?ng!'));
+        onSuccess(result.message || (isEdit ? 'Cập nhật thông tin thành công!' : 'Đăng ký diện cá nhân thành công!'));
       } else {
-        setError(result.error || (isEdit ? 'C?p nh?t th?t b?i. Vui l?ng th? l?i.' : '??ng k? th?t b?i. Vui l?ng th? l?i.'));
+        setError(result.error || (isEdit ? 'Cập nhật thất bại. Vui lòng thử lại.' : 'Đăng ký thất bại. Vui lòng thử lại.'));
       }
     } catch (err: any) {
-      setError(err?.message || 'C? l?i k?t n?i m?y ch?');
+      setError(err?.message || 'Có lỗi kết nối máy chủ');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md">
       <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 sm:p-6 text-slate-100">
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-rose-600/20 shrink-0">
-              {isEdit ? <Edit3 className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400 block">
+              {isEdit ? 'Chỉnh Sửa Thông Tin' : 'Dành Cho Người Chưa Có Nhóm'}
             </span>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 block">
-                {isEdit ? 'Ch?nh S?a Th?ng Tin' : 'D?nh Cho Ng??i Ch?a C? Nh?m'}
-              </span>
-              <h3 className="text-lg font-black text-white">
-                {isEdit ? 'S?a ??ng K? C? Nh?n' : '??ng K? Di?n C? Nh?n'}
-              </h3>
-            </div>
+            <h3 className="text-lg font-black text-white">{isEdit ? 'Sửa Đăng Ký Cá Nhân' : 'Đăng Ký Diện Cá Nhân'}</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-            aria-label="??ng"
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            aria-label="Đóng"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="mb-4 p-3 rounded-xl bg-purple-950/30 border border-purple-500/30 text-xs text-purple-200 leading-relaxed flex items-start gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-          <span>
-            {isEdit
-              ? 'B?n c? th? ch?nh s?a l?i H? t?n, MSSV, Gmail ho?c S?T (Zalo) n?u l? ?i?n sai. H? th?ng s? t? ??ng ??ng b? sang ??i thi ??u n?u b?n ?? ???c x?p v?o ??i.'
-              : 'B?n s? ???c ??a v?o danh s?ch ch? gh?p ??i t? do. Ban T? Ch?c s? gh?p ng?u nhi?n b?n v?o c?c ??i c?n tr?ng slot (d??i 5 th?nh vi?n).'}
-          </span>
+        <div className="mb-4 p-3 rounded-xl bg-purple-950/40 border border-purple-500/30 text-xs text-purple-200 leading-relaxed">
+          {isEdit ? 'Bạn có thể chỉnh sửa lại Họ tên, MSSV, Gmail hoặc SĐT (Zalo) nếu lỡ điền sai. Hệ thống sẽ tự động đồng bộ sang đội thi đấu nếu bạn đã được xếp vào đội.' : 'Bạn sẽ được đưa vào danh sách chờ ghép đội tự do. Ban Tổ Chức sẽ ghép ngẫu nhiên bạn vào các đội còn trống slot (dưới 5 thành viên).'}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-3 text-xs">
           {error && (
-            <div className="p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 flex items-start gap-2 animate-shake">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <div className="p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 flex items-start gap-2">
+              <span className="font-bold text-red-400">⚠️ Lỗi:</span>
               <span>{error}</span>
             </div>
           )}
 
           <div>
-            <label className="text-slate-200 font-semibold mb-1 flex items-center gap-1.5">
-              <UserIcon className="w-3 h-3 text-slate-400" />
-              <span>H? v? t?n</span>
-              <span className="text-rose-400">*</span>
+            <label className="block text-slate-200 font-semibold mb-1">
+              Họ và tên <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
@@ -173,18 +149,16 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
                 setName(e.target.value);
                 if (error) setError(null);
               }}
-              placeholder="VD: Nguy?n V?n An"
+              placeholder="VD: Nguyễn Văn An"
               required
               maxLength={50}
-              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-rose-500 focus:outline-none text-white placeholder-slate-600 transition-colors"
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-purple-500 focus:outline-none text-white placeholder-slate-600"
             />
           </div>
 
           <div>
-            <label className="text-slate-200 font-semibold mb-1 flex items-center gap-1.5">
-              <GraduationCap className="w-3 h-3 text-blue-400" />
-              <span>MSSV (M? s? sinh vi?n)</span>
-              <span className="text-rose-400">*</span>
+            <label className="block text-slate-200 font-semibold mb-1">
+              MSSV (Mã số sinh viên) <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
@@ -196,15 +170,13 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
               placeholder="VD: SE170123"
               required
               maxLength={20}
-              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-rose-500 focus:outline-none text-white placeholder-slate-600 font-mono transition-colors"
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-purple-500 focus:outline-none text-white placeholder-slate-600"
             />
           </div>
 
           <div>
-            <label className="text-slate-200 font-semibold mb-1 flex items-center gap-1.5">
-              <Mail className="w-3 h-3 text-slate-400" />
-              <span>??a ch? Gmail</span>
-              <span className="text-rose-400">*</span>
+            <label className="block text-slate-200 font-semibold mb-1">
+              Địa chỉ Gmail <span className="text-red-400">*</span>
             </label>
             <input
               type="email"
@@ -215,15 +187,13 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
               }}
               placeholder="VD: an.nv@gmail.com"
               required
-              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-rose-500 focus:outline-none text-white placeholder-slate-600 transition-colors"
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-purple-500 focus:outline-none text-white placeholder-slate-600"
             />
           </div>
 
           <div>
-            <label className="text-slate-200 font-semibold mb-1 flex items-center gap-1.5">
-              <Phone className="w-3 h-3 text-slate-400" />
-              <span>S? ?i?n tho?i (Zalo)</span>
-              <span className="text-rose-400">*</span>
+            <label className="block text-slate-200 font-semibold mb-1">
+              Số điện thoại (Zalo) <span className="text-red-400">*</span>
             </label>
             <input
               type="tel"
@@ -235,7 +205,7 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
               placeholder="VD: 0912345678"
               required
               maxLength={20}
-              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-rose-500 focus:outline-none text-white placeholder-slate-600 transition-colors"
+              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-purple-500 focus:outline-none text-white placeholder-slate-600"
             />
           </div>
 
@@ -244,22 +214,22 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors font-semibold cursor-pointer"
+              className="px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors font-semibold"
             >
-              H?y
+              Hủy
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-pink-600 to-purple-600 hover:opacity-95 text-white font-bold transition-all shadow-md shadow-rose-600/30 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer border border-rose-500/30"
+              className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all shadow-md shadow-purple-600/30 flex items-center gap-1.5 disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
                   <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>{isEdit ? '?ang l?u...' : '?ang g?i...'}</span>
+                  {isEdit ? 'Đang lưu...' : 'Đang gửi...'}
                 </>
               ) : (
-                <span>{isEdit ? 'L?U THAY ??I' : '??NG K?'}</span>
+                isEdit ? 'LƯU THAY ĐỔI' : 'ĐĂNG KÝ'
               )}
             </button>
           </div>

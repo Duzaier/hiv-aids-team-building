@@ -64,6 +64,7 @@ export default function Home() {
   const [matches, setMatches] = useState<TeamMatchRequest[]>([]);
   const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
   const [teamToMatch, setTeamToMatch] = useState<Team | null>(null);
+  const [targetTeamForMatch, setTargetTeamForMatch] = useState<Team | null>(null);
 
   // Individuals state
   const [individuals, setIndividuals] = useState<IndividualRegistration[]>([]);
@@ -338,8 +339,9 @@ export default function Home() {
   };
 
   // Match Team Handlers
-  const handleOpenMatchModal = (team: Team) => {
+  const handleOpenMatchModal = (team: Team, targetTeam?: Team) => {
     setTeamToMatch(team);
+    setTargetTeamForMatch(targetTeam || null);
     setIsMatchModalOpen(true);
   };
 
@@ -577,8 +579,10 @@ export default function Home() {
           onClose={() => {
             setIsMatchModalOpen(false);
             setTeamToMatch(null);
+            setTargetTeamForMatch(null);
           }}
           myTeam={teamToMatch}
+          targetTeam={targetTeamForMatch}
           allTeams={teams}
           matches={matches}
           onSendMatch={handleSendMatch}

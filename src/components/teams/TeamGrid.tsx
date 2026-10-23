@@ -15,7 +15,7 @@ interface TeamGridProps {
   onEditClick: (team: Team) => void;
   onAdminClick: (team: Team) => void;
   onLoginPrompt: () => void;
-  onOpenMatchModal?: (team: Team) => void;
+  onOpenMatchModal?: (team: Team, targetTeam?: Team) => void;
   onAcceptMatch?: (matchId: string) => void;
   onRejectMatch?: (matchId: string) => void;
   onCancelMatch?: (matchId: string) => void;
