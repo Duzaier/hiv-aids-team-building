@@ -119,14 +119,6 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
       <div className="p-4 sm:p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-md">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400">
-                Hàng Đợi Ghép Đội Tự Do
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-purple-950/80 border border-purple-500/30 text-[10px] text-purple-300 font-semibold">
-                Random Slot 1 - 6
-              </span>
-            </div>
             <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
               Danh Sách Đăng Ký Cá Nhân
             </h3>
