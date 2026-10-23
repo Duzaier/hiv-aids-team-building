@@ -32,7 +32,6 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   const isRegistered = !!team;
   const isMyTeam = isRegistered && (team.ownerId === currentUser?.id || team.id === ownedTeamId);
   const userAlreadyOwnsTeam = !!ownedTeamId || (currentRole === 'OWNER');
-  const teamDisplayName = team?.name || `Đội ${slotNumber}`;
 
   return (
     <div
@@ -54,7 +53,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
       <div className="p-4 sm:p-5 flex-1 flex flex-col">
         {/* Header: Slot Number & Status */}
         <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <span
               className={`inline-flex items-center justify-center w-7 h-7 rounded-lg font-black text-xs shrink-0 ${
                 isMyTeam
@@ -67,11 +66,8 @@ export const TeamCard: React.FC<TeamCardProps> = ({
               0{slotNumber}
             </span>
             <div className="min-w-0">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block truncate">
-                Slot #{slotNumber}
-              </span>
-              <span className="text-[11px] text-slate-400 truncate block">
-                {meta.badgeTitle}
+              <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-white block truncate">
+                ĐỘI {slotNumber}
               </span>
             </div>
           </div>
@@ -91,19 +87,14 @@ export const TeamCard: React.FC<TeamCardProps> = ({
         {isRegistered ? (
           <div className="flex-1 flex flex-col justify-between">
             <div>
-              {/* Team Name: Đội 1..6 */}
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <h4 className="text-base sm:text-xl font-bold text-white tracking-tight break-words">
-                  {teamDisplayName}
-                </h4>
+              {/* Member count & Owner info */}
+              <div className="flex items-center justify-between gap-2 mb-2.5">
+                <div className="text-[11px] text-slate-400 truncate">
+                  Người đại diện: <span className="text-slate-200 font-medium">{team.ownerName}</span>
+                </div>
                 <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 shrink-0 font-medium">
                   {team.members.length}/5 người
                 </span>
-              </div>
-              
-              {/* Owner info */}
-              <div className="mb-3 text-[11px] text-slate-400">
-                Người đại diện: <span className="text-slate-300 font-medium">{team.ownerName}</span>
               </div>
 
               {/* Members Section */}
@@ -172,7 +163,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                   onClick={onLoginPrompt}
                   className="w-full py-2.5 px-3 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-white transition-colors text-center"
                 >
-                  Đăng nhập để đăng ký Slot #{slotNumber}
+                  Đăng nhập để đăng ký Đội {slotNumber}
                 </button>
               ) : userAlreadyOwnsTeam ? (
                 <div className="w-full py-2.5 px-3 rounded-xl text-center bg-slate-900 border border-slate-800 text-xs text-slate-400 font-medium">
@@ -183,7 +174,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                   onClick={() => onRegisterClick(slotNumber)}
                   className="w-full py-2.5 px-3 rounded-xl font-bold text-xs bg-red-600 hover:bg-red-500 text-white shadow-sm transition-colors text-center"
                 >
-                  Đăng ký vào Vị trí #{slotNumber}
+                  Đăng ký Đội {slotNumber}
                 </button>
               )}
             </div>

@@ -123,7 +123,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 block">
-              Vị Trí Slot #{targetSlot}
+              Đội #{targetSlot}
             </span>
             <h3 className="text-lg sm:text-xl font-black text-white">
               Đăng Ký {defaultTeamName}

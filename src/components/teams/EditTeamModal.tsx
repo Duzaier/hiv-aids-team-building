@@ -87,7 +87,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 block">
-              Slot #{team.slotNumber} • {isAdminMode ? 'Chế độ Admin' : 'Đội của bạn'}
+              Đội #{team.slotNumber} • {isAdminMode ? 'Chế độ Admin' : 'Đội của bạn'}
             </span>
             <h3 className="text-lg sm:text-xl font-black text-white">
               Chỉnh Sửa {team.name}
