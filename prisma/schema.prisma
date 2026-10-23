@@ -25,6 +25,7 @@ model Team {
   id           String       @id @default(cuid())
   slotNumber   Int          @unique
   name         String
+  captainName  String       @default("")
   ownerId      String       @unique
   owner        User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members      TeamMember[]
@@ -34,11 +35,12 @@ model Team {
 }
 
 model TeamMember {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   teamId     String
-  team       Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  team       Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
   name       String
   orderIndex Int
+  isCaptain  Boolean @default(false)
 }
 
 model AuditLog {

@@ -33,6 +33,8 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   const isMyTeam = isRegistered && (team.ownerId === currentUser?.id || team.id === ownedTeamId);
   const userAlreadyOwnsTeam = !!ownedTeamId || (currentRole === 'OWNER');
 
+  const displayCaptain = team ? (team.captainName || team.ownerName) : '';
+
   return (
     <div
       className={`relative rounded-2xl transition-all duration-200 flex flex-col justify-between overflow-hidden ${
@@ -94,11 +96,20 @@ export const TeamCard: React.FC<TeamCardProps> = ({
               <h4 className="text-base sm:text-xl font-bold text-white tracking-tight mb-1 break-words">
                 {team.name}
               </h4>
-              <p className="text-xs text-slate-400 mb-3.5 truncate">
-                Đội trưởng: <strong className="text-slate-200">{team.ownerName}</strong>
-              </p>
+              
+              {/* Captain & Owner info */}
+              <div className="mb-3 text-xs space-y-0.5">
+                <p className="text-slate-300">
+                  Đội trưởng: <strong className="text-amber-400 font-bold">{displayCaptain}</strong>
+                </p>
+                {team.ownerName && team.ownerName.toLowerCase().trim() !== displayCaptain.toLowerCase().trim() && (
+                  <p className="text-[11px] text-slate-500">
+                    Người đăng ký: {team.ownerName}
+                  </p>
+                )}
+              </div>
 
-              {/* Members Section (Clean typographic pills, no clutter dots) */}
+              {/* Members Section (Clean typographic pills, clearly highlighting Captain) */}
               <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800 mb-4">
                 <div className="flex items-center justify-between mb-2 text-xs">
                   <span className="font-medium text-slate-300">
@@ -110,14 +121,24 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                 </div>
 
                 <div className="flex flex-wrap gap-1.5">
-                  {team.members.map((member) => (
-                    <span
-                      key={member.id}
-                      className="px-2 py-0.5 rounded-md text-[11px] bg-slate-900 border border-slate-800 text-slate-200 max-w-full truncate"
-                    >
-                      {member.name}
-                    </span>
-                  ))}
+                  {team.members.map((member) => {
+                    const isCap =
+                      member.isCaptain ||
+                      member.name.toLowerCase().trim() === displayCaptain.toLowerCase().trim();
+
+                    return (
+                      <span
+                        key={member.id}
+                        className={`px-2.5 py-0.5 rounded-md text-[11px] max-w-full truncate transition-all ${
+                          isCap
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
+                            : 'bg-slate-900 border border-slate-800 text-slate-300'
+                        }`}
+                      >
+                        {member.name} {isCap ? '(Đội trưởng)' : ''}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -157,7 +178,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
               </p>
 
               <p className="text-[11px] text-slate-500 bg-slate-950 p-2.5 rounded-lg border border-slate-800/60">
-                Quy định: 1 đội trưởng + 2 đến 4 thành viên (tổng 3 - 5 người).
+                Quy định: 1 đội trưởng + 2 đến 4 thành viên (tổng 3 - 5 người). Người đăng ký có thể tự chọn đội trưởng là bất kỳ ai trong đội.
               </p>
             </div>
 

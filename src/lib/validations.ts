@@ -1,53 +1,89 @@
 import { z } from 'zod';
 
-export const teamRegistrationSchema = z.object({
-  teamName: z
-    .string()
-    .trim()
-    .min(2, 'TÃªn Ä‘á»™i pháº£i cÃ³ Ã­t nháº¥t 2 kÃ½ tá»±')
-    .max(50, 'TÃªn Ä‘á»™i khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 50 kÃ½ tá»±'),
-  members: z
-    .array(
-      z
-        .string()
-        .trim()
-        .min(2, 'Há» tÃªn thÃ nh viÃªn pháº£i cÃ³ Ã­t nháº¥t 2 kÃ½ tá»±')
-        .max(50, 'Há» tÃªn khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 50 kÃ½ tá»±')
-    )
-    .min(3, 'Äá»™i thi Ä‘áº¥u pháº£i cÃ³ tá»‘i thiá»ƒu 3 thÃ nh viÃªn')
-    .max(5, 'Äá»™i thi Ä‘áº¥u tá»‘i Ä‘a 5 thÃ nh viÃªn')
-    .refine(
-      (items) => {
-        const lower = items.map((i) => i.toLowerCase());
-        return new Set(lower).size === lower.length;
-      },
-      { message: 'Danh sÃ¡ch thÃ nh viÃªn khÃ´ng Ä‘Æ°á»£c chá»©a tÃªn trÃ¹ng láº·p' }
-    )
-});
+export const teamRegistrationSchema = z
+  .object({
+    teamName: z
+      .string()
+      .trim()
+      .min(2, 'Tên đội phải có ít nhất 2 ký tự')
+      .max(50, 'Tên đội không được vượt quá 50 ký tự'),
+    captainName: z
+      .string()
+      .trim()
+      .min(2, 'Vui lòng chọn hoặc nhập tên đội trưởng')
+      .max(50, 'Tên đội trưởng không được vượt quá 50 ký tự'),
+    members: z
+      .array(
+        z
+          .string()
+          .trim()
+          .min(2, 'Họ tên thành viên phải có ít nhất 2 ký tự')
+          .max(50, 'Họ tên không được vượt quá 50 ký tự')
+      )
+      .min(3, 'Đội thi đấu phải có tối thiểu 3 thành viên')
+      .max(5, 'Đội thi đấu tối đa 5 thành viên')
+      .refine(
+        (items) => {
+          const lower = items.map((i) => i.toLowerCase().trim());
+          return new Set(lower).size === lower.length;
+        },
+        { message: 'Danh sách thành viên không được chứa tên trùng lặp' }
+      )
+  })
+  .refine(
+    (data) => {
+      const lowerCap = data.captainName.toLowerCase().trim();
+      return data.members.some((m) => m.toLowerCase().trim() === lowerCap);
+    },
+    {
+      message: 'Đội trưởng được chọn phải là một trong các thành viên trong danh sách',
+      path: ['captainName']
+    }
+  );
 
-export const teamUpdateSchema = z.object({
-  teamName: z
-    .string()
-    .trim()
-    .min(2, 'TÃªn Ä‘á»™i pháº£i cÃ³ Ã­t nháº¥t 2 kÃ½ tá»±')
-    .max(50, 'TÃªn Ä‘á»™i khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 50 kÃ½ tá»±')
-    .optional(),
-  members: z
-    .array(
-      z
-        .string()
-        .trim()
-        .min(2, 'Há» tÃªn thÃ nh viÃªn pháº£i cÃ³ Ã­t nháº¥t 2 kÃ½ tá»±')
-        .max(50, 'Há» tÃªn khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ 50 kÃ½ tá»±')
-    )
-    .min(3, 'Äá»™i thi Ä‘áº¥u pháº£i cÃ³ tá»‘i thiá»ƒu 3 thÃ nh viÃªn')
-    .max(5, 'Äá»™i thi Ä‘áº¥u tá»‘i Ä‘a 5 thÃ nh viÃªn')
-    .refine(
-      (items) => {
-        const lower = items.map((i) => i.toLowerCase());
-        return new Set(lower).size === lower.length;
-      },
-      { message: 'Danh sÃ¡ch thÃ nh viÃªn khÃ´ng Ä‘Æ°á»£c chá»©a tÃªn trÃ¹ng láº·p' }
-    )
-    .optional()
-});
+export const teamUpdateSchema = z
+  .object({
+    teamName: z
+      .string()
+      .trim()
+      .min(2, 'Tên đội phải có ít nhất 2 ký tự')
+      .max(50, 'Tên đội không được vượt quá 50 ký tự')
+      .optional(),
+    captainName: z
+      .string()
+      .trim()
+      .min(2, 'Vui lòng chọn hoặc nhập tên đội trưởng')
+      .max(50, 'Tên đội trưởng không được vượt quá 50 ký tự')
+      .optional(),
+    members: z
+      .array(
+        z
+          .string()
+          .trim()
+          .min(2, 'Họ tên thành viên phải có ít nhất 2 ký tự')
+          .max(50, 'Họ tên không được vượt quá 50 ký tự')
+      )
+      .min(3, 'Đội thi đấu phải có tối thiểu 3 thành viên')
+      .max(5, 'Đội thi đấu tối đa 5 thành viên')
+      .refine(
+        (items) => {
+          const lower = items.map((i) => i.toLowerCase().trim());
+          return new Set(lower).size === lower.length;
+        },
+        { message: 'Danh sách thành viên không được chứa tên trùng lặp' }
+      )
+      .optional()
+  })
+  .refine(
+    (data) => {
+      if (data.captainName && data.members) {
+        const lowerCap = data.captainName.toLowerCase().trim();
+        return data.members.some((m) => m.toLowerCase().trim() === lowerCap);
+      }
+      return true;
+    },
+    {
+      message: 'Đội trưởng được chọn phải là một trong các thành viên trong danh sách',
+      path: ['captainName']
+    }
+  );

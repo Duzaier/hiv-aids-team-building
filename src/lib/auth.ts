@@ -28,7 +28,7 @@ export async function getServerSession(req?: Request): Promise<AuthSession> {
           create: {
             id: overrideUserId,
             email: overrideEmail,
-            name: req.headers.get('x-user-name') || overrideEmail.split('@')[0],
+            name: req.headers.get('x-user-name') ? decodeURIComponent(req.headers.get('x-user-name')!) : overrideEmail.split('@')[0],
             role: isAdminEmail(overrideEmail) ? 'ADMIN' : 'USER'
           }
         });
@@ -58,4 +58,12 @@ export function isAdminEmail(email: string): boolean {
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
   return adminEmails.includes(email.toLowerCase());
+}
+
+export async function requireAdmin(req?: Request) {
+  const session = await getServerSession(req);
+  if (!session.user || session.user.role !== 'ADMIN') {
+    throw new Error('UNAUTHORIZED_ADMIN');
+  }
+  return session.user;
 }

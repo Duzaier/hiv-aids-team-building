@@ -3,57 +3,79 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/auth';
 import { teamUpdateSchema } from '@/lib/validations';
 
-// GET /api/teams/me â€” Get authenticated owner's team
+// GET /api/teams/me — Fetch the team owned by the authenticated user
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session.user) {
-      return NextResponse.json({ success: false, error: 'ChÆ°a Ä‘Äƒng nháº­p' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: 'Vui lòng đăng nhập Google' },
+        { status: 401 }
+      );
     }
 
     const team = await prisma.team.findUnique({
       where: { ownerId: session.user.id },
       include: {
-        members: { orderBy: { orderIndex: 'asc' } }
+        members: {
+          orderBy: { orderIndex: 'asc' }
+        },
+        owner: {
+          select: { name: true, email: true }
+        }
       }
-    });
-
-    return NextResponse.json({
-      success: true,
-      hasTeam: !!team,
-      team: team
-        ? {
-            id: team.id,
-            slotNumber: team.slotNumber,
-            name: team.name,
-            ownerId: team.ownerId,
-            registeredAt: team.registeredAt.toISOString().replace('T', ' ').substring(0, 16),
-            members: team.members
-          }
-        : null
-    });
-  } catch (error) {
-    console.error('Error fetching my team:', error);
-    return NextResponse.json({ success: false, error: 'Lá»—i mÃ¡y chá»§' }, { status: 500 });
-  }
-}
-
-// PATCH /api/teams/me â€” Owner edits their own team
-export async function PATCH(req: NextRequest) {
-  try {
-    const session = await getServerSession(req);
-    if (!session.user) {
-      return NextResponse.json({ success: false, error: 'ChÆ°a Ä‘Äƒng nháº­p' }, { status: 401 });
-    }
-
-    const team = await prisma.team.findUnique({
-      where: { ownerId: session.user.id },
-      include: { members: true }
     });
 
     if (!team) {
       return NextResponse.json(
-        { success: false, error: 'Báº¡n chÆ°a cÃ³ Ä‘á»™i nÃ o Ä‘Æ°á»£c ghi danh Ä‘á»ƒ chá»‰nh sá»­a' },
+        { success: false, error: 'Bạn chưa có đội nào được đăng ký' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      team: {
+        id: team.id,
+        slotNumber: team.slotNumber,
+        name: team.name,
+        captainName: team.captainName || team.members.find(m => m.isCaptain)?.name || team.owner.name,
+        ownerId: team.ownerId,
+        ownerName: team.owner.name,
+        ownerEmail: team.owner.email,
+        version: team.version,
+        registeredAt: team.registeredAt.toISOString().replace('T', ' ').substring(0, 16),
+        members: team.members
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching owned team:', error);
+    return NextResponse.json(
+      { success: false, error: 'Lỗi máy chủ khi lấy dữ liệu đội' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH /api/teams/me — Edit team name, captain, or member list
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getServerSession(req);
+    if (!session.user) {
+      return NextResponse.json(
+        { success: false, error: 'Vui lòng đăng nhập Google' },
+        { status: 401 }
+      );
+    }
+
+    const existingTeam = await prisma.team.findUnique({
+      where: { ownerId: session.user.id },
+      include: { members: true }
+    });
+
+    if (!existingTeam) {
+      return NextResponse.json(
+        { success: false, error: 'Không tìm thấy đội để chỉnh sửa' },
         { status: 404 }
       );
     }
@@ -64,67 +86,72 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: parseResult.error.issues?.[0]?.message || 'Dá»¯ liá»‡u khÃ´ng há»£p lá»‡',
+          error: parseResult.error.issues?.[0]?.message || 'Dữ liệu không hợp lệ',
           validationErrors: parseResult.error.flatten().fieldErrors
         },
         { status: 400 }
       );
     }
 
-    const { teamName, members } = parseResult.data;
+    const { teamName, captainName, members } = parseResult.data;
 
-    // Transaction to safely update team & members
     const updatedTeam = await prisma.$transaction(async (tx) => {
-      // 1. Update team name if provided
-      const updated = await tx.team.update({
-        where: { id: team.id },
-        data: {
-          name: teamName || team.name,
-          version: { increment: 1 }
-        }
-      });
-
-      // 2. If members provided, replace members atomically
-      if (members && members.length >= 3 && members.length <= 5) {
+      if (members && members.length > 0) {
         await tx.teamMember.deleteMany({
-          where: { teamId: team.id }
+          where: { teamId: existingTeam.id }
         });
+
+        const activeCaptain = (captainName || existingTeam.captainName || members[0]).trim().toLowerCase();
 
         await tx.teamMember.createMany({
           data: members.map((name, idx) => ({
-            teamId: team.id,
-            name,
-            orderIndex: idx + 1
+            teamId: existingTeam.id,
+            name: name.trim(),
+            orderIndex: idx + 1,
+            isCaptain: name.trim().toLowerCase() === activeCaptain
           }))
         });
       }
 
-      return tx.team.findUnique({
-        where: { id: team.id },
+      const newCapName = captainName ? captainName.trim() : (members ? members[0] : existingTeam.captainName);
+
+      return tx.team.update({
+        where: { id: existingTeam.id },
+        data: {
+          name: teamName || existingTeam.name,
+          captainName: newCapName,
+          version: { increment: 1 }
+        },
         include: {
-          members: { orderBy: { orderIndex: 'asc' } },
-          owner: { select: { name: true } }
+          members: {
+            orderBy: { orderIndex: 'asc' }
+          },
+          owner: {
+            select: { name: true, email: true }
+          }
         }
       });
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Cáº­p nháº­t thÃ´ng tin Ä‘á»™i thÃ nh cÃ´ng',
-      team: updatedTeam
-        ? {
-            id: updatedTeam.id,
-            slotNumber: updatedTeam.slotNumber,
-            name: updatedTeam.name,
-            ownerId: updatedTeam.ownerId,
-            ownerName: updatedTeam.owner.name,
-            registeredAt: updatedTeam.registeredAt.toISOString().replace('T', ' ').substring(0, 16),
-            members: updatedTeam.members
-          }
-        : null
+      message: 'Cập nhật thông tin đội thành công',
+      team: {
+        id: updatedTeam.id,
+        slotNumber: updatedTeam.slotNumber,
+        name: updatedTeam.name,
+        captainName: updatedTeam.captainName,
+        ownerId: updatedTeam.ownerId,
+        ownerName: updatedTeam.owner.name,
+        version: updatedTeam.version,
+        members: updatedTeam.members
+      }
     });
   } catch (error) {
     console.error('Error updating team:', error);
-    return NextResponse.json({ success: false, error: 'Lá»—i mÃ¡y chá»§ khi cáº­p nháº­t Ä‘á»™i' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'Lỗi máy chủ khi cập nhật thông tin đội' },
+      { status: 500 }
+    );
   }
 }

@@ -1,30 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { teamUpdateSchema } from '@/lib/validations';
 
-// PATCH /api/admin/teams/[id] â€” Admin updates any team
+// PATCH /api/admin/teams/[id] — Admin edit team
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(req);
-    if (!session.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, error: 'Truy cáº­p bá»‹ tá»« chá»‘i: YÃªu cáº§u quyá»n Quáº£n trá»‹ viÃªn' },
-        { status: 403 }
-      );
-    }
-
+    const adminUser = await requireAdmin(req);
     const { id } = await params;
-    const team = await prisma.team.findUnique({
+
+    const existingTeam = await prisma.team.findUnique({
       where: { id },
       include: { members: true }
     });
 
-    if (!team) {
-      return NextResponse.json({ success: false, error: 'KhÃ´ng tÃ¬m tháº¥y Ä‘á»™i' }, { status: 404 });
+    if (!existingTeam) {
+      return NextResponse.json(
+        { success: false, error: 'Không tìm thấy đội để chỉnh sửa' },
+        { status: 404 }
+      );
     }
 
     const body = await req.json();
@@ -33,121 +30,140 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: parseResult.error.issues?.[0]?.message,
+          error: parseResult.error.issues?.[0]?.message || 'Dữ liệu không hợp lệ',
           validationErrors: parseResult.error.flatten().fieldErrors
         },
         { status: 400 }
       );
     }
 
-    const { teamName, members } = parseResult.data;
+    const { teamName, captainName, members } = parseResult.data;
 
     const updatedTeam = await prisma.$transaction(async (tx) => {
-      const updated = await tx.team.update({
-        where: { id },
-        data: {
-          name: teamName || team.name,
-          version: { increment: 1 }
-        }
-      });
+      if (members && members.length > 0) {
+        await tx.teamMember.deleteMany({
+          where: { teamId: existingTeam.id }
+        });
 
-      if (members && members.length >= 3 && members.length <= 5) {
-        await tx.teamMember.deleteMany({ where: { teamId: id } });
+        const activeCaptain = (captainName || existingTeam.captainName || members[0]).trim().toLowerCase();
+
         await tx.teamMember.createMany({
           data: members.map((name, idx) => ({
-            teamId: id,
-            name,
-            orderIndex: idx + 1
+            teamId: existingTeam.id,
+            name: name.trim(),
+            orderIndex: idx + 1,
+            isCaptain: name.trim().toLowerCase() === activeCaptain
           }))
         });
       }
 
-      // Record Audit Log
-      await tx.auditLog.create({
+      const newCapName = captainName ? captainName.trim() : (members ? members[0] : existingTeam.captainName);
+
+      const saved = await tx.team.update({
+        where: { id: existingTeam.id },
         data: {
-          adminId: session.user!.id,
-          action: 'TEAM_UPDATED',
-          targetSlot: team.slotNumber,
-          targetTeamName: teamName || team.name,
-          details: JSON.stringify({
-            previousName: team.name,
-            newName: teamName || team.name,
-            membersCount: members ? members.length : team.members.length
-          })
+          name: teamName || existingTeam.name,
+          captainName: newCapName,
+          version: { increment: 1 }
+        },
+        include: {
+          members: {
+            orderBy: { orderIndex: 'asc' }
+          },
+          owner: {
+            select: { name: true, email: true }
+          }
         }
       });
 
-      return tx.team.findUnique({
-        where: { id },
-        include: {
-          members: { orderBy: { orderIndex: 'asc' } },
-          owner: { select: { name: true, email: true } }
+      // Audit Log
+      await tx.auditLog.create({
+        data: {
+          adminId: adminUser.id,
+          action: 'ADMIN_UPDATE_TEAM',
+          targetSlot: saved.slotNumber,
+          targetTeamName: saved.name,
+          details: `Admin cập nhật tên hoặc thành viên đội ${saved.name} (Đội trưởng: ${saved.captainName})`
         }
       });
+
+      return saved;
     });
 
     return NextResponse.json({
       success: true,
-      message: `Quáº£n trá»‹ viÃªn Ä‘Ã£ cáº­p nháº­t Äá»™i "${updatedTeam?.name}" thÃ nh cÃ´ng`,
+      message: `Admin đã cập nhật thành công Đội "${updatedTeam.name}"`,
       team: updatedTeam
     });
-  } catch (error) {
-    console.error('Admin PATCH error:', error);
-    return NextResponse.json({ success: false, error: 'Lá»—i mÃ¡y chá»§ khi cáº­p nháº­t Ä‘á»™i' }, { status: 500 });
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED_ADMIN') {
+      return NextResponse.json(
+        { success: false, error: 'Chỉ Quản trị viên mới có quyền thực hiện' },
+        { status: 403 }
+      );
+    }
+
+    console.error('Admin edit error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Lỗi máy chủ khi admin cập nhật thông tin đội' },
+      { status: 500 }
+    );
   }
 }
 
-// DELETE /api/admin/teams/[id] â€” Admin deletes team and releases slot
+// DELETE /api/admin/teams/[id] — Admin release slot
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(req);
-    if (!session.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { success: false, error: 'Truy cáº­p bá»‹ tá»« chá»‘i: YÃªu cáº§u quyá»n Quáº£n trá»‹ viÃªn' },
-        { status: 403 }
-      );
-    }
-
+    const adminUser = await requireAdmin(req);
     const { id } = await params;
-    const team = await prisma.team.findUnique({
+
+    const existingTeam = await prisma.team.findUnique({
       where: { id }
     });
 
-    if (!team) {
-      return NextResponse.json({ success: false, error: 'KhÃ´ng tÃ¬m tháº¥y Ä‘á»™i Ä‘á»ƒ xÃ³a' }, { status: 404 });
+    if (!existingTeam) {
+      return NextResponse.json(
+        { success: false, error: 'Không tìm thấy đội để giải phóng slot' },
+        { status: 404 }
+      );
     }
 
     await prisma.$transaction(async (tx) => {
-      // 1. Delete members (or cascade)
-      await tx.teamMember.deleteMany({ where: { teamId: id } });
+      await tx.team.delete({
+        where: { id }
+      });
 
-      // 2. Delete team (releases slotNumber and ownerId)
-      await tx.team.delete({ where: { id } });
-
-      // 3. Record Audit Log
       await tx.auditLog.create({
         data: {
-          adminId: session.user!.id,
-          action: 'TEAM_DELETED',
-          targetSlot: team.slotNumber,
-          targetTeamName: team.name,
-          details: JSON.stringify({
-            slotReleased: team.slotNumber,
-            reason: 'Quáº£n trá»‹ viÃªn xÃ³a Ä‘á»™i vÃ  giáº£i phÃ³ng slot'
-          })
+          adminId: adminUser.id,
+          action: 'ADMIN_RELEASE_SLOT',
+          targetSlot: existingTeam.slotNumber,
+          targetTeamName: existingTeam.name,
+          details: `Admin đã giải phóng Slot #${existingTeam.slotNumber} (trước đó là ${existingTeam.name})`
         }
       });
     });
 
     return NextResponse.json({
       success: true,
-      message: `ÄÃ£ xÃ³a Ä‘á»™i "${team.name}". Vá»‹ trÃ­ Slot #${team.slotNumber} Ä‘Ã£ Ä‘Æ°á»£c giáº£i phÃ³ng thÃ nh cÃ´ng.`
+      message: `Đã xóa Đội "${existingTeam.name}" và giải phóng Vị trí Slot #${existingTeam.slotNumber}`,
+      releasedSlot: existingTeam.slotNumber
     });
-  } catch (error) {
-    console.error('Admin DELETE error:', error);
-    return NextResponse.json({ success: false, error: 'Lá»—i mÃ¡y chá»§ khi xÃ³a Ä‘á»™i' }, { status: 500 });
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED_ADMIN') {
+      return NextResponse.json(
+        { success: false, error: 'Chỉ Quản trị viên mới có quyền thực hiện' },
+        { status: 403 }
+      );
+    }
+
+    console.error('Admin delete error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Lỗi máy chủ khi giải phóng slot' },
+      { status: 500 }
+    );
   }
 }

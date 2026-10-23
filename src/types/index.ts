@@ -1,4 +1,4 @@
-﻿export type Role = 'GUEST' | 'USER' | 'OWNER' | 'ADMIN';
+export type Role = 'GUEST' | 'USER' | 'OWNER' | 'ADMIN';
 
 export interface User {
   id: string;
@@ -11,6 +11,8 @@ export interface User {
 export interface TeamMember {
   id: string;
   name: string;
+  orderIndex?: number;
+  isCaptain?: boolean;
   roleDescription?: string;
 }
 
@@ -18,8 +20,9 @@ export interface Team {
   id: string;
   slotNumber: number; // 1 to 6
   name: string;
-  ownerId: string;
-  ownerName: string;
+  captainName: string; // The designated captain among the team members
+  ownerId: string;     // The Google account user who created the registration
+  ownerName: string;   // Name of the account holder
   ownerEmail: string;
   members: TeamMember[];
   registeredAt: string;
