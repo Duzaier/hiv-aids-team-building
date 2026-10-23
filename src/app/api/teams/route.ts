@@ -88,7 +88,11 @@ export async function POST(req: NextRequest) {
 
     // 2. Validate Input Payload with Zod
     const body = await req.json();
-    const parseResult = teamRegistrationSchema.safeParse(body);
+    console.log('[DEBUG /api/teams POST] Body:', JSON.stringify(body));
+const parseResult = teamRegistrationSchema.safeParse(body);
+if (!parseResult.success) {
+  console.error('[DEBUG /api/teams POST Validation Error]:', JSON.stringify(parseResult.error.issues));
+}
     if (!parseResult.success) {
       return NextResponse.json(
         {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User } from '@/types';
 import { X } from 'lucide-react';
 
@@ -14,7 +14,7 @@ interface RegistrationModalProps {
     captainName: string;
     members: string[];
     slotNumber: number;
-  }) => void;
+  }) => Promise<{ success: boolean; error?: string } | void> | void;
 }
 
 export const RegistrationModal: React.FC<RegistrationModalProps> = ({
@@ -28,6 +28,24 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [members, setMembers] = useState<string[]>(['', '', '']);
   const [captainIndex, setCaptainIndex] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTeamName('');
+      setCaptainIndex(0);
+      setError(null);
+      setIsSubmitting(false);
+
+      // Pre-fill member 1 with current user if logged in
+      if (currentUser?.name) {
+        setMembers([currentUser.name, '', '']);
+      } else {
+        setMembers(['', '', '']);
+      }
+    }
+  }, [isOpen, currentUser]);
 
   if (!isOpen) return null;
 
@@ -35,7 +53,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     const updated = [...members];
     updated[index] = value;
     setMembers(updated);
-    setError(null);
+    if (error) setError(null);
   };
 
   const addMember = () => {
@@ -44,14 +62,13 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     }
   };
 
-  const removeMember = (indexToRemove: number) => {
+  const removeMember = (index: number) => {
     if (members.length > 3) {
-      const updated = members.filter((_, idx) => idx !== indexToRemove);
+      const updated = members.filter((_, i) => i !== index);
       setMembers(updated);
-
-      if (captainIndex === indexToRemove) {
+      if (captainIndex === index) {
         setCaptainIndex(0);
-      } else if (captainIndex > indexToRemove) {
+      } else if (captainIndex > index) {
         setCaptainIndex(captainIndex - 1);
       }
     }
@@ -63,19 +80,28 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     const cleanTeamName = teamName.trim();
     if (!cleanTeamName) {
-      setError('Vui lòng nhập tên đội');
+      const msg = 'Vui lòng nhập tên đội thi đấu (ít nhất 2 ký tự)';
+      setError(msg);
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     const cleanMembers = members.map((m) => m.trim());
-    if (cleanMembers.some((m) => !m)) {
-      setError('Vui lòng điền đầy đủ họ tên cho tất cả thành viên trong danh sách');
+    const emptyMemberIndex = cleanMembers.findIndex((m) => !m);
+    if (emptyMemberIndex !== -1) {
+      const msg = `Vui lòng nhập họ tên cho thành viên #${emptyMemberIndex + 1}`;
+      setError(msg);
+      return;
+    }
+
+    if (cleanMembers.length < 3) {
+      setError('Đội thi đấu bắt buộc phải có tối thiểu 3 thành viên');
       return;
     }
 
@@ -91,19 +117,33 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       return;
     }
 
-    onSubmit({
-      teamName: cleanTeamName,
-      captainName: selectedCaptain,
-      members: cleanMembers,
-      slotNumber: targetSlot
-    });
+    try {
+      setIsSubmitting(true);
+      const res = await onSubmit({
+        teamName: cleanTeamName,
+        captainName: selectedCaptain,
+        members: cleanMembers,
+        slotNumber: targetSlot
+      });
+
+      if (res && res.success === false) {
+        setError(res.error || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Có lỗi xảy ra khi kết nối máy chủ.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const selectedCaptainName = members[captainIndex]?.trim();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md">
-      <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-4 sm:p-6 text-slate-100">
+      <div
+        ref={scrollContainerRef}
+        className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-4 sm:p-6 text-slate-100"
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
           <div>
@@ -126,8 +166,9 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {error && (
-            <div className="p-3 rounded-lg bg-red-950/60 border border-red-500/40 text-red-200">
-              {error}
+            <div className="p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 flex items-start gap-2">
+              <span className="font-bold text-red-400">⚠️</span>
+              <span>{error}</span>
             </div>
           )}
 
@@ -151,7 +192,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             <input
               type="text"
               value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
+              onChange={(e) => {
+                setTeamName(e.target.value);
+                if (error) setError(null);
+              }}
               placeholder="Ví dụ: Ruy Băng Vàng, Sức Sống Mới..."
               maxLength={50}
               className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-red-500 focus:outline-hidden text-white placeholder-slate-500"
@@ -259,10 +303,19 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             )}
           </div>
 
+          {/* Bottom Error Alert (Visible immediately right next to the submit button) */}
+          {error && (
+            <div className="p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 text-xs flex items-start gap-2">
+              <span className="font-bold text-red-400">⚠️ Lỗi:</span>
+              <span>{error}</span>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-colors"
             >
@@ -270,9 +323,19 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-sm transition-all"
+              disabled={isSubmitting}
+              className={`px-5 py-2 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 ${
+                isSubmitting ? 'bg-red-850 cursor-wait opacity-80' : 'bg-red-600 hover:bg-red-500 text-white'
+              }`}
             >
-              Hoàn tất đăng ký Slot #{targetSlot}
+              {isSubmitting ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Đang ghi danh...
+                </>
+              ) : (
+                `Hoàn tất đăng ký Slot #${targetSlot}`
+              )}
             </button>
           </div>
         </form>

@@ -127,7 +127,10 @@ export default function Home() {
     members: string[];
     slotNumber: number;
   }) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setIsLoginModalOpen(true);
+      return { success: false, error: 'Vui lòng đăng nhập trước khi đăng ký đội' };
+    }
 
     try {
       const res = await fetch('/api/teams', {
@@ -150,13 +153,17 @@ export default function Home() {
       if (result.success) {
         setIsRegisterOpen(false);
         showNotice('success', result.message || `Đăng ký thành công Đội "${teamData.teamName}"! Đội trưởng: ${teamData.captainName}`);
-        fetchTeams();
+        await fetchTeams();
+        return { success: true };
       } else {
-        showNotice('error', result.error || 'Đăng ký thất bại');
+        const errorMsg = result.error || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.';
+        showNotice('error', errorMsg);
+        return { success: false, error: errorMsg };
       }
-    } catch {
-      fetchTeams();
-      setIsRegisterOpen(false);
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Có lỗi kết nối máy chủ khi gửi dữ liệu đăng ký.';
+      showNotice('error', errorMsg);
+      return { success: false, error: errorMsg };
     }
   };
 
