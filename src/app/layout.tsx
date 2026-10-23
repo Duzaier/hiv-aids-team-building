@@ -25,6 +25,9 @@ export default function RootLayout({
           name="description"
           content="Nền tảng đăng ký thi đấu Team Building 6 đội nhân tháng hành động quốc gia phòng, chống HIV/AIDS. Gắn kết yêu thương, xóa nhòa định kiến."
         />
+        <link rel="icon" href="/icon.png" type="image/png" />
+        <link rel="shortcut icon" href="/icon.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/icon.png" />
       </head>
       <body className={`${beVietnamPro.className} min-h-full flex flex-col bg-slate-950 antialiased selection:bg-red-500 selection:text-white`}>
         <AuthProvider>{children}</AuthProvider>
