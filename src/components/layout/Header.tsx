@@ -29,6 +29,13 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const isFull = occupiedCount >= totalSlots;
   const availableCount = Math.max(0, totalSlots - occupiedCount);
+  const [imageError, setImageError] = React.useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [currentUser?.avatar]);
+
+  const initialLetter = currentUser?.name?.trim() ? currentUser.name.trim().charAt(0).toUpperCase() : 'U';
 
   return (
     <header className="relative pt-5 pb-6 px-3 sm:px-6 lg:px-8 border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
@@ -54,11 +61,19 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-2 shrink-0">
             {currentUser ? (
               <div className="flex items-center gap-2 sm:gap-3 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
-                <img
-                  src={currentUser.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'}
-                  alt={currentUser.name}
-                  className="w-6 h-6 rounded-full border border-slate-700 object-cover"
-                />
+                {imageError || !currentUser.avatar ? (
+                  <div className="w-6 h-6 rounded-full bg-linear-to-tr from-red-600 to-amber-500 flex items-center justify-center text-[11px] font-bold text-white uppercase shrink-0 shadow-xs">
+                    {initialLetter}
+                  </div>
+                ) : (
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    referrerPolicy="no-referrer"
+                    onError={() => setImageError(true)}
+                    className="w-6 h-6 rounded-full border border-slate-700 object-cover shrink-0"
+                  />
+                )}
                 <span className="text-xs font-semibold text-slate-200 hidden sm:inline">
                   {currentUser.name}
                 </span>
