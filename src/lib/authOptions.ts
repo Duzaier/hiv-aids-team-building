@@ -89,6 +89,9 @@ export const authOptions: NextAuthOptions = {
       return session;
     }
   },
+  pages: {
+    error: '/'
+  },
   secret: process.env.NEXTAUTH_SECRET || 'hiv-team-building-super-secret-key-2026',
   session: {
     strategy: 'jwt'
