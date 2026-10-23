@@ -2,7 +2,7 @@
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from './prisma';
-import { isAdminEmail } from './auth';
+import { isAdminEmail } from './roles';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -55,7 +55,6 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role || 'USER';
       }
       if (token.email) {
         token.role = isAdminEmail(token.email) ? 'ADMIN' : 'USER';
