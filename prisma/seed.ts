@@ -13,46 +13,46 @@ async function main() {
   const adminUser = await prisma.user.create({
     data: {
       id: 'user-admin',
-      name: 'LÃª HoÃ ng Admin',
+      name: 'Lê Hoàng Admin',
       email: 'admin.lehoang@organizer.org',
       role: 'ADMIN',
       image: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=120&auto=format&fit=crop&q=80'
     }
   });
 
-  console.log('--- Creating 4 initial teams with 3-5 members ---');
+  console.log('--- Creating 4 initial teams with pure UTF-8 Vietnamese ---');
   const initialTeamsData = [
     {
       slot: 1,
-      name: 'Chiáº¿n Binh Äá»',
-      ownerName: 'Nguyá»…n VÄƒn An',
+      name: 'Chiến Binh Đỏ',
+      ownerName: 'Nguyễn Văn An',
       ownerEmail: 'an.nguyen@example.com',
       ownerId: 'user-owner-1',
-      members: ['Nguyá»…n VÄƒn An (Äá»™i trÆ°á»Ÿng)', 'Tráº§n Thá»‹ Tháº£o', 'LÃª Minh Tuáº¥n', 'Pháº¡m Thu Háº±ng']
+      members: ['Nguyễn Văn An (Đội trưởng)', 'Trần Thị Thảo', 'Lê Minh Tuấn', 'Phạm Thu Hằng']
     },
     {
       slot: 2,
-      name: 'Ruy BÄƒng Káº¿t Ná»‘i',
-      ownerName: 'Pháº¡m Há»“ng Äá»©c',
+      name: 'Ruy Băng Kết Nối',
+      ownerName: 'Phạm Hồng Đức',
       ownerEmail: 'duc.pham@example.com',
       ownerId: 'user-owner-2',
-      members: ['Pháº¡m Há»“ng Äá»©c (Äá»™i trÆ°á»Ÿng)', 'VÅ© Ngá»c Lan', 'Äá»— Quá»‘c Báº£o']
+      members: ['Phạm Hồng Đức (Đội trưởng)', 'Vũ Ngọc Lan', 'Đỗ Quốc Bảo']
     },
     {
       slot: 3,
-      name: 'TrÃ¡i Tim DÅ©ng Cáº£m',
-      ownerName: 'HoÃ ng Háº£i Yáº¿n',
+      name: 'Trái Tim Dũng Cảm',
+      ownerName: 'Hoàng Hải Yến',
       ownerEmail: 'yen.hoang@example.com',
       ownerId: 'user-owner-3',
-      members: ['HoÃ ng Háº£i Yáº¿n (Äá»™i trÆ°á»Ÿng)', 'NgÃ´ Thanh TÃ¹ng', 'BÃ¹i PhÆ°Æ¡ng Linh', 'Äinh Trá»ng NghÄ©a', 'Há»“ Quá»³nh Mai']
+      members: ['Hoàng Hải Yến (Đội trưởng)', 'Ngô Thanh Tùng', 'Bùi Phương Linh', 'Đinh Trọng Nghĩa', 'Hồ Quỳnh Mai']
     },
     {
       slot: 4,
-      name: 'KhÃ¡t Vá»ng VÆ°Æ¡n LÃªn',
-      ownerName: 'VÃµ Minh QuÃ¢n',
+      name: 'Khát Vọng Vươn Lên',
+      ownerName: 'Võ Minh Quân',
       ownerEmail: 'quan.vo@example.com',
       ownerId: 'user-owner-4',
-      members: ['VÃµ Minh QuÃ¢n (Äá»™i trÆ°á»Ÿng)', 'LÃ½ HoÃ ng Nam', 'DÆ°Æ¡ng Má»¹ TiÃªn', 'ÄoÃ n Gia Báº£o']
+      members: ['Võ Minh Quân (Đội trưởng)', 'Lý Hoàng Nam', 'Dương Mỹ Tiên', 'Đoàn Gia Bảo']
     }
   ];
 
@@ -90,11 +90,11 @@ async function main() {
       action: 'SYSTEM_INIT',
       targetSlot: 0,
       targetTeamName: 'System Bootstrap',
-      details: JSON.stringify({ message: 'Khá»Ÿi táº¡o dá»¯ liá»‡u máº«u 4 Ä‘á»™i ban Ä‘áº§u, 2 slot cÃ²n trá»‘ng' })
+      details: JSON.stringify({ message: 'Khởi tạo dữ liệu mẫu 4 đội ban đầu, 2 slot còn trống' })
     }
   });
 
-  console.log('--- Database seeding completed successfully! ---');
+  console.log('--- Database seeding completed with clean UTF-8! ---');
 }
 
 main()

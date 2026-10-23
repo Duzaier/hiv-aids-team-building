@@ -19,7 +19,7 @@ export default function Home() {
   const [isDbSynced, setIsDbSynced] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>({
     type: 'info',
-    message: 'Há»‡ thá»‘ng Ä‘Ã£ káº¿t ná»‘i Database SQLite/PostgreSQL vá»›i Transaction an toÃ n chá»‘ng xung Ä‘á»™t slot.'
+    message: 'Hệ thống đã kết nối Database với Transaction an toàn chống xung đột slot.'
   });
 
   // Modal states
@@ -47,7 +47,7 @@ export default function Home() {
               slotNumber: t.slotNumber,
               name: t.name,
               ownerId: t.ownerId,
-              ownerName: t.ownerName || 'Chá»§ Ä‘á»™i',
+              ownerName: t.ownerName || 'Chủ đội',
               ownerEmail: t.ownerEmail || 'user@example.com',
               registeredAt: t.registeredAt,
               accentColor: meta.accentColor,
@@ -92,7 +92,7 @@ export default function Home() {
     if (currentPersona.user) {
       headers['x-user-id'] = currentPersona.user.id;
       headers['x-user-email'] = currentPersona.user.email;
-      headers['x-user-name'] = currentPersona.user.name;
+      headers['x-user-name'] = encodeURIComponent(currentPersona.user.name);
     }
     return headers;
   };
@@ -102,7 +102,7 @@ export default function Home() {
     setCurrentPersona(newUserPersona);
     setNotification({
       type: 'success',
-      message: `ÄÄƒng nháº­p Google thÃ nh cÃ´ng vá»›i tÃ i khoáº£n "${newUserPersona.user?.name}". Báº¡n cÃ³ thá»ƒ Ä‘Äƒng kÃ½ Ä‘á»™i ngay bÃ¢y giá»!`
+      message: `Đăng nhập Google thành công với tài khoản "${newUserPersona.user?.name}". Bạn có thể đăng ký đội ngay!`
     });
   };
 
@@ -110,7 +110,7 @@ export default function Home() {
     setCurrentPersona(MOCK_PERSONAS[0]);
     setNotification({
       type: 'info',
-      message: 'ÄÃ£ Ä‘Äƒng xuáº¥t khá»i tÃ i khoáº£n Google.'
+      message: 'Đã đăng xuất khỏi tài khoản Google.'
     });
   };
 
@@ -118,7 +118,7 @@ export default function Home() {
     if (isFull) {
       setNotification({
         type: 'error',
-        message: 'ÄÃ£ Ä‘áº¡t giá»›i háº¡n tá»‘i Ä‘a 6 Ä‘á»™i. ÄÄƒng kÃ½ hiá»‡n Ä‘Ã£ táº¡m Ä‘Ã³ng.'
+        message: 'Đã đạt giới hạn tối đa 6 đội. Đăng ký hiện đã tạm đóng.'
       });
       return;
     }
@@ -131,7 +131,7 @@ export default function Home() {
     if (hasTeam && myTeam) {
       setNotification({
         type: 'info',
-        message: `TÃ i khoáº£n cá»§a báº¡n Ä‘Ã£ sá»Ÿ há»¯u "${myTeam.name}". Má»—i tÃ i khoáº£n chá»‰ Ä‘Æ°á»£c Ä‘Äƒng kÃ½ 1 Ä‘á»™i. Äang má»Ÿ cá»­a sá»• chá»‰nh sá»­a.`
+        message: `Tài khoản của bạn đã sở hữu "${myTeam.name}". Mỗi tài khoản chỉ được đăng ký 1 đội.`
       });
       setTeamToEdit(myTeam);
       setIsAdminEdit(false);
@@ -168,26 +168,26 @@ export default function Home() {
           setCurrentPersona({
             ...currentPersona,
             role: 'OWNER',
-            label: `Chá»§ ${result.team.name}`,
+            label: `Chủ ${result.team.name}`,
             ownedTeamId: result.team.id,
-            description: `Chá»§ sá»Ÿ há»¯u ${result.team.name} (Vá»‹ trÃ­ #${result.team.slotNumber}).`
+            description: `Chủ sở hữu ${result.team.name} (Vị trí #${result.team.slotNumber}).`
           });
         }
         setNotification({
           type: 'success',
-          message: `ÄÃ£ ghi nháº­n Äá»™i "${teamName}" vÃ o Database vá»›i Slot #${result.team.slotNumber} an toÃ n qua Transaction!`
+          message: `Chúc mừng! Đội "${teamName}" đã đăng ký thành công vào Slot #${result.team.slotNumber}!`
         });
       } else {
         setNotification({
           type: 'error',
-          message: result.error || 'ÄÄƒng kÃ½ tháº¥t báº¡i'
+          message: result.error || 'Đăng ký thất bại'
         });
       }
     } catch (err) {
       console.error('Registration failed:', err);
       setNotification({
         type: 'error',
-        message: 'Lá»—i káº¿t ná»‘i khi gá»­i dá»¯ liá»‡u Ä‘Äƒng kÃ½'
+        message: 'Lỗi kết nối khi gửi dữ liệu đăng ký'
       });
     }
   };
@@ -221,19 +221,19 @@ export default function Home() {
         await fetchTeams();
         setNotification({
           type: 'success',
-          message: `Cáº­p nháº­t thÃ´ng tin Äá»™i "${updatedTeam.name}" vÃ o Database thÃ nh cÃ´ng!`
+          message: `Cập nhật thông tin Đội "${updatedTeam.name}" thành công!`
         });
       } else {
         setNotification({
           type: 'error',
-          message: result.error || 'Cáº­p nháº­t tháº¥t báº¡i'
+          message: result.error || 'Cập nhật thất bại'
         });
       }
     } catch (err) {
       console.error('Update error:', err);
       setNotification({
         type: 'error',
-        message: 'Lá»—i káº¿t ná»‘i khi cáº­p nháº­t'
+        message: 'Lỗi kết nối khi cập nhật'
       });
     }
   };
@@ -255,25 +255,24 @@ export default function Home() {
         await fetchTeams();
         setNotification({
           type: 'info',
-          message: `ÄÃ£ xÃ³a Ä‘á»™i vÃ  ghi vÃ o Audit Log. Vá»‹ trÃ­ Slot #${slotNumber} hiá»‡n Ä‘Ã£ Ä‘Æ°á»£c giáº£i phÃ³ng thÃ nh cÃ´ng!`
+          message: `Đã xóa đội. Vị trí Slot #${slotNumber} hiện đã được giải phóng thành công!`
         });
       } else {
         setNotification({
           type: 'error',
-          message: result.error || 'XÃ³a Ä‘á»™i tháº¥t báº¡i'
+          message: result.error || 'Xóa đội thất bại'
         });
       }
     } catch (err) {
       console.error('Delete error:', err);
       setNotification({
         type: 'error',
-        message: 'Lá»—i káº¿t ná»‘i khi thá»±c hiá»‡n xÃ³a'
+        message: 'Lỗi kết nối khi thực hiện xóa'
       });
     }
   };
 
   const handleFillAllSlots = async () => {
-    // Fill remaining slots
     for (let slot = 1; slot <= 6; slot++) {
       if (!teams.some((t) => t.slotNumber === slot)) {
         const meta = SLOT_METADATA[slot - 1];
@@ -283,15 +282,15 @@ export default function Home() {
             'Content-Type': 'application/json',
             'x-user-id': `mock-user-slot-${slot}`,
             'x-user-email': `leader.slot0${slot}@test.org`,
-            'x-user-name': `Äá»™i TrÆ°á»Ÿng 0${slot}`
+            'x-user-name': encodeURIComponent(`Đội Trưởng 0${slot}`)
           },
           body: JSON.stringify({
             teamName: meta.nameDefault,
             members: [
-              `Äá»™i TrÆ°á»Ÿng 0${slot} (TrÆ°á»Ÿng nhÃ³m)`,
-              `ThÃ nh viÃªn A (Slot ${slot})`,
-              `ThÃ nh viÃªn B (Slot ${slot})`,
-              `ThÃ nh viÃªn C (Slot ${slot})`
+              `Đội Trưởng 0${slot} (Trưởng nhóm)`,
+              `Thành viên A (Slot ${slot})`,
+              `Thành viên B (Slot ${slot})`,
+              `Thành viên C (Slot ${slot})`
             ]
           })
         });
@@ -300,17 +299,16 @@ export default function Home() {
     await fetchTeams();
     setNotification({
       type: 'info',
-      message: 'ÄÃ£ láº¥p Ä‘áº§y toÃ n bá»™ 6 Slot vÃ o Database Ä‘á»ƒ kiá»ƒm tra tráº¡ng thÃ¡i Äáº§y Chá»— (Full Capacity).'
+      message: 'Đã lấp đầy toàn bộ 6 Slot để kiểm tra trạng thái Đầy Chỗ (Full Capacity).'
     });
   };
 
   const handleResetData = async () => {
-    // Re-fetch initial state
     await fetchTeams();
     setCurrentPersona(MOCK_PERSONAS[0]);
     setNotification({
       type: 'info',
-      message: 'ÄÃ£ Ä‘á»“ng bá»™ láº¡i dá»¯ liá»‡u tá»« cÆ¡ sá»Ÿ dá»¯ liá»‡u.'
+      message: 'Đã đồng bộ lại dữ liệu từ cơ sở dữ liệu.'
     });
   };
 
@@ -323,7 +321,7 @@ export default function Home() {
           setCurrentPersona(p);
           setNotification({
             type: 'info',
-            message: `Chuyá»ƒn vai: "${p.label}". ${p.description}`
+            message: `Chuyển vai: "${p.label}". ${p.description}`
           });
         }}
         onFillAllSlots={handleFillAllSlots}
@@ -333,25 +331,25 @@ export default function Home() {
 
       {/* 2. Notification Toast */}
       {notification && (
-        <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 transition-all animate-in fade-in">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs sm:text-sm">
-            <div className="flex items-center gap-2">
+        <div className="bg-slate-900 border-b border-slate-800 px-3 sm:px-4 py-2.5 sm:py-3 transition-all animate-in fade-in">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3 text-xs sm:text-sm">
+            <div className="flex items-center gap-2 min-w-0">
               {notification.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
               {notification.type === 'error' && <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
               {notification.type === 'info' && <Info className="w-4 h-4 text-blue-400 shrink-0" />}
-              <span className="text-slate-200">{notification.message}</span>
+              <span className="text-slate-200 truncate sm:whitespace-normal">{notification.message}</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 shrink-0">
               {isDbSynced && (
-                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30">
+                <span className="hidden md:inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30">
                   <Database className="w-3 h-3" />
-                  Prisma DB Connected
+                  Prisma DB
                 </span>
               )}
               <button
                 onClick={() => setNotification(null)}
                 className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors"
-                title="ÄÃ³ng thÃ´ng bÃ¡o"
+                title="Đóng"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -380,7 +378,7 @@ export default function Home() {
       />
 
       {/* 4. Main Body: Admin View or 6-Card Grid */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10">
         {currentPersona.role === 'ADMIN' && (
           <AdminManagementPanel
             teams={teams}
@@ -389,32 +387,32 @@ export default function Home() {
           />
         )}
 
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-red-400">
-                Báº£ng Tá»•ng Sáº¯p 6 Äá»™i Thi Äáº¥u
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-red-400">
+                Bảng Tổng Sắp 6 Đội Thi Đấu
               </span>
-              <span className="text-xs text-slate-400">â€¢ ÄÄƒng kÃ½ theo thá»© tá»± slot</span>
+              <span className="text-[11px] sm:text-xs text-slate-400">• Đăng ký theo thứ tự</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Danh SÃ¡ch 6 Tháº» Äá»™i Danh Dá»±
+            <h2 className="text-xl sm:text-3xl font-black text-white tracking-tight">
+              Danh Sách 6 Thẻ Đội Danh Dự
             </h2>
           </div>
 
           <div className="flex items-center gap-3">
             {isFull ? (
-              <span className="px-4 py-2 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 text-xs font-bold flex items-center gap-1.5">
+              <span className="w-full sm:w-auto justify-center px-4 py-2 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 text-xs font-bold flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                Äáº§y Ä‘á»§ 6/6 Ä‘á»™i
+                Đầy đủ 6/6 đội
               </span>
             ) : (
               <button
                 onClick={() => handleOpenRegister()}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs shadow-md shadow-red-600/20 flex items-center gap-1.5 transition-all"
+                className="w-full sm:w-auto justify-center px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs shadow-md shadow-red-600/20 flex items-center gap-1.5 transition-all"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                ÄÄƒng kÃ½ vÃ o Slot tiáº¿p theo (Slot #{getNextAvailableSlot()})
+                Đăng ký Slot tiếp theo (Slot #{getNextAvailableSlot()})
               </button>
             )}
           </div>

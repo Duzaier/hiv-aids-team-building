@@ -1,20 +1,13 @@
-﻿import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+'use client';
+
+import { Be_Vietnam_Pro } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin', 'vietnamese'] });
-
-export const metadata: Metadata = {
-  title: 'ÄÄƒng KÃ½ Team Building 2026 â€” Chung Tay Äáº©y LÃ¹i HIV/AIDS',
-  description:
-    'Ná»n táº£ng Ä‘Äƒng kÃ½ thi Ä‘áº¥u Team Building 6 Ä‘á»™i nhÃ¢n thÃ¡ng hÃ nh Ä‘á»™ng quá»‘c gia phÃ²ng, chá»‘ng HIV/AIDS. Gáº¯n káº¿t yÃªu thÆ°Æ¡ng, xÃ³a nhÃ²a Ä‘á»‹nh kiáº¿n.',
-  keywords: ['Team Building', 'HIV/AIDS Awareness', 'Há»™i thao cá»™ng Ä‘á»“ng', 'ÄÄƒng kÃ½ 6 Ä‘á»™i', 'Lan tá»a yÃªu thÆ°Æ¡ng'],
-  authors: [{ name: 'Ban Tá»• Chá»©c Team Building 2026' }],
-  robots: {
-    index: true,
-    follow: true
-  }
-};
+const beVietnamPro = Be_Vietnam_Pro({
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  subsets: ['latin', 'vietnamese'],
+  display: 'swap'
+});
 
 export default function RootLayout({
   children
@@ -23,7 +16,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className="h-full bg-slate-950 text-slate-100 dark">
-      <body className={`${inter.className} min-h-full flex flex-col bg-slate-950`}>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <title>Đăng Ký Team Building 2026 — Chung Tay Đẩy Lùi HIV/AIDS</title>
+        <meta
+          name="description"
+          content="Nền tảng đăng ký thi đấu Team Building 6 đội nhân tháng hành động quốc gia phòng, chống HIV/AIDS. Gắn kết yêu thương, xóa nhòa định kiến."
+        />
+      </head>
+      <body className={`${beVietnamPro.className} min-h-full flex flex-col bg-slate-950 antialiased selection:bg-red-500 selection:text-white`}>
         {children}
       </body>
     </html>

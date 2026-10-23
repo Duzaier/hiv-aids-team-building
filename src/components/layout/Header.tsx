@@ -1,8 +1,8 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { User, Role } from '@/types';
-import { Shield, Sparkles, Users, HeartHandshake, LogIn, LogOut, CheckCircle2 } from 'lucide-react';
+import { Sparkles, HeartHandshake, LogOut, CheckCircle2 } from 'lucide-react';
 
 interface HeaderProps {
   currentUser: User | null;
@@ -30,55 +30,55 @@ export const Header: React.FC<HeaderProps> = ({
   const isFull = occupiedCount >= totalSlots;
 
   return (
-    <header className="relative overflow-hidden pt-8 pb-12 px-4 sm:px-6 lg:px-8 border-b border-slate-800/80">
+    <header className="relative overflow-hidden pt-4 pb-8 sm:py-10 px-3 sm:px-6 lg:px-8 border-b border-slate-800/80">
       {/* Background glowing gradients */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-red-600/15 via-rose-900/5 to-transparent blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-80 bg-gradient-to-b from-red-600/15 via-rose-900/5 to-transparent blur-3xl pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto">
         {/* Top Navbar */}
-        <div className="flex items-center justify-between gap-4 mb-10">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 mb-6 sm:mb-8">
           {/* Logo / Brand */}
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center text-white shadow-lg shadow-red-600/30 ring-2 ring-red-500/30">
-              <HeartHandshake className="w-6 h-6" />
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center text-white shadow-lg shadow-red-600/30 ring-2 ring-red-500/30 shrink-0">
+              <HeartHandshake className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-red-400 block">
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-red-400 block truncate">
                 HIV/AIDS Awareness 2026
               </span>
-              <span className="text-base sm:text-lg font-black text-white tracking-tight">
-                Team Building Äáº¥u TrÆ°á»ng 6 Äá»™i
+              <span className="text-sm sm:text-lg font-black text-white tracking-tight block truncate">
+                Team Building Đấu Trường 6 Đội
               </span>
             </div>
           </div>
 
           {/* User Profile / Google Auth Status */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             {currentUser ? (
-              <div className="flex items-center gap-3 bg-slate-900/90 border border-slate-800 px-3.5 py-1.5 rounded-2xl shadow-sm">
+              <div className="flex items-center gap-2 sm:gap-3 bg-slate-900/90 border border-slate-800 px-2.5 sm:px-3.5 py-1.5 rounded-xl sm:rounded-2xl shadow-sm">
                 <img
                   src={currentUser.avatar}
                   alt={currentUser.name}
-                  className="w-8 h-8 rounded-full border border-red-500/40 object-cover"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-red-500/40 object-cover"
                 />
-                <div className="hidden sm:block text-left text-xs">
+                <div className="hidden md:block text-left text-xs">
                   <span className="font-bold text-white block leading-tight">{currentUser.name}</span>
                   <span className="text-slate-400 text-[11px] block">{currentUser.email}</span>
                 </div>
                 <button
                   onClick={onLogoutClick}
-                  className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-                  title="MÃ´ phá»ng ÄÄƒng xuáº¥t Google"
+                  className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+                  title="Đăng xuất"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             ) : (
               <button
                 onClick={onLoginClick}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs shadow-md shadow-white/10 transition-all hover:scale-[1.02]"
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs shadow-md shadow-white/10 transition-all hover:scale-[1.02]"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -96,82 +96,82 @@ export const Header: React.FC<HeaderProps> = ({
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                   />
                 </svg>
-                <span>ÄÄƒng nháº­p Google</span>
+                <span className="whitespace-nowrap">Đăng nhập</span>
               </button>
             )}
           </div>
         </div>
 
         {/* Hero Banner Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-7 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-500/40 text-red-400 text-xs font-semibold">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
+          <div className="lg:col-span-7 space-y-3 sm:space-y-4">
+            <div className="inline-flex items-center gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-red-950/80 border border-red-500/40 text-red-400 text-xs font-semibold">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-              Sá»± Kiá»‡n Team Building Káº¿t Ná»‘i Cá»™ng Äá»“ng
+              Sự Kiện Team Building Kết Nối Cộng Đồng
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-              Chung Tay VÃ¬ NgÃ y Mai,{' '}
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-snug sm:leading-tight">
+              Chung Tay Vì Ngày Mai,{' '}
               <span className="bg-gradient-to-r from-red-500 via-rose-500 to-amber-500 bg-clip-text text-transparent">
-                XÃ³a Bá» Äá»‹nh Kiáº¿n
+                Xóa Bỏ Định Kiến
               </span>
             </h1>
 
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
-              Há»™i thao vÃ  giao lÆ°u gáº¯n káº¿t tinh tháº§n Ä‘á»“ng Ä‘á»™i nhÃ¢n thÃ¡ng hÃ nh Ä‘á»™ng quá»‘c gia phÃ²ng, chá»‘ng HIV/AIDS. SÃ¢n chÆ¡i gá»“m Ä‘Ãºng <strong>6 vá»‹ trÃ­ thi Ä‘áº¥u danh dá»±</strong> dÃ nh cho 6 Ä‘á»™i xuáº¥t sáº¯c Ä‘Äƒng kÃ½ sá»›m nháº¥t.
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+              Hội thao và giao lưu gắn kết tinh thần đồng đội nhân tháng hành động quốc gia phòng, chống HIV/AIDS. Sân chơi gồm đúng <strong>6 vị trí thi đấu danh dự</strong> dành cho 6 đội xuất sắc đăng ký sớm nhất.
             </p>
 
             {/* Hero CTAs */}
-            <div className="pt-2 flex flex-wrap items-center gap-3">
+            <div className="pt-2 flex flex-wrap items-center gap-2.5 sm:gap-3">
               {hasTeam ? (
                 <button
                   onClick={onOpenMyTeamEdit}
-                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all"
+                  className="w-full sm:w-auto px-5 sm:px-6 py-3 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  Quáº£n lÃ½ Ä‘á»™i cá»§a báº¡n
+                  <Sparkles className="w-4 h-4 shrink-0" />
+                  Quản lý đội của bạn
                 </button>
               ) : isFull ? (
-                <div className="px-5 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 text-sm font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  ÄÃ£ Ä‘á»§ 6/6 Ä‘á»™i Ä‘Äƒng kÃ½ (ÄÄƒng kÃ½ táº¡m Ä‘Ã³ng)
+                <div className="w-full sm:w-auto px-4 sm:px-5 py-3 rounded-xl sm:rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  Đã đủ 6/6 đội đăng ký (Tạm đóng)
                 </div>
               ) : (
                 <button
                   onClick={onOpenRegisterHero}
-                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-sm shadow-xl shadow-red-600/30 flex items-center gap-2 transition-all hover:scale-[1.02]"
+                  className="w-full sm:w-auto px-5 sm:px-6 py-3 rounded-xl sm:rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs sm:text-sm shadow-xl shadow-red-600/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01]"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  ÄÄƒng kÃ½ Ä‘á»™i ngay (CÃ²n {totalSlots - occupiedCount} slot)
+                  <Sparkles className="w-4 h-4 shrink-0" />
+                  Đăng ký đội ngay (Còn {totalSlots - occupiedCount} slot)
                 </button>
               )}
 
-              <span className="text-xs text-slate-400 hidden sm:inline">
-                â€¢ 3 - 5 thÃ nh viÃªn má»—i Ä‘á»™i â€¢ PhÃ¢n bá»• slot tá»± Ä‘á»™ng 1 â†’ 6
+              <span className="text-[11px] sm:text-xs text-slate-400 w-full sm:w-auto text-center sm:text-left">
+                • 3 - 5 người/đội • Slot 1 → 6 tự động
               </span>
             </div>
           </div>
 
           {/* Quick Metrics Cards */}
-          <div className="lg:col-span-5 grid grid-cols-3 gap-3">
-            <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-center">
-              <span className="text-xs text-slate-400 block mb-1">Tá»•ng Vá»‹ TrÃ­</span>
-              <span className="text-2xl sm:text-3xl font-black text-white">{totalSlots}</span>
-              <span className="text-[11px] text-slate-400 block mt-1">Giá»›i háº¡n cá»©ng</span>
+          <div className="lg:col-span-5 grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/90 border border-slate-800 text-center">
+              <span className="text-[10px] sm:text-xs text-slate-400 block mb-0.5 sm:mb-1">Tổng Slot</span>
+              <span className="text-xl sm:text-3xl font-black text-white">{totalSlots}</span>
+              <span className="text-[10px] sm:text-[11px] text-slate-400 block mt-0.5">Giới hạn cứng</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-red-950/40 border border-red-500/30 text-center">
-              <span className="text-xs text-red-400 block mb-1">ÄÃ£ ÄÄƒng KÃ½</span>
-              <span className="text-2xl sm:text-3xl font-black text-white">{occupiedCount}</span>
-              <span className="text-[11px] text-red-300 block mt-1">Slot chiáº¿m chá»—</span>
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-red-950/40 border border-red-500/30 text-center">
+              <span className="text-[10px] sm:text-xs text-red-400 block mb-0.5 sm:mb-1">Đã Đăng Ký</span>
+              <span className="text-xl sm:text-3xl font-black text-white">{occupiedCount}</span>
+              <span className="text-[10px] sm:text-[11px] text-red-300 block mt-0.5">Slot chiếm chỗ</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-center">
-              <span className="text-xs text-emerald-400 block mb-1">CÃ²n Trá»‘ng</span>
-              <span className="text-2xl sm:text-3xl font-black text-emerald-400">
+            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-center">
+              <span className="text-[10px] sm:text-xs text-emerald-400 block mb-0.5 sm:mb-1">Còn Trống</span>
+              <span className="text-xl sm:text-3xl font-black text-emerald-400">
                 {totalSlots - occupiedCount}
               </span>
-              <span className="text-[11px] text-emerald-300 block mt-1">CÆ¡ há»™i tham gia</span>
+              <span className="text-[10px] sm:text-[11px] text-emerald-300 block mt-0.5">Sẵn sàng nhận</span>
             </div>
           </div>
         </div>

@@ -1,59 +1,59 @@
-﻿import { Team, Persona, User } from '@/types';
+import { Team, Persona } from '@/types';
 
 export const SLOT_METADATA = [
   {
     slotNumber: 1,
-    nameDefault: 'Chiáº¿n Binh Äá»',
+    nameDefault: 'Chiến Binh Đỏ',
     accentColor: 'from-red-600 to-rose-700',
     borderColor: 'border-red-500/40 hover:border-red-500',
     glowColor: 'shadow-red-500/10',
     badgeTitle: 'Crimson Vanguard',
-    motto: 'Ngá»n lá»­a tiÃªn phong vÃ¬ nháº­n thá»©c cá»™ng Ä‘á»“ng'
+    motto: 'Ngọn lửa tiên phong vì nhận thức cộng đồng'
   },
   {
     slotNumber: 2,
-    nameDefault: 'Ruy BÄƒng Káº¿t Ná»‘i',
+    nameDefault: 'Ruy Băng Kết Nối',
     accentColor: 'from-rose-600 to-pink-700',
     borderColor: 'border-rose-500/40 hover:border-rose-500',
     glowColor: 'shadow-rose-500/10',
     badgeTitle: 'Red Ribbon Force',
-    motto: 'Lan tá»a yÃªu thÆ°Æ¡ng, xÃ³a nhÃ²a khoáº£ng cÃ¡ch'
+    motto: 'Lan tỏa yêu thương, xóa nhòa khoảng cách'
   },
   {
     slotNumber: 3,
-    nameDefault: 'TrÃ¡i Tim DÅ©ng Cáº£m',
+    nameDefault: 'Trái Tim Dũng Cảm',
     accentColor: 'from-red-700 to-amber-700',
     borderColor: 'border-amber-600/40 hover:border-amber-500',
     glowColor: 'shadow-amber-500/10',
     badgeTitle: 'Heart of Courage',
-    motto: 'KhÃ´ng phÃ¡n xÃ©t, luÃ´n sáº» chia vÃ  tháº¥u hiá»ƒu'
+    motto: 'Không phán xét, luôn sẻ chia và thấu hiểu'
   },
   {
     slotNumber: 4,
-    nameDefault: 'KhÃ¡t Vá»ng VÆ°Æ¡n LÃªn',
+    nameDefault: 'Khát Vọng Vươn Lên',
     accentColor: 'from-orange-600 to-red-700',
     borderColor: 'border-orange-500/40 hover:border-orange-500',
     glowColor: 'shadow-orange-500/10',
     badgeTitle: 'Vitality Pulse',
-    motto: 'Chung sá»©c Ä‘á»“ng lÃ²ng vÃ¬ má»™t tÆ°Æ¡ng lai khá»e máº¡nh'
+    motto: 'Chung sức đồng lòng vì một tương lai khỏe mạnh'
   },
   {
     slotNumber: 5,
-    nameDefault: 'Ãnh DÆ°Æ¡ng Hy Vá»ng',
+    nameDefault: 'Ánh Dương Hy Vọng',
     accentColor: 'from-pink-600 to-red-800',
     borderColor: 'border-pink-500/40 hover:border-pink-500',
     glowColor: 'shadow-pink-500/10',
     badgeTitle: 'Aurora Hope',
-    motto: 'BÆ°á»›c tiáº¿p cÃ¹ng nhau, vá»¯ng tin ngÃ y mai'
+    motto: 'Bước tiếp cùng nhau, vững tin ngày mai'
   },
   {
     slotNumber: 6,
-    nameDefault: 'VÃ²ng Tay Äá»“ng Äá»™i',
+    nameDefault: 'Vòng Tay Đồng Đội',
     accentColor: 'from-red-800 to-rose-950',
     borderColor: 'border-rose-700/40 hover:border-rose-600',
     glowColor: 'shadow-rose-700/10',
     badgeTitle: 'United Victory',
-    motto: 'Gáº¯n káº¿t bá»n cháº·t, vÆ°Æ¡n táº§m chiáº¿n tháº¯ng'
+    motto: 'Gắn kết bền chặt, vươn tầm chiến thắng'
   }
 ];
 
@@ -61,69 +61,69 @@ export const INITIAL_TEAMS: Team[] = [
   {
     id: 'team-1',
     slotNumber: 1,
-    name: 'Chiáº¿n Binh Äá»',
+    name: 'Chiến Binh Đỏ',
     ownerId: 'user-owner-1',
-    ownerName: 'Nguyá»…n VÄƒn An',
+    ownerName: 'Nguyễn Văn An',
     ownerEmail: 'an.nguyen@example.com',
     registeredAt: '2026-10-23 08:15',
     accentColor: 'from-red-600 to-rose-700',
     badgeTitle: 'Crimson Vanguard',
     members: [
-      { id: 'm-1-1', name: 'Nguyá»…n VÄƒn An (Äá»™i trÆ°á»Ÿng)' },
-      { id: 'm-1-2', name: 'Tráº§n Thá»‹ Tháº£o' },
-      { id: 'm-1-3', name: 'LÃª Minh Tuáº¥n' },
-      { id: 'm-1-4', name: 'Pháº¡m Thu Háº±ng' }
+      { id: 'm-1-1', name: 'Nguyễn Văn An (Đội trưởng)' },
+      { id: 'm-1-2', name: 'Trần Thị Thảo' },
+      { id: 'm-1-3', name: 'Lê Minh Tuấn' },
+      { id: 'm-1-4', name: 'Phạm Thu Hằng' }
     ]
   },
   {
     id: 'team-2',
     slotNumber: 2,
-    name: 'Ruy BÄƒng Káº¿t Ná»‘i',
+    name: 'Ruy Băng Kết Nối',
     ownerId: 'user-owner-2',
-    ownerName: 'Pháº¡m Há»“ng Äá»©c',
+    ownerName: 'Phạm Hồng Đức',
     ownerEmail: 'duc.pham@example.com',
     registeredAt: '2026-10-23 08:30',
     accentColor: 'from-rose-600 to-pink-700',
     badgeTitle: 'Red Ribbon Force',
     members: [
-      { id: 'm-2-1', name: 'Pháº¡m Há»“ng Äá»©c (Äá»™i trÆ°á»Ÿng)' },
-      { id: 'm-2-2', name: 'VÅ© Ngá»c Lan' },
-      { id: 'm-2-3', name: 'Äá»— Quá»‘c Báº£o' }
+      { id: 'm-2-1', name: 'Phạm Hồng Đức (Đội trưởng)' },
+      { id: 'm-2-2', name: 'Vũ Ngọc Lan' },
+      { id: 'm-2-3', name: 'Đỗ Quốc Bảo' }
     ]
   },
   {
     id: 'team-3',
     slotNumber: 3,
-    name: 'TrÃ¡i Tim DÅ©ng Cáº£m',
+    name: 'Trái Tim Dũng Cảm',
     ownerId: 'user-owner-3',
-    ownerName: 'HoÃ ng Háº£i Yáº¿n',
+    ownerName: 'Hoàng Hải Yến',
     ownerEmail: 'yen.hoang@example.com',
     registeredAt: '2026-10-23 08:45',
     accentColor: 'from-red-700 to-amber-700',
     badgeTitle: 'Heart of Courage',
     members: [
-      { id: 'm-3-1', name: 'HoÃ ng Háº£i Yáº¿n (Äá»™i trÆ°á»Ÿng)' },
-      { id: 'm-3-2', name: 'NgÃ´ Thanh TÃ¹ng' },
-      { id: 'm-3-3', name: 'BÃ¹i PhÆ°Æ¡ng Linh' },
-      { id: 'm-3-4', name: 'Äinh Trá»ng NghÄ©a' },
-      { id: 'm-3-5', name: 'Há»“ Quá»³nh Mai' }
+      { id: 'm-3-1', name: 'Hoàng Hải Yến (Đội trưởng)' },
+      { id: 'm-3-2', name: 'Ngô Thanh Tùng' },
+      { id: 'm-3-3', name: 'Bùi Phương Linh' },
+      { id: 'm-3-4', name: 'Đinh Trọng Nghĩa' },
+      { id: 'm-3-5', name: 'Hồ Quỳnh Mai' }
     ]
   },
   {
     id: 'team-4',
     slotNumber: 4,
-    name: 'KhÃ¡t Vá»ng VÆ°Æ¡n LÃªn',
+    name: 'Khát Vọng Vươn Lên',
     ownerId: 'user-owner-4',
-    ownerName: 'VÃµ Minh QuÃ¢n',
+    ownerName: 'Võ Minh Quân',
     ownerEmail: 'quan.vo@example.com',
     registeredAt: '2026-10-23 09:05',
     accentColor: 'from-orange-600 to-red-700',
     badgeTitle: 'Vitality Pulse',
     members: [
-      { id: 'm-4-1', name: 'VÃµ Minh QuÃ¢n (Äá»™i trÆ°á»Ÿng)' },
-      { id: 'm-4-2', name: 'LÃ½ HoÃ ng Nam' },
-      { id: 'm-4-3', name: 'DÆ°Æ¡ng Má»¹ TiÃªn' },
-      { id: 'm-4-4', name: 'ÄoÃ n Gia Báº£o' }
+      { id: 'm-4-1', name: 'Võ Minh Quân (Đội trưởng)' },
+      { id: 'm-4-2', name: 'Lý Hoàng Nam' },
+      { id: 'm-4-3', name: 'Dương Mỹ Tiên' },
+      { id: 'm-4-4', name: 'Đoàn Gia Bảo' }
     ]
   }
 ];
@@ -131,49 +131,49 @@ export const INITIAL_TEAMS: Team[] = [
 export const MOCK_PERSONAS: Persona[] = [
   {
     id: 'persona-guest',
-    label: 'KhÃ¡ch vÃ£ng lai',
+    label: 'Khách vãng lai',
     role: 'GUEST',
     user: null,
-    description: 'ChÆ°a Ä‘Äƒng nháº­p. CÃ³ thá»ƒ xem 6 tháº» Ä‘á»™i vÃ  tÃªn thÃ nh viÃªn cÃ´ng khai.'
+    description: 'Chưa đăng nhập. Có thể xem 6 thẻ đội và tên thành viên công khai.'
   },
   {
     id: 'persona-new-user',
-    label: 'TÃ i khoáº£n Google má»›i',
+    label: 'Tài khoản Google mới',
     role: 'USER',
     user: {
       id: 'user-new-5',
-      name: 'Tráº§n Mai Anh',
+      name: 'Trần Mai Anh',
       email: 'maianh.tran@gmail.com',
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80',
       role: 'USER'
     },
-    description: 'ÄÃ£ xÃ¡c thá»±c Google, chÆ°a cÃ³ Ä‘á»™i. Äá»§ Ä‘iá»u kiá»‡n Ä‘Äƒng kÃ½ vÃ o Slot trá»‘ng.'
+    description: 'Đã xác thực Google, chưa có đội. Đủ điều kiện đăng ký vào Slot trống.'
   },
   {
     id: 'persona-owner-1',
-    label: 'Chá»§ Äá»™i 1 (Nguyá»…n VÄƒn An)',
+    label: 'Chủ Đội 1 (Nguyễn Văn An)',
     role: 'OWNER',
     ownedTeamId: 'team-1',
     user: {
       id: 'user-owner-1',
-      name: 'Nguyá»…n VÄƒn An',
+      name: 'Nguyễn Văn An',
       email: 'an.nguyen@example.com',
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80',
       role: 'USER'
     },
-    description: 'Chá»§ sá»Ÿ há»¯u Äá»™i 1. ÄÆ°á»£c quyá»n chá»‰nh sá»­a tÃªn Ä‘á»™i vÃ  thÃ nh viÃªn cá»§a mÃ¬nh.'
+    description: 'Chủ sở hữu Đội 1. Được quyền chỉnh sửa tên đội và thành viên của mình.'
   },
   {
     id: 'persona-admin',
-    label: 'Quáº£n trá»‹ viÃªn (Admin)',
+    label: 'Quản trị viên (Admin)',
     role: 'ADMIN',
     user: {
       id: 'user-admin',
-      name: 'LÃª HoÃ ng Admin',
+      name: 'Lê Hoàng Admin',
       email: 'admin.lehoang@organizer.org',
       avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=120&auto=format&fit=crop&q=80',
       role: 'ADMIN'
     },
-    description: 'Quyá»n quáº£n trá»‹ toÃ n diá»‡n: Xem, sá»­a, xÃ³a báº¥t ká»³ Ä‘á»™i nÃ o vÃ  kiá»ƒm soÃ¡t slot.'
+    description: 'Quyền quản trị toàn diện: Xem, sửa, xóa bất kỳ đội nào và kiểm soát slot.'
   }
 ];

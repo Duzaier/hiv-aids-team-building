@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { Team } from '@/types';
@@ -20,48 +20,48 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
   const availableCount = totalSlots - occupiedCount;
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl mb-12">
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 shadow-2xl mb-8 sm:mb-12">
       {/* Admin Panel Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-purple-950/80 border border-purple-500/40 text-purple-400 flex items-center justify-center shadow-lg shadow-purple-500/10">
-            <Shield className="w-6 h-6" />
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-purple-950/80 border border-purple-500/40 text-purple-400 flex items-center justify-center shadow-lg shadow-purple-500/10 shrink-0">
+            <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <h3 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-              Báº£ng Quáº£n Trá»‹ Há»‡ Thá»‘ng (Administrator)
+            <h3 className="text-lg sm:text-2xl font-black text-white flex items-center gap-2">
+              Bảng Quản Trị Hệ Thống
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              ToÃ n quyá»n xem, hiá»‡u chá»‰nh, giáº£i phÃ³ng slot vÃ  kiá»ƒm tra danh sÃ¡ch 6 Ä‘á»™i thi Ä‘áº¥u.
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+              Toàn quyền xem, hiệu chỉnh, xóa và giải phóng slot thi đấu.
             </p>
           </div>
         </div>
 
         {/* Status Metrics */}
-        <div className="flex items-center gap-2 text-xs">
-          <span className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300">
-            Tá»•ng slot: <strong className="text-white font-bold">{totalSlots}</strong>
+        <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs flex-wrap">
+          <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300">
+            Tổng: <strong className="text-white font-bold">{totalSlots}</strong>
           </span>
-          <span className="px-3 py-1.5 rounded-xl bg-red-950/60 border border-red-500/30 text-red-300">
-            ÄÃ£ Ä‘Äƒng kÃ½: <strong className="text-white font-bold">{occupiedCount}</strong>
+          <span className="px-2.5 py-1 rounded-lg bg-red-950/60 border border-red-500/30 text-red-300">
+            Đã đăng ký: <strong className="text-white font-bold">{occupiedCount}</strong>
           </span>
-          <span className="px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-300">
-            CÃ²n trá»‘ng: <strong className="text-white font-bold">{availableCount}</strong>
+          <span className="px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300">
+            Còn trống: <strong className="text-white font-bold">{availableCount}</strong>
           </span>
         </div>
       </div>
 
-      {/* Teams Table / Grid */}
-      <div className="mt-6 overflow-x-auto">
+      {/* Desktop Table View (Hidden on mobile < 768px) */}
+      <div className="hidden md:block mt-6 overflow-x-auto">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider">
               <th className="py-3 px-3">Slot</th>
-              <th className="py-3 px-4">TÃªn Äá»™i</th>
-              <th className="py-3 px-4">Äá»™i TrÆ°á»Ÿng (Owner)</th>
-              <th className="py-3 px-4">ThÃ nh ViÃªn ({teams.reduce((acc, t) => acc + t.members.length, 0)} ngÆ°á»i)</th>
-              <th className="py-3 px-4">Thá»i Gian</th>
-              <th className="py-3 px-4 text-right">Thao TÃ¡c</th>
+              <th className="py-3 px-4">Tên Đội</th>
+              <th className="py-3 px-4">Đội Trưởng (Owner)</th>
+              <th className="py-3 px-4">Thành Viên</th>
+              <th className="py-3 px-4">Thời Gian</th>
+              <th className="py-3 px-4 text-right">Thao Tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60">
@@ -76,15 +76,15 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                         0{slotNum}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 font-medium italic text-slate-400">
-                      (ChÆ°a cÃ³ Ä‘á»™i Ä‘Äƒng kÃ½)
+                    <td className="py-3.5 px-4 italic text-slate-400">
+                      (Chưa có đội đăng ký)
                     </td>
-                    <td className="py-3.5 px-4 text-slate-400">â€”</td>
-                    <td className="py-3.5 px-4 text-slate-400">â€”</td>
-                    <td className="py-3.5 px-4 text-slate-400">â€”</td>
+                    <td className="py-3.5 px-4 text-slate-400">—</td>
+                    <td className="py-3.5 px-4 text-slate-400">—</td>
+                    <td className="py-3.5 px-4 text-slate-400">—</td>
                     <td className="py-3.5 px-4 text-right">
-                      <span className="inline-block px-2.5 py-1 rounded-md bg-emerald-950/50 text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold">
-                        Sáºµn sÃ ng nháº­n Ä‘Äƒng kÃ½
+                      <span className="inline-block px-2 py-0.5 rounded bg-emerald-950/50 text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold">
+                        Sẵn sàng
                       </span>
                     </td>
                   </tr>
@@ -128,18 +128,18 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-right">
-                    <div className="inline-flex items-center gap-2">
+                    <div className="inline-flex items-center gap-1.5">
                       <button
                         onClick={() => onEditTeam(team)}
-                        className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition-colors"
-                        title="Chá»‰nh sá»­a thÃ´ng tin Ä‘á»™i"
+                        className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+                        title="Chỉnh sửa đội"
                       >
                         <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => onDeleteTeam(team)}
-                        className="p-2 rounded-xl bg-red-950/60 hover:bg-red-900/80 text-red-300 hover:text-red-100 border border-red-500/30 transition-colors"
-                        title="XÃ³a Ä‘á»™i vÃ  giáº£i phÃ³ng slot"
+                        className="p-2 rounded-lg bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-500/30 transition-colors"
+                        title="Xóa đội và giải phóng slot"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -152,11 +152,70 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
         </table>
       </div>
 
+      {/* Mobile Card List View (Visible on mobile < 768px) */}
+      <div className="md:hidden mt-4 space-y-3">
+        {[1, 2, 3, 4, 5, 6].map((slotNum) => {
+          const team = teams.find((t) => t.slotNumber === slotNum);
+
+          if (!team) {
+            return (
+              <div key={slotNum} className="p-3 rounded-xl bg-slate-950/40 border border-dashed border-slate-800 flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-400">Slot 0{slotNum}</span>
+                <span className="italic text-slate-500">Chưa có đội đăng ký</span>
+                <span className="px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 text-[10px]">Trống</span>
+              </div>
+            );
+          }
+
+          return (
+            <div key={slotNum} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-md bg-red-950 border border-red-500/40 text-red-300 font-bold flex items-center justify-center text-xs">
+                    0{slotNum}
+                  </span>
+                  <span className="font-bold text-white text-sm">{team.name}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => onEditTeam(team)}
+                    className="p-1.5 rounded-md bg-slate-800 text-slate-200"
+                    title="Sửa đội"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => onDeleteTeam(team)}
+                    className="p-1.5 rounded-md bg-red-950 text-red-300 border border-red-500/30"
+                    title="Xóa đội"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-400 flex justify-between">
+                <span>Đội trưởng: <strong className="text-slate-300">{team.ownerName}</strong></span>
+                <span>{team.registeredAt}</span>
+              </div>
+
+              <div className="flex flex-wrap gap-1 pt-1">
+                {team.members.map((m) => (
+                  <span key={m.id} className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 text-[10px]">
+                    {m.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Admin Notice */}
-      <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-        <span className="flex items-center gap-1.5 text-purple-300">
-          <AlertCircle className="w-4 h-4 text-purple-400" />
-          HÃ nh Ä‘á»™ng Quáº£n trá»‹ viÃªn Ä‘Æ°á»£c báº£o vá»‡ Server-side vÃ  tá»± Ä‘á»™ng ghi vÃ o Audit Log an toÃ n.
+      <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <span className="flex items-center gap-1 text-purple-300">
+          <AlertCircle className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+          Hành động xóa sẽ lập tức giải phóng slot cho đội tiếp theo.
         </span>
       </div>
     </div>
