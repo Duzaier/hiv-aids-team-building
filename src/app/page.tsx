@@ -298,34 +298,13 @@ export default function Home() {
           />
         )}
 
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 block mb-0.5">
-              Bảng Tổng Sắp 6 Vị Trí
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              Danh Sách 6 Thẻ Đội Thi Đấu
-            </h2>
-          </div>
-
-          <div>
-            {isFull ? (
-              <span className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 text-xs font-semibold">
-                Đã đạt tối đa 6/6 đội
-              </span>
-            ) : hasTeam ? (
-              <span className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold">
-                Đã đăng ký Slot #{userOwnedTeam.slotNumber}
-              </span>
-            ) : (
-              <button
-                onClick={() => handleOpenRegister()}
-                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-sm transition-all"
-              >
-                Đăng ký Slot #{teams.length < 6 ? teams.length + 1 : ''}
-              </button>
-            )}
-          </div>
+        <div className="mb-6 sm:mb-8">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 block mb-0.5">
+            Bảng Tổng Sắp 6 Vị Trí
+          </span>
+          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            Danh Sách 6 Thẻ Đội Thi Đấu
+          </h2>
         </div>
 
         {/* 6-Slot Grid */}
