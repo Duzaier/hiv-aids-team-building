@@ -11,15 +11,14 @@ import { RegistrationModal } from '@/components/teams/RegistrationModal';
 import { EditTeamModal } from '@/components/teams/EditTeamModal';
 import { AdminManagementPanel } from '@/components/admin/AdminManagementPanel';
 import { DeleteConfirmModal } from '@/components/admin/DeleteConfirmModal';
-import { CheckCircle2, AlertCircle, Info, Sparkles, X, Database } from 'lucide-react';
+import { X } from 'lucide-react';
 
 export default function Home() {
   const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
   const [currentPersona, setCurrentPersona] = useState<Persona>(MOCK_PERSONAS[0]);
-  const [isDbSynced, setIsDbSynced] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>({
     type: 'info',
-    message: 'Hệ thống đã kết nối Database với Transaction an toàn chống xung đột slot.'
+    message: 'Nền tảng vận hành với cơ chế phân bổ slot tự động 1 đến 6 và kiểm soát xung đột dữ liệu.'
   });
 
   // Modal states
@@ -33,7 +32,6 @@ export default function Home() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
 
-  // Fetch live teams from database API
   const fetchTeams = async () => {
     try {
       const res = await fetch('/api/teams', { cache: 'no-store' });
@@ -56,11 +54,10 @@ export default function Home() {
             };
           });
           setTeams(formatted.sort((a, b) => a.slotNumber - b.slotNumber));
-          setIsDbSynced(true);
         }
       }
     } catch (err) {
-      console.warn('API fetch warning, using local state:', err);
+      console.warn('API fetch warning:', err);
     }
   };
 
@@ -68,7 +65,6 @@ export default function Home() {
     fetchTeams();
   }, []);
 
-  // Computed state
   const occupiedCount = teams.length;
   const isFull = occupiedCount >= 6;
   const myTeam = currentPersona.user
@@ -102,7 +98,7 @@ export default function Home() {
     setCurrentPersona(newUserPersona);
     setNotification({
       type: 'success',
-      message: `Đăng nhập Google thành công với tài khoản "${newUserPersona.user?.name}". Bạn có thể đăng ký đội ngay!`
+      message: `Đăng nhập thành công với tài khoản "${newUserPersona.user?.name}". Bạn có thể đăng ký đội ngay.`
     });
   };
 
@@ -118,7 +114,7 @@ export default function Home() {
     if (isFull) {
       setNotification({
         type: 'error',
-        message: 'Đã đạt giới hạn tối đa 6 đội. Đăng ký hiện đã tạm đóng.'
+        message: 'Đã đạt giới hạn 6 đội. Đăng ký hiện tạm đóng.'
       });
       return;
     }
@@ -131,7 +127,7 @@ export default function Home() {
     if (hasTeam && myTeam) {
       setNotification({
         type: 'info',
-        message: `Tài khoản của bạn đã sở hữu "${myTeam.name}". Mỗi tài khoản chỉ được đăng ký 1 đội.`
+        message: `Bạn đã sở hữu "${myTeam.name}". Mỗi tài khoản chỉ đăng ký 1 đội.`
       });
       setTeamToEdit(myTeam);
       setIsAdminEdit(false);
@@ -175,7 +171,7 @@ export default function Home() {
         }
         setNotification({
           type: 'success',
-          message: `Chúc mừng! Đội "${teamName}" đã đăng ký thành công vào Slot #${result.team.slotNumber}!`
+          message: `Đội "${teamName}" đã ghi danh thành công vào Slot #${result.team.slotNumber}.`
         });
       } else {
         setNotification({
@@ -187,7 +183,7 @@ export default function Home() {
       console.error('Registration failed:', err);
       setNotification({
         type: 'error',
-        message: 'Lỗi kết nối khi gửi dữ liệu đăng ký'
+        message: 'Lỗi kết nối khi gửi dữ liệu'
       });
     }
   };
@@ -221,7 +217,7 @@ export default function Home() {
         await fetchTeams();
         setNotification({
           type: 'success',
-          message: `Cập nhật thông tin Đội "${updatedTeam.name}" thành công!`
+          message: `Đã cập nhật thông tin Đội "${updatedTeam.name}".`
         });
       } else {
         setNotification({
@@ -255,19 +251,19 @@ export default function Home() {
         await fetchTeams();
         setNotification({
           type: 'info',
-          message: `Đã xóa đội. Vị trí Slot #${slotNumber} hiện đã được giải phóng thành công!`
+          message: `Đã xóa đội. Vị trí Slot #${slotNumber} đã được giải phóng.`
         });
       } else {
         setNotification({
           type: 'error',
-          message: result.error || 'Xóa đội thất bại'
+          message: result.error || 'Xóa thất bại'
         });
       }
     } catch (err) {
       console.error('Delete error:', err);
       setNotification({
         type: 'error',
-        message: 'Lỗi kết nối khi thực hiện xóa'
+        message: 'Lỗi kết nối khi xóa'
       });
     }
   };
@@ -299,7 +295,7 @@ export default function Home() {
     await fetchTeams();
     setNotification({
       type: 'info',
-      message: 'Đã lấp đầy toàn bộ 6 Slot để kiểm tra trạng thái Đầy Chỗ (Full Capacity).'
+      message: 'Đã điền đủ 6 slot để kiểm tra trạng thái đầy chỗ.'
     });
   };
 
@@ -308,12 +304,12 @@ export default function Home() {
     setCurrentPersona(MOCK_PERSONAS[0]);
     setNotification({
       type: 'info',
-      message: 'Đã đồng bộ lại dữ liệu từ cơ sở dữ liệu.'
+      message: 'Đã khôi phục dữ liệu ban đầu.'
     });
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-red-500 selection:text-white">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* 1. Persona Switcher */}
       <PersonaSwitcher
         currentPersona={currentPersona}
@@ -321,7 +317,7 @@ export default function Home() {
           setCurrentPersona(p);
           setNotification({
             type: 'info',
-            message: `Chuyển vai: "${p.label}". ${p.description}`
+            message: `Chuyển vai: ${p.label}. ${p.description}`
           });
         }}
         onFillAllSlots={handleFillAllSlots}
@@ -329,31 +325,27 @@ export default function Home() {
         occupiedCount={occupiedCount}
       />
 
-      {/* 2. Notification Toast */}
+      {/* 2. Notification Toast (Clean typographic alert) */}
       {notification && (
-        <div className="bg-slate-900 border-b border-slate-800 px-3 sm:px-4 py-2.5 sm:py-3 transition-all animate-in fade-in">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3 text-xs sm:text-sm">
-            <div className="flex items-center gap-2 min-w-0">
-              {notification.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
-              {notification.type === 'error' && <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />}
-              {notification.type === 'info' && <Info className="w-4 h-4 text-blue-400 shrink-0" />}
-              <span className="text-slate-200 truncate sm:whitespace-normal">{notification.message}</span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {isDbSynced && (
-                <span className="hidden md:inline-flex items-center gap-1 text-[11px] text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30">
-                  <Database className="w-3 h-3" />
-                  Prisma DB
-                </span>
-              )}
-              <button
-                onClick={() => setNotification(null)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors"
-                title="Đóng"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+        <div className="bg-slate-900 border-b border-slate-800 px-3 sm:px-6 py-2.5 transition-all">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs sm:text-sm">
+            <span className={`font-medium ${
+              notification.type === 'success'
+                ? 'text-emerald-400'
+                : notification.type === 'error'
+                ? 'text-red-400'
+                : 'text-slate-200'
+            }`}>
+              {notification.message}
+            </span>
+            <button
+              onClick={() => setNotification(null)}
+              className="p-1 text-slate-400 hover:text-white rounded transition-colors"
+              title="Đóng thông báo"
+              aria-label="Đóng thông báo"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
@@ -377,7 +369,7 @@ export default function Home() {
         hasTeam={hasTeam}
       />
 
-      {/* 4. Main Body: Admin View or 6-Card Grid */}
+      {/* 4. Main Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-10">
         {currentPersona.role === 'ADMIN' && (
           <AdminManagementPanel
@@ -389,30 +381,25 @@ export default function Home() {
 
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-red-400">
-                Bảng Tổng Sắp 6 Đội Thi Đấu
-              </span>
-              <span className="text-[11px] sm:text-xs text-slate-400">• Đăng ký theo thứ tự</span>
-            </div>
-            <h2 className="text-xl sm:text-3xl font-black text-white tracking-tight">
-              Danh Sách 6 Thẻ Đội Danh Dự
+            <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 block mb-0.5">
+              Bảng Tổng Sắp 6 Vị Trí
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              Danh Sách 6 Thẻ Đội Thi Đấu
             </h2>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div>
             {isFull ? (
-              <span className="w-full sm:w-auto justify-center px-4 py-2 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 text-xs font-bold flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Đầy đủ 6/6 đội
+              <span className="px-3.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 text-xs font-semibold">
+                Đã đủ 6/6 đội
               </span>
             ) : (
               <button
                 onClick={() => handleOpenRegister()}
-                className="w-full sm:w-auto justify-center px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs shadow-md shadow-red-600/20 flex items-center gap-1.5 transition-all"
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-sm transition-all"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                Đăng ký Slot tiếp theo (Slot #{getNextAvailableSlot()})
+                Đăng ký Slot #{getNextAvailableSlot()}
               </button>
             )}
           </div>

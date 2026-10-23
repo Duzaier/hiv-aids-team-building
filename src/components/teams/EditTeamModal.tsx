@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Team } from '@/types';
-import { Plus, Trash2, AlertCircle, Sparkles, Loader2, Lock } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 interface EditTeamModalProps {
   isOpen: boolean;
@@ -68,7 +68,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
     if (!trimmedTeam) {
       newErrors.teamName = 'Tên đội không được để trống';
     } else if (trimmedTeam.length < 2) {
-      newErrors.teamName = 'Tên đội phải từ 2 ký tự trở lên';
+      newErrors.teamName = 'Tên đội phải từ 2 ký tự';
     } else if (trimmedTeam.length > 50) {
       newErrors.teamName = 'Tên đội tối đa 50 ký tự';
     }
@@ -119,7 +119,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
       };
       onUpdateSuccess(updated);
       onClose();
-    }, 500);
+    }, 400);
   };
 
   return (
@@ -127,21 +127,20 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={isAdminEdit ? `Quản Trị: Chỉnh Sửa Đội #${team.slotNumber}` : `Chỉnh Sửa Đội Của Bạn (#${team.slotNumber})`}
-      subtitle={`Vị trí Slot #${team.slotNumber} và quyền sở hữu được khóa cố định để đảm bảo tính toàn vẹn.`}
+      subtitle={`Vị trí Slot #${team.slotNumber} và chủ đội được khóa cố định.`}
     >
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-        {/* Immutable Meta Info */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Meta Info */}
+        <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
           <div>
-            <span className="text-slate-400 block mb-0.5 text-[11px]">Vị trí cố định (Slot)</span>
-            <span className="font-bold text-white flex items-center gap-1 text-xs sm:text-sm">
-              <Lock className="w-3 h-3 text-amber-400 shrink-0" />
+            <span className="text-slate-400 block mb-0.5 text-[11px]">Vị trí</span>
+            <span className="font-bold text-white text-xs sm:text-sm">
               Thẻ số 0{team.slotNumber}
             </span>
           </div>
           <div>
-            <span className="text-slate-400 block mb-0.5 text-[11px]">Chủ sở hữu đội</span>
-            <span className="font-semibold text-slate-300 truncate block text-xs sm:text-sm">
+            <span className="text-slate-400 block mb-0.5 text-[11px]">Chủ sở hữu</span>
+            <span className="font-semibold text-slate-200 truncate block text-xs sm:text-sm">
               {team.ownerName}
             </span>
           </div>
@@ -166,11 +165,10 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
               setTeamName(e.target.value);
               if (errors.teamName) setErrors({ ...errors, teamName: undefined });
             }}
-            className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-950 border border-slate-800 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 text-white text-xs sm:text-sm"
+            className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-red-500 focus:ring-1 focus:ring-red-500 text-white text-xs sm:text-sm"
           />
           {errors.teamName && (
-            <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <p className="mt-1 text-xs text-red-400">
               {errors.teamName}
             </p>
           )}
@@ -183,30 +181,26 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
               <label className="block text-xs sm:text-sm font-semibold text-slate-200">
                 Thành viên đội ({members.length}/5) <span className="text-red-400">*</span>
               </label>
-              <p className="text-[11px] sm:text-xs text-slate-400">
-                Điều chỉnh tên, thêm hoặc bớt trong giới hạn 3 - 5 người.
-              </p>
             </div>
 
             <button
               type="button"
               onClick={handleAddMember}
               disabled={members.length >= 5}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-xs font-bold transition-all shrink-0 ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
                 members.length >= 5
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                  : 'bg-red-600/20 hover:bg-red-600/30 text-red-300 border border-red-500/40'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
               }`}
             >
-              <Plus className="w-3.5 h-3.5" />
-              Thêm ({members.length}/5)
+              + Thêm người
             </button>
           </div>
 
-          <div className="space-y-2 sm:space-y-3">
+          <div className="space-y-2">
             {members.map((member, idx) => (
               <div key={idx} className="flex items-center gap-2">
-                <span className="w-7 h-9 sm:w-8 sm:h-10 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 font-mono text-xs flex items-center justify-center font-bold shrink-0">
+                <span className="w-6 h-8 rounded bg-slate-950 border border-slate-800 text-slate-400 font-mono text-xs flex items-center justify-center font-bold shrink-0">
                   {idx + 1}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -214,12 +208,11 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
                     type="text"
                     value={member}
                     onChange={(e) => handleMemberChange(idx, e.target.value)}
-                    placeholder={`Họ và tên thành viên ${idx + 1}...`}
-                    className="w-full px-3 py-2 sm:py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 text-white text-xs sm:text-sm"
+                    placeholder={`Họ và tên thành viên ${idx + 1}`}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-red-500 focus:ring-1 focus:ring-red-500 text-white text-xs sm:text-sm"
                   />
                   {errors.members && errors.members[idx] && (
-                    <p className="mt-1 text-xs text-red-400 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3 shrink-0" />
+                    <p className="mt-1 text-xs text-red-400">
                       {errors.members[idx]}
                     </p>
                   )}
@@ -229,8 +222,9 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
                   <button
                     type="button"
                     onClick={() => handleRemoveMember(idx)}
-                    className="p-2 sm:p-2.5 rounded-lg sm:rounded-xl bg-slate-950 hover:bg-red-950/60 text-slate-400 hover:text-red-400 border border-slate-800 transition-colors shrink-0"
+                    className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-950 transition-colors shrink-0"
                     title="Xóa thành viên"
+                    aria-label="Xóa thành viên"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -240,39 +234,28 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
           </div>
 
           {errors.general && (
-            <p className="mt-2 text-xs text-red-400 flex items-center gap-1">
-              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <p className="mt-2 text-xs text-red-400">
               {errors.general}
             </p>
           )}
         </div>
 
         {/* Buttons */}
-        <div className="pt-3 sm:pt-4 border-t border-slate-800 flex items-center justify-end gap-2.5 sm:gap-3">
+        <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2.5">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
           >
             Hủy
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-5 py-2 sm:px-6 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-lg shadow-red-600/25 flex items-center gap-1.5 sm:gap-2 transition-all"
+            className="px-5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-red-600 hover:bg-red-500 text-white shadow-sm transition-all"
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                Đang lưu...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 shrink-0" />
-                Cập nhật
-              </>
-            )}
+            {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
           </button>
         </div>
       </form>
