@@ -148,15 +148,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
           )}
 
           {/* Account Info Notice */}
-          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <span className="text-slate-400 block text-[11px]">Tài khoản đại diện đăng ký:</span>
-              <strong className="text-slate-200 text-xs">{currentUser?.name}</strong>{' '}
-              <span className="text-slate-500 text-[11px]">({currentUser?.email})</span>
-            </div>
-            <span className="text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-lg self-start sm:self-auto font-medium">
-              Tên mặc định: {defaultTeamName}
-            </span>
+          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+            <span className="text-slate-400 block text-[11px]">Tài khoản đại diện đăng ký:</span>
+            <strong className="text-slate-200 text-xs">{currentUser?.name}</strong>{' '}
+            <span className="text-slate-500 text-[11px]">({currentUser?.email})</span>
           </div>
 
           {/* Members List */}
