@@ -158,23 +158,16 @@ export const TeamCard: React.FC<TeamCardProps> = ({
           <div className="flex-1 flex flex-col justify-end pt-12 pb-1">
             {/* CTA Button */}
             <div>
-              {currentRole === 'GUEST' ? (
-                <button
-                  onClick={onLoginPrompt}
-                  className="w-full py-2.5 px-3 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-white transition-colors text-center"
-                >
-                  Đăng nhập để đăng ký Đội {slotNumber}
-                </button>
-              ) : userAlreadyOwnsTeam ? (
+              {userAlreadyOwnsTeam ? (
                 <div className="w-full py-2.5 px-3 rounded-xl text-center bg-slate-900 border border-slate-800 text-xs text-slate-400 font-medium">
                   Tài khoản đã có đội
                 </div>
               ) : (
                 <button
-                  onClick={() => onRegisterClick(slotNumber)}
-                  className="w-full py-2.5 px-3 rounded-xl font-bold text-xs bg-red-600 hover:bg-red-500 text-white shadow-sm transition-colors text-center"
+                  onClick={() => (currentRole === 'GUEST' ? onLoginPrompt() : onRegisterClick(slotNumber))}
+                  className="w-full py-2.5 px-3 rounded-xl font-bold text-xs bg-red-600 hover:bg-red-500 text-white shadow-sm transition-colors text-center uppercase tracking-wider"
                 >
-                  Đăng ký Đội {slotNumber}
+                  ĐĂNG KÝ
                 </button>
               )}
             </div>

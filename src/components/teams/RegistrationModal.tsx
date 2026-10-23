@@ -257,7 +257,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                   Đang ghi danh...
                 </>
               ) : (
-                `Hoàn tất đăng ký ${defaultTeamName}`
+                'ĐĂNG KÝ'
               )}
             </button>
           </div>
