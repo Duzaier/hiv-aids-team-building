@@ -28,23 +28,24 @@ export const Header: React.FC<HeaderProps> = ({
   hasTeam
 }) => {
   const isFull = occupiedCount >= totalSlots;
+  const availableCount = Math.max(0, totalSlots - occupiedCount);
 
   return (
-    <header className="relative pt-6 pb-8 sm:py-10 px-3 sm:px-6 lg:px-8 border-b border-slate-800/80">
+    <header className="relative pt-4 pb-5 px-3 sm:px-6 lg:px-8 border-b border-slate-800/80 bg-slate-950/40">
       <div className="max-w-7xl mx-auto">
-        {/* Top Navbar */}
-        <div className="flex items-center justify-between gap-3 mb-6 sm:mb-8">
-          {/* Logo / Brand (Typographic) */}
+        {/* Top Navbar: Brand & Auth */}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          {/* Logo / Brand */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-red-600/90 flex items-center justify-center text-white font-black text-sm tracking-wider shadow-sm shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white font-black text-sm tracking-wider shadow-sm shrink-0">
               TB
             </div>
             <div className="min-w-0">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-red-400 block truncate">
-                HIV/AIDS Awareness 2026
+              <span className="text-base sm:text-lg font-black text-white tracking-tight block truncate">
+                Đăng Ký Team Building 2026
               </span>
-              <span className="text-sm sm:text-base font-black text-white tracking-tight block truncate">
-                Team Building 6 Đội Gắn Kết
+              <span className="text-[11px] font-medium text-slate-400 block tracking-wide truncate">
+                Chiến dịch Nâng cao Nhận thức Phòng Chống HIV/AIDS
               </span>
             </div>
           </div>
@@ -52,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* User Profile / Google Auth Status */}
           <div className="flex items-center gap-2 shrink-0">
             {currentUser ? (
-              <div className="flex items-center gap-2 sm:gap-3 bg-slate-900 border border-slate-800 px-3 py-1 rounded-xl">
+              <div className="flex items-center gap-2 sm:gap-3 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
                 <img
                   src={currentUser.avatar}
                   alt={currentUser.name}
@@ -73,7 +74,7 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <button
                 onClick={onLoginClick}
-                className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs shadow-sm transition-all"
+                className="px-3.5 sm:px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs shadow-sm transition-all"
               >
                 Đăng nhập Google
               </button>
@@ -81,70 +82,55 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Hero Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
-          <div className="lg:col-span-7 space-y-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-red-400 block">
-              Hoạt động thi đấu & giao lưu gắn kết
-            </span>
-
-            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-              Chung Tay Vì Ngày Mai,{' '}
-              <span className="text-red-500">
-                Xóa Bỏ Định Kiến
+        {/* Action & Metric Strip */}
+        <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Metric Badges */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full md:w-auto">
+            <div className="px-3 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-center min-w-[85px] sm:min-w-[110px]">
+              <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mb-0.5">
+                Tổng Slot
               </span>
-            </h1>
+              <span className="text-lg sm:text-xl font-black text-white">{totalSlots}</span>
+            </div>
 
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-              Hội thao giao lưu nâng cao nhận thức cộng đồng về phòng, chống HIV/AIDS. Sân chơi gồm đúng <strong>6 vị trí thi đấu danh dự</strong> dành cho 6 đội hoàn thành đăng ký sớm nhất.
-            </p>
+            <div className="px-3 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-center min-w-[85px] sm:min-w-[110px]">
+              <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mb-0.5">
+                Đã Đăng Ký
+              </span>
+              <span className="text-lg sm:text-xl font-black text-white">{occupiedCount}</span>
+            </div>
 
-            {/* Hero CTAs (Text-focused, no decorative sparkles) */}
-            <div className="pt-2 flex flex-wrap items-center gap-3">
-              {hasTeam ? (
-                <button
-                  onClick={onOpenMyTeamEdit}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow-sm transition-all"
-                >
-                  Quản lý đội của bạn
-                </button>
-              ) : isFull ? (
-                <div className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 text-xs sm:text-sm font-medium">
-                  Đã đủ 6/6 đội đăng ký (Tạm đóng)
-                </div>
-              ) : (
-                <button
-                  onClick={onOpenRegisterHero}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-red-600/20 transition-all"
-                >
-                  Đăng ký đội (Còn {totalSlots - occupiedCount} slot)
-                </button>
-              )}
-
-              <span className="text-xs text-slate-400">
-                3 - 5 người mỗi đội • Slot phân bổ tự động
+            <div className="px-3 py-2 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-center min-w-[85px] sm:min-w-[110px]">
+              <span className="text-[10px] text-emerald-400 uppercase tracking-wider block font-semibold mb-0.5">
+                Còn Trống
+              </span>
+              <span className="text-lg sm:text-xl font-black text-emerald-300">
+                {availableCount}
               </span>
             </div>
           </div>
 
-          {/* Quick Metrics Cards */}
-          <div className="lg:col-span-5 grid grid-cols-3 gap-2 sm:gap-3">
-            <div className="p-3 sm:p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-center">
-              <span className="text-[11px] text-slate-400 block mb-0.5">Tổng Slot</span>
-              <span className="text-xl sm:text-3xl font-black text-white">{totalSlots}</span>
-            </div>
-
-            <div className="p-3 sm:p-4 rounded-xl bg-red-950/40 border border-red-500/30 text-center">
-              <span className="text-[11px] text-red-300 block mb-0.5">Đã đăng ký</span>
-              <span className="text-xl sm:text-3xl font-black text-white">{occupiedCount}</span>
-            </div>
-
-            <div className="p-3 sm:p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-center">
-              <span className="text-[11px] text-emerald-300 block mb-0.5">Còn trống</span>
-              <span className="text-xl sm:text-3xl font-black text-emerald-400">
-                {totalSlots - occupiedCount}
-              </span>
-            </div>
+          {/* Primary CTA */}
+          <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+            {hasTeam ? (
+              <button
+                onClick={onOpenMyTeamEdit}
+                className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow-sm transition-all text-center"
+              >
+                Quản lý đội của bạn
+              </button>
+            ) : isFull ? (
+              <div className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs sm:text-sm font-medium text-center">
+                Đã đủ 6/6 đội (Tạm đóng đăng ký)
+              </div>
+            ) : (
+              <button
+                onClick={onOpenRegisterHero}
+                className="w-full md:w-auto px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-red-600/20 transition-all text-center"
+              >
+                Đăng ký đội (Còn {availableCount} vị trí)
+              </button>
+            )}
           </div>
         </div>
       </div>
