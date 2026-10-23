@@ -73,9 +73,6 @@ export const MatchTeamModal: React.FC<MatchTeamModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400 block">
-              Tính Năng Ghép / Gộp Đội (Match Team)
-            </span>
             <h3 className="text-lg sm:text-xl font-black text-white">
               Gộp {myTeam.name} Vào Đội Khác
             </h3>
@@ -107,9 +104,6 @@ export const MatchTeamModal: React.FC<MatchTeamModalProps> = ({
               </span>
             ))}
           </div>
-          <p className="mt-2 text-[11px] text-slate-400 leading-relaxed">
-            💡 <strong>Quy tắc gộp:</strong> Khi đội nhận chấp nhận, toàn bộ <strong>{myCount} thành viên</strong> của {myTeam.name} sẽ chuyển sang đội mới. Vị trí <strong>Slot #{myTeam.slotNumber}</strong> của bạn sẽ được giải phóng trở thành 5 slot trống.
-          </p>
         </div>
 
         {/* Pending Requests */}
