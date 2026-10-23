@@ -13,14 +13,16 @@ export interface TeamMember {
   name: string;
   orderIndex?: number;
   isCaptain?: boolean;
+  isFromIndividual?: boolean;
+  individualId?: string | null;
   roleDescription?: string;
 }
 
 export interface Team {
   id: string;
   slotNumber: number; // 1 to 6
-  name: string;
-  captainName: string; // The designated captain among the team members
+  name: string;        // "Đội 1", "Đội 2", ...
+  captainName?: string;
   ownerId: string;     // The Google account user who created the registration
   ownerName: string;   // Name of the account holder
   ownerEmail: string;
@@ -28,6 +30,18 @@ export interface Team {
   registeredAt: string;
   accentColor: string;
   badgeTitle: string;
+}
+
+export interface IndividualRegistration {
+  id: string;
+  userId?: string | null;
+  name: string;
+  email: string;
+  phone?: string | null;
+  assignedTeamId?: string | null;
+  assignedSlot?: number | null;
+  assignedAt?: string | null;
+  registeredAt: string;
 }
 
 export interface Persona {

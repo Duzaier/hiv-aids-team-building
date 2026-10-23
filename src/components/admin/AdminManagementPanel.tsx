@@ -31,7 +31,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
       </div>
 
       <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-        Quản trị viên có toàn quyền chỉnh sửa thông tin đội, phân định lại đội trưởng hoặc giải phóng vị trí (xóa đội) khi phát hiện vi phạm.
+        Quản trị viên có toàn quyền chỉnh sửa danh sách thành viên hoặc giải phóng vị trí (xóa đội) khi phát hiện vi phạm.
       </p>
 
       {/* Responsive Table */}
@@ -41,48 +41,69 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
             <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-semibold text-[11px]">
               <th className="py-2.5 px-3">Slot</th>
               <th className="py-2.5 px-3">Tên Đội</th>
-              <th className="py-2.5 px-3">Đội Trưởng</th>
-              <th className="py-2.5 px-3">Người Đăng Ký</th>
-              <th className="py-2.5 px-3">Thành Viên</th>
+              <th className="py-2.5 px-3">Người Đại Diện Đăng Ký</th>
+              <th className="py-2.5 px-3">Sĩ Số</th>
+              <th className="py-2.5 px-3">Trạng Thái Slot</th>
               <th className="py-2.5 px-3 text-right">Thao Tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60">
-            {teams.map((team) => (
-              <tr key={team.id} className="hover:bg-slate-800/30 transition-colors">
-                <td className="py-3 px-3">
-                  <span className="font-bold text-slate-200">
-                    Slot #{team.slotNumber}
-                  </span>
-                </td>
-                <td className="py-3 px-3">
-                  <span className="font-semibold text-white block">{team.name}</span>
-                </td>
-                <td className="py-3 px-3">
-                  <span className="font-bold text-amber-400 block">{team.captainName || team.ownerName}</span>
-                </td>
-                <td className="py-3 px-3 text-slate-300">
-                  <span>{team.ownerName}</span>
-                </td>
-                <td className="py-3 px-3 text-slate-400">
-                  <span>{team.members.length}/5 người</span>
-                </td>
-                <td className="py-3 px-3 text-right space-x-2">
-                  <button
-                    onClick={() => onEditTeam(team)}
-                    className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-semibold transition-colors"
-                  >
-                    Sửa
-                  </button>
-                  <button
-                    onClick={() => onDeleteTeam(team)}
-                    className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-[11px] font-semibold transition-colors"
-                  >
-                    Giải phóng slot
-                  </button>
+            {teams.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-6 text-center text-slate-500 text-xs">
+                  Chưa có đội nào đăng ký thi đấu.
                 </td>
               </tr>
-            ))}
+            ) : (
+              teams.map((team) => {
+                const isNeedMembers = team.members.length < 5;
+
+                return (
+                  <tr key={team.id} className="hover:bg-slate-800/30 transition-colors">
+                    <td className="py-3 px-3">
+                      <span className="font-bold text-slate-200">
+                        Slot #{team.slotNumber}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className="font-semibold text-white block">{team.name}</span>
+                    </td>
+                    <td className="py-3 px-3 text-slate-300">
+                      <span>{team.ownerName}</span>
+                      <span className="text-[10px] text-slate-500 block">{team.ownerEmail}</span>
+                    </td>
+                    <td className="py-3 px-3 text-slate-300">
+                      <span className="font-semibold">{team.members.length}/5 người</span>
+                    </td>
+                    <td className="py-3 px-3">
+                      {isNeedMembers ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] bg-amber-950/50 text-amber-300 border border-amber-500/30 font-medium">
+                          Còn thiếu {5 - team.members.length} slot (Chờ random)
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950/50 text-emerald-300 border border-emerald-500/30 font-medium">
+                          Đã đủ 5/5 người
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-right space-x-2">
+                      <button
+                        onClick={() => onEditTeam(team)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-semibold transition-colors"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        onClick={() => onDeleteTeam(team)}
+                        className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-[11px] font-semibold transition-colors"
+                      >
+                        Giải phóng slot
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

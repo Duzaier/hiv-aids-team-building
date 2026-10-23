@@ -3,15 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useSession, signOut } from 'next-auth/react';
-import { Team, User, Role } from '@/types';
+import { Team, User, Role, IndividualRegistration } from '@/types';
 import { SLOT_METADATA } from '@/data/initialData';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { TeamGrid } from '@/components/teams/TeamGrid';
 import { TeamGridSkeleton } from '@/components/ui/TeamGridSkeleton';
-import { X } from 'lucide-react';
+import { X, Users, UserCheck } from 'lucide-react';
 
-// Lazy loading overlays & admin panel for optimal initial bundle & performance
+// Lazy loading overlays & tabs for optimal initial bundle & performance
 const RegistrationModal = dynamic(
   () => import('@/components/teams/RegistrationModal').then((m) => m.RegistrationModal),
   { ssr: false }
@@ -37,10 +37,29 @@ const LoginModal = dynamic(
   { ssr: false }
 );
 
+const IndividualPoolView = dynamic(
+  () => import('@/components/individuals/IndividualPoolView').then((m) => m.IndividualPoolView),
+  { ssr: false }
+);
+
+const IndividualRegistrationModal = dynamic(
+  () => import('@/components/individuals/IndividualRegistrationModal').then((m) => m.IndividualRegistrationModal),
+  { ssr: false }
+);
+
 export default function Home() {
   const { data: session } = useSession();
+  const [activeTab, setActiveTab] = useState<'teams' | 'individuals'>('teams');
+
+  // Teams state
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoadingTeams, setIsLoadingTeams] = useState(true);
+
+  // Individuals state
+  const [individuals, setIndividuals] = useState<IndividualRegistration[]>([]);
+  const [isLoadingIndividuals, setIsLoadingIndividuals] = useState(true);
+  const [isIndividualModalOpen, setIsIndividualModalOpen] = useState(false);
+
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
@@ -78,8 +97,8 @@ export default function Home() {
             return {
               id: t.id,
               slotNumber: t.slotNumber,
-              name: t.name,
-              captainName: t.captainName || t.ownerName,
+              name: t.name || `Đội ${t.slotNumber}`,
+              captainName: '',
               ownerId: t.ownerId,
               ownerName: t.ownerName,
               ownerEmail: t.ownerEmail || '',
@@ -99,8 +118,30 @@ export default function Home() {
     }
   };
 
+  // Sync individuals with API on load
+  const fetchIndividuals = async () => {
+    try {
+      const res = await fetch('/api/individuals');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.individuals) {
+          setIndividuals(data.individuals);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch individuals:', err);
+    } finally {
+      setIsLoadingIndividuals(false);
+    }
+  };
+
+  const refreshAll = async () => {
+    await Promise.all([fetchTeams(), fetchIndividuals()]);
+  };
+
   useEffect(() => {
     fetchTeams();
+    fetchIndividuals();
   }, []);
 
   const occupiedCount = teams.length;
@@ -131,11 +172,11 @@ export default function Home() {
       return;
     }
     if (hasTeam) {
-      showNotice('error', `Tài khoản đã sở hữu "${userOwnedTeam?.name}" (Slot #${userOwnedTeam?.slotNumber}). Không thể đăng ký thêm.`);
+      showNotice('error', `Tài khoản đã sở hữu "${userOwnedTeam?.name}" (Slot #${userOwnedTeam?.slotNumber}). Không thể đăng ký thêm đội.`);
       return;
     }
     if (isFull) {
-      showNotice('error', 'Đã đủ 6/6 đội đăng ký. Cổng đăng ký hiện đã tạm dừng!');
+      showNotice('error', 'Đã đủ 6/6 đội đăng ký. Cổng đăng ký đội hiện đã tạm dừng!');
       return;
     }
 
@@ -146,8 +187,7 @@ export default function Home() {
   };
 
   const handleRegisterSubmit = async (teamData: {
-    teamName: string;
-    captainName: string;
+    teamName?: string;
     members: string[];
     slotNumber: number;
   }) => {
@@ -167,8 +207,6 @@ export default function Home() {
           'x-user-role': currentUser.role
         },
         body: JSON.stringify({
-          teamName: teamData.teamName,
-          captainName: teamData.captainName,
           members: teamData.members
         })
       });
@@ -176,8 +214,8 @@ export default function Home() {
       const result = await res.json();
       if (result.success) {
         setIsRegisterOpen(false);
-        showNotice('success', result.message || `Đăng ký thành công Đội "${teamData.teamName}"! Đội trưởng: ${teamData.captainName}`);
-        await fetchTeams();
+        showNotice('success', result.message || `Đăng ký thành công ${result.team?.name || 'Đội mới'}!`);
+        await refreshAll();
         return { success: true };
       } else {
         const errorMsg = result.error || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.';
@@ -212,7 +250,7 @@ export default function Home() {
         : `/api/teams/${teamToEdit.id}`;
 
       const res = await fetch(endpoint, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'x-user-id': currentUser?.id || '',
@@ -221,8 +259,6 @@ export default function Home() {
           'x-user-role': currentUser?.role || 'USER'
         },
         body: JSON.stringify({
-          teamName: updatedData.teamName,
-          captainName: updatedData.captainName,
           members: updatedData.members
         })
       });
@@ -231,12 +267,12 @@ export default function Home() {
       if (result.success) {
         setIsEditOpen(false);
         showNotice('success', 'Đã lưu thay đổi thông tin đội thành công');
-        await fetchTeams();
+        await refreshAll();
       } else {
         showNotice('error', result.error || 'Cập nhật thất bại');
       }
     } catch {
-      await fetchTeams();
+      await refreshAll();
       setIsEditOpen(false);
     }
   };
@@ -264,12 +300,12 @@ export default function Home() {
       if (result.success) {
         setIsDeleteOpen(false);
         showNotice('success', result.message || `Đã giải phóng Slot #${teamToDelete.slotNumber}`);
-        await fetchTeams();
+        await refreshAll();
       } else {
         showNotice('error', result.error || 'Xóa thất bại');
       }
     } catch {
-      await fetchTeams();
+      await refreshAll();
       setIsDeleteOpen(false);
     }
   };
@@ -310,43 +346,88 @@ export default function Home() {
         isLoading={isLoadingTeams}
         onLoginClick={() => setIsLoginModalOpen(true)}
         onLogoutClick={() => signOut()}
-        onOpenRegisterHero={() => handleOpenRegister()}
+        onOpenRegisterHero={() => (activeTab === 'teams' ? handleOpenRegister() : setIsIndividualModalOpen(true))}
         onOpenMyTeamEdit={() => userOwnedTeam && handleEditClick(userOwnedTeam)}
         hasTeam={hasTeam}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {currentRole === 'ADMIN' && (
-          <AdminManagementPanel
-            teams={teams}
-            onEditTeam={handleAdminEditClick}
-            onDeleteTeam={handleDeleteClick}
-          />
-        )}
+        {/* Navigation Tab Bar: Theo Đội vs Cá Nhân */}
+        <div className="flex items-center gap-2 p-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl w-fit mb-6 sm:mb-8 shadow-sm">
+          <button
+            onClick={() => setActiveTab('teams')}
+            className={`px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'teams'
+                ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Theo Đội ({teams.length}/6 Đội)
+          </button>
 
-        <div className="mb-6 sm:mb-8">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 block mb-0.5">
-            Bảng Tổng Sắp 6 Vị Trí
-          </span>
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-            Danh Sách 6 Thẻ Đội Thi Đấu
-          </h2>
+          <button
+            onClick={() => setActiveTab('individuals')}
+            className={`px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'individuals'
+                ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <UserCheck className="w-4 h-4" />
+            Cá Nhân ({individuals.length} người)
+          </button>
         </div>
 
-        {/* 6-Slot Grid with Skeleton Loading */}
-        {isLoadingTeams ? (
-          <TeamGridSkeleton />
-        ) : (
-          <TeamGrid
-            teams={teams}
+        {/* TAB 1: THEO ĐỘI (6 SLOTS) */}
+        {activeTab === 'teams' && (
+          <div>
+            {currentRole === 'ADMIN' && (
+              <AdminManagementPanel
+                teams={teams}
+                onEditTeam={handleAdminEditClick}
+                onDeleteTeam={handleDeleteClick}
+              />
+            )}
+
+            <div className="mb-6 sm:mb-8">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 block mb-0.5">
+                Bảng Tổng Sắp 6 Vị Trí
+              </span>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Danh Sách 6 Đội Thi Đấu
+              </h2>
+            </div>
+
+            {/* 6-Slot Grid with Skeleton Loading */}
+            {isLoadingTeams ? (
+              <TeamGridSkeleton />
+            ) : (
+              <TeamGrid
+                teams={teams}
+                currentUser={currentUser}
+                currentRole={currentRole}
+                ownedTeamId={userOwnedTeam?.id}
+                onRegisterClick={handleOpenRegister}
+                onEditClick={handleEditClick}
+                onAdminClick={handleAdminEditClick}
+                onLoginPrompt={() => setIsLoginModalOpen(true)}
+              />
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: CÁ NHÂN (HÀNG ĐỢI & RANDOM PHÂN BỔ) */}
+        {activeTab === 'individuals' && (
+          <IndividualPoolView
+            individuals={individuals}
             currentUser={currentUser}
             currentRole={currentRole}
-            ownedTeamId={userOwnedTeam?.id}
-            onRegisterClick={handleOpenRegister}
-            onEditClick={handleEditClick}
-            onAdminClick={handleAdminEditClick}
-            onLoginPrompt={() => setIsLoginModalOpen(true)}
+            isLoading={isLoadingIndividuals}
+            onOpenRegisterIndividual={() => setIsIndividualModalOpen(true)}
+            onRefresh={refreshAll}
+            onShowNotice={showNotice}
           />
         )}
       </main>
@@ -362,7 +443,7 @@ export default function Home() {
         />
       )}
 
-      {/* Registration Modal - Lazy Loaded */}
+      {/* Team Registration Modal - Lazy Loaded */}
       {isRegisterOpen && (
         <RegistrationModal
           isOpen={isRegisterOpen}
@@ -370,6 +451,19 @@ export default function Home() {
           currentUser={currentUser}
           onClose={() => setIsRegisterOpen(false)}
           onSubmit={handleRegisterSubmit}
+        />
+      )}
+
+      {/* Individual Registration Modal - Lazy Loaded */}
+      {isIndividualModalOpen && (
+        <IndividualRegistrationModal
+          isOpen={isIndividualModalOpen}
+          currentUser={currentUser}
+          onClose={() => setIsIndividualModalOpen(false)}
+          onSuccess={(msg) => {
+            showNotice('success', msg);
+            refreshAll();
+          }}
         />
       )}
 

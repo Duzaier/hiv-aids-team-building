@@ -32,8 +32,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   const isRegistered = !!team;
   const isMyTeam = isRegistered && (team.ownerId === currentUser?.id || team.id === ownedTeamId);
   const userAlreadyOwnsTeam = !!ownedTeamId || (currentRole === 'OWNER');
-
-  const displayCaptain = team ? (team.captainName || team.ownerName) : '';
+  const teamDisplayName = team?.name || `Đội ${slotNumber}`;
 
   return (
     <div
@@ -92,53 +91,50 @@ export const TeamCard: React.FC<TeamCardProps> = ({
         {isRegistered ? (
           <div className="flex-1 flex flex-col justify-between">
             <div>
-              {/* Team Name */}
-              <h4 className="text-base sm:text-xl font-bold text-white tracking-tight mb-1 break-words">
-                {team.name}
-              </h4>
+              {/* Team Name: Đội 1..6 */}
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <h4 className="text-base sm:text-xl font-bold text-white tracking-tight break-words">
+                  {teamDisplayName}
+                </h4>
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 shrink-0 font-medium">
+                  {team.members.length}/5 người
+                </span>
+              </div>
               
-              {/* Captain & Owner info */}
-              <div className="mb-3 text-xs space-y-0.5">
-                <p className="text-slate-300">
-                  Đội trưởng: <strong className="text-amber-400 font-bold">{displayCaptain}</strong>
-                </p>
-                {team.ownerName && team.ownerName.toLowerCase().trim() !== displayCaptain.toLowerCase().trim() && (
-                  <p className="text-[11px] text-slate-500">
-                    Người đăng ký: {team.ownerName}
-                  </p>
-                )}
+              {/* Owner info */}
+              <div className="mb-3 text-[11px] text-slate-400">
+                Người đại diện: <span className="text-slate-300 font-medium">{team.ownerName}</span>
               </div>
 
-              {/* Members Section (Clean typographic pills, clearly highlighting Captain) */}
+              {/* Members Section */}
               <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800 mb-4">
                 <div className="flex items-center justify-between mb-2 text-xs">
                   <span className="font-medium text-slate-300">
-                    Thành viên ({team.members.length}/5)
+                    Danh sách thành viên
                   </span>
                   <span className="text-[10px] text-slate-500 uppercase tracking-wider">
-                    Công khai
+                    {team.members.length < 5 ? `Còn thiếu ${5 - team.members.length} slot` : 'Đã đủ đội hình'}
                   </span>
                 </div>
 
                 <div className="flex flex-wrap gap-1.5">
-                  {team.members.map((member) => {
-                    const isCap =
-                      member.isCaptain ||
-                      member.name.toLowerCase().trim() === displayCaptain.toLowerCase().trim();
-
-                    return (
-                      <span
-                        key={member.id}
-                        className={`px-2.5 py-0.5 rounded-md text-[11px] max-w-full truncate transition-all ${
-                          isCap
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
-                            : 'bg-slate-900 border border-slate-800 text-slate-300'
-                        }`}
-                      >
-                        {member.name} {isCap ? '(Đội trưởng)' : ''}
-                      </span>
-                    );
-                  })}
+                  {team.members.map((member) => (
+                    <span
+                      key={member.id}
+                      className={`px-2.5 py-1 rounded-md text-[11px] max-w-full truncate transition-all flex items-center gap-1.5 ${
+                        member.isFromIndividual
+                          ? 'bg-purple-950/50 text-purple-300 border border-purple-500/40 font-medium'
+                          : 'bg-slate-900 border border-slate-800 text-slate-300'
+                      }`}
+                    >
+                      <span>{member.name}</span>
+                      {member.isFromIndividual && (
+                        <span className="text-[9px] px-1 py-0.2 rounded bg-purple-500/30 text-purple-200">
+                          Ghép
+                        </span>
+                      )}
+                    </span>
+                  ))}
                 </div>
               </div>
             </div>
@@ -167,7 +163,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
             </div>
           </div>
         ) : (
-          /* Available Empty State - Clean & Minimal */
+          /* Available Empty State */
           <div className="flex-1 flex flex-col justify-end pt-12 pb-1">
             {/* CTA Button */}
             <div>

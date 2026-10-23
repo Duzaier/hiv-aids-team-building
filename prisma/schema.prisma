@@ -25,7 +25,7 @@ model Team {
   id           String       @id @default(cuid())
   slotNumber   Int          @unique
   name         String
-  captainName  String       @default("")
+  captainName  String?      @default("")
   ownerId      String       @unique
   owner        User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members      TeamMember[]
@@ -35,12 +35,27 @@ model Team {
 }
 
 model TeamMember {
-  id         String  @id @default(cuid())
-  teamId     String
-  team       Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  name       String
-  orderIndex Int
-  isCaptain  Boolean @default(false)
+  id               String   @id @default(cuid())
+  teamId           String
+  team             Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  name             String
+  orderIndex       Int      @default(0)
+  isCaptain        Boolean  @default(false)
+  isFromIndividual Boolean  @default(false)
+  individualId     String?
+}
+
+model IndividualRegistration {
+  id             String    @id @default(cuid())
+  userId         String?   @unique
+  name           String
+  email          String
+  phone          String?
+  assignedTeamId String?
+  assignedSlot   Int?
+  assignedAt     DateTime?
+  registeredAt   DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model AuditLog {

@@ -24,24 +24,15 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
   onClose,
   onSubmit
 }) => {
-  const [teamName, setTeamName] = useState('');
   const [members, setMembers] = useState<string[]>([]);
-  const [captainIndex, setCaptainIndex] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (team) {
-      setTeamName(team.name);
-      const memberNames = team.members.map((m) => m.name);
-      setMembers(memberNames);
-
-      const activeCaptain = (team.captainName || team.ownerName || '').toLowerCase().trim();
-      const capIdx = memberNames.findIndex((name) => name.toLowerCase().trim() === activeCaptain);
-      setCaptainIndex(capIdx >= 0 ? capIdx : 0);
-
+      setMembers(team.members.map((m) => m.name));
       setError(null);
     }
-  }, [team, isOpen]);
+  }, [team]);
 
   if (!isOpen || !team) return null;
 
@@ -49,7 +40,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
     const updated = [...members];
     updated[index] = value;
     setMembers(updated);
-    setError(null);
+    if (error) setError(null);
   };
 
   const addMember = () => {
@@ -58,16 +49,10 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
     }
   };
 
-  const removeMember = (indexToRemove: number) => {
-    if (members.length > 3) {
-      const updated = members.filter((_, idx) => idx !== indexToRemove);
+  const removeMember = (index: number) => {
+    if (members.length > 1) {
+      const updated = members.filter((_, i) => i !== index);
       setMembers(updated);
-
-      if (captainIndex === indexToRemove) {
-        setCaptainIndex(0);
-      } else if (captainIndex > indexToRemove) {
-        setCaptainIndex(captainIndex - 1);
-      }
     }
   };
 
@@ -75,15 +60,10 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    const cleanTeamName = teamName.trim();
-    if (!cleanTeamName) {
-      setError('Vui lòng nhập tên đội');
-      return;
-    }
-
     const cleanMembers = members.map((m) => m.trim());
-    if (cleanMembers.some((m) => !m)) {
-      setError('Vui lòng điền đầy đủ họ tên cho tất cả thành viên trong danh sách');
+    const emptyMemberIndex = cleanMembers.findIndex((m) => !m);
+    if (emptyMemberIndex !== -1) {
+      setError(`Vui lòng nhập họ tên cho thành viên #${emptyMemberIndex + 1}`);
       return;
     }
 
@@ -93,33 +73,24 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
       return;
     }
 
-    const selectedCaptain = cleanMembers[captainIndex];
-    if (!selectedCaptain) {
-      setError('Vui lòng chọn 1 thành viên làm đội trưởng');
-      return;
-    }
-
     onSubmit({
       teamId: team.id,
-      teamName: cleanTeamName,
-      captainName: selectedCaptain,
+      teamName: team.name,
+      captainName: '',
       members: cleanMembers
     });
   };
 
-  const selectedCaptainName = members[captainIndex]?.trim();
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md">
       <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-4 sm:p-6 text-slate-100">
-        {/* Header */}
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 block">
-              {isAdminMode ? 'Chế độ Admin: Điều Chỉnh Đội' : 'Quản Lý Đội Của Bạn'}
+              Slot #{team.slotNumber} • {isAdminMode ? 'Chế độ Admin' : 'Đội của bạn'}
             </span>
             <h3 className="text-lg sm:text-xl font-black text-white">
-              Cập Nhật Slot #{team.slotNumber} — {team.name}
+              Chỉnh Sửa {team.name}
             </h3>
           </div>
           <button
@@ -131,110 +102,56 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {error && (
-            <div className="p-3 rounded-lg bg-red-950/60 border border-red-500/40 text-red-200">
+            <div className="p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200">
               {error}
             </div>
           )}
 
-          {/* Account Info */}
-          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400">
-            Người đăng ký (Tài khoản sở hữu): <strong className="text-slate-200">{team.ownerName}</strong>
-          </div>
-
-          {/* Team Name */}
-          <div>
-            <label className="block font-semibold text-slate-200 mb-1">
-              Tên đội thi đấu <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={teamName}
-              onChange={(e) => setTeamName(e.target.value)}
-              maxLength={50}
-              className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 focus:border-amber-500 focus:outline-hidden text-white"
-            />
-          </div>
-
-          {/* Members List & Captain Picker */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="font-semibold text-slate-200">
-                Danh sách thành viên ({members.length}/5 người){' '}
-                <span className="text-red-400">*</span>
+                Danh sách thành viên ({members.length}/5 người)
               </label>
               <span className="text-[11px] text-slate-400">
-                Tối thiểu 3, tối đa 5 người
-              </span>
-            </div>
-
-            {/* Current Selected Captain Indicator */}
-            <div className="mb-3 px-3 py-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center justify-between">
-              <span className="text-slate-400 text-[11px]">Đội trưởng được chọn:</span>
-              <span className="font-bold text-amber-400 text-xs">
-                {selectedCaptainName ? selectedCaptainName : '(Chưa chọn đội trưởng)'}
+                Tối đa 5 người
               </span>
             </div>
 
             <div className="space-y-2.5">
-              {members.map((member, idx) => {
-                const isCurrentCaptain = captainIndex === idx;
+              {members.map((member, idx) => (
+                <div
+                  key={idx}
+                  className="p-2.5 rounded-xl border border-slate-800 bg-slate-950"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="font-medium text-slate-300 text-[11px]">
+                      Thành viên #{idx + 1}
+                    </span>
 
-                return (
-                  <div
-                    key={idx}
-                    className={`p-2.5 rounded-xl border transition-all ${
-                      isCurrentCaptain
-                        ? 'bg-amber-950/20 border-amber-500/40'
-                        : 'bg-slate-950 border-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="font-medium text-slate-300 text-[11px]">
-                        Thành viên #{idx + 1}
-                      </span>
-
-                      <div className="flex items-center gap-2">
-                        {/* Pick Captain Button */}
-                        <button
-                          type="button"
-                          onClick={() => setCaptainIndex(idx)}
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-colors ${
-                            isCurrentCaptain
-                              ? 'bg-amber-500 text-slate-950'
-                              : 'bg-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-                          }`}
-                        >
-                          {isCurrentCaptain ? '✓ Đội trưởng' : 'Chọn làm đội trưởng'}
-                        </button>
-
-                        {/* Remove button */}
-                        {members.length > 3 && (
-                          <button
-                            type="button"
-                            onClick={() => removeMember(idx)}
-                            className="text-[11px] text-slate-500 hover:text-red-400 px-1"
-                            title="Xóa thành viên"
-                          >
-                            Xóa
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <input
-                      type="text"
-                      value={member}
-                      onChange={(e) => handleMemberChange(idx, e.target.value)}
-                      placeholder={`Nhập họ tên thành viên #${idx + 1}`}
-                      maxLength={50}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 focus:border-amber-500 focus:outline-hidden text-white text-xs"
-                    />
+                    {members.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeMember(idx)}
+                        className="text-[11px] text-slate-500 hover:text-red-400 px-1"
+                        title="Xóa thành viên"
+                      >
+                        Xóa
+                      </button>
+                    )}
                   </div>
-                );
-              })}
+
+                  <input
+                    type="text"
+                    value={member}
+                    onChange={(e) => handleMemberChange(idx, e.target.value)}
+                    placeholder={`Nhập họ tên thành viên #${idx + 1}`}
+                    maxLength={50}
+                    className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 focus:border-red-500 focus:outline-hidden text-white placeholder-slate-600 text-xs"
+                  />
+                </div>
+              ))}
             </div>
 
             {members.length < 5 && (
@@ -248,7 +165,6 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
             )}
           </div>
 
-          {/* Actions */}
           <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
             <button
               type="button"

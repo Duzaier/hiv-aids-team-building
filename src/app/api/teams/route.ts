@@ -3,65 +3,47 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/auth';
 import { teamRegistrationSchema } from '@/lib/validations';
 
-// GET /api/teams — Return overview of 6 teams with captain information
+// GET /api/teams - Public read access
 export async function GET() {
   try {
     const teams = await prisma.team.findMany({
-      orderBy: { slotNumber: 'asc' },
       include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
         members: {
-          orderBy: { orderIndex: 'asc' },
-          select: {
-            id: true,
-            name: true,
-            orderIndex: true,
-            isCaptain: true
-          }
+          orderBy: { orderIndex: 'asc' }
+        },
+        owner: {
+          select: { id: true, name: true, email: true, image: true }
         }
-      }
+      },
+      orderBy: { slotNumber: 'asc' }
     });
 
-    const occupiedCount = teams.length;
-    const availableSlots = [1, 2, 3, 4, 5, 6].filter(
-      (slot) => !teams.some((t) => t.slotNumber === slot)
-    );
+    const occupiedSlots = new Set(teams.map((t) => t.slotNumber));
+    const availableSlots = [1, 2, 3, 4, 5, 6].filter((s) => !occupiedSlots.has(s));
 
     return NextResponse.json({
       success: true,
-      totalSlots: 6,
-      occupiedCount,
-      isFull: occupiedCount >= 6,
+      totalCapacity: 6,
+      occupiedCount: teams.length,
+      availableCount: availableSlots.length,
       availableSlots,
-      teams: teams.map((t) => {
-        const designatedCaptain =
-          t.captainName ||
-          t.members.find((m) => m.isCaptain)?.name ||
-          t.owner.name ||
-          'Chưa chỉ định';
-
-        return {
-          id: t.id,
-          slotNumber: t.slotNumber,
-          name: t.name,
-          captainName: designatedCaptain,
-          ownerId: t.ownerId,
-          ownerName: t.owner.name || 'Người dùng',
-          ownerEmail: t.owner.email || '',
-          registeredAt: t.registeredAt.toISOString().replace('T', ' ').substring(0, 16),
-          members: t.members.map((m) => ({
-            id: m.id,
-            name: m.name,
-            isCaptain: m.isCaptain || m.name.toLowerCase().trim() === designatedCaptain.toLowerCase().trim()
-          }))
-        };
-      })
+      teams: teams.map((t) => ({
+        id: t.id,
+        slotNumber: t.slotNumber,
+        name: t.name || `Đội ${t.slotNumber}`,
+        captainName: '',
+        ownerId: t.ownerId,
+        ownerName: t.owner.name || 'Người dùng',
+        ownerEmail: t.owner.email || '',
+        registeredAt: t.registeredAt.toISOString().replace('T', ' ').substring(0, 16),
+        members: t.members.map((m) => ({
+          id: m.id,
+          name: m.name,
+          orderIndex: m.orderIndex,
+          isCaptain: false,
+          isFromIndividual: m.isFromIndividual || false
+        }))
+      }))
     });
   } catch (error) {
     console.error('Error fetching teams:', error);
@@ -72,27 +54,39 @@ export async function GET() {
   }
 }
 
-// POST /api/teams — Concurrency-safe atomic registration with customizable captain selection
+// POST /api/teams - Concurrency-safe atomic registration (default team name: Đội 1..6, no captain)
 export async function POST(req: NextRequest) {
   try {
     // 1. Check Authentication
     const session = await getServerSession(req);
-    if (!session.user) {
+    if (!session.user || !session.user.email) {
       return NextResponse.json(
         { success: false, error: 'Vui lòng đăng nhập Google để đăng ký đội' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const email = session.user.email.toLowerCase().trim();
+    let dbUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (!dbUser) {
+      dbUser = await prisma.user.create({
+        data: {
+          email,
+          name: session.user.name || email.split('@')[0],
+          role: session.user.role || 'USER',
+          image: session.user.image || undefined
+        }
+      });
+    }
+
+    const userId = dbUser.id;
 
     // 2. Validate Input Payload with Zod
     const body = await req.json();
-    console.log('[DEBUG /api/teams POST] Body:', JSON.stringify(body));
-const parseResult = teamRegistrationSchema.safeParse(body);
-if (!parseResult.success) {
-  console.error('[DEBUG /api/teams POST Validation Error]:', JSON.stringify(parseResult.error.issues));
-}
+    const parseResult = teamRegistrationSchema.safeParse(body);
     if (!parseResult.success) {
       return NextResponse.json(
         {
@@ -104,7 +98,7 @@ if (!parseResult.success) {
       );
     }
 
-    const { teamName, captainName, members } = parseResult.data;
+    const { members } = parseResult.data;
 
     // 3. Check if user already owns an active team (1 team per user rule)
     const existingUserTeam = await prisma.team.findUnique({
@@ -146,20 +140,21 @@ if (!parseResult.success) {
         throw new Error('CAPACITY_FULL');
       }
 
-      const trimmedCaptain = captainName.trim().toLowerCase();
+      const teamName = `Đội ${assignedSlot}`;
 
       // Create team and members atomically
       const createdTeam = await tx.team.create({
         data: {
           slotNumber: assignedSlot,
           name: teamName,
-          captainName: captainName.trim(),
+          captainName: '',
           ownerId: userId,
           members: {
             create: members.map((name, idx) => ({
               name: name.trim(),
               orderIndex: idx + 1,
-              isCaptain: name.trim().toLowerCase() === trimmedCaptain
+              isCaptain: false,
+              isFromIndividual: false
             }))
           }
         },
@@ -168,7 +163,7 @@ if (!parseResult.success) {
             orderBy: { orderIndex: 'asc' }
           },
           owner: {
-            select: { name: true, email: true }
+            select: { id: true, name: true, email: true }
           }
         }
       });
@@ -179,32 +174,41 @@ if (!parseResult.success) {
     return NextResponse.json(
       {
         success: true,
-        message: `Đăng ký thành công Đội "${newTeam.name}" vào Vị trí Slot #${newTeam.slotNumber}`,
+        message: `Đăng ký thành công ${newTeam.name} vào Vị trí Slot #${newTeam.slotNumber}`,
         team: {
           id: newTeam.id,
           slotNumber: newTeam.slotNumber,
           name: newTeam.name,
-          captainName: newTeam.captainName,
+          captainName: '',
           ownerId: newTeam.ownerId,
           ownerName: newTeam.owner.name,
           ownerEmail: newTeam.owner.email,
           registeredAt: newTeam.registeredAt.toISOString().replace('T', ' ').substring(0, 16),
-          members: newTeam.members
+          members: newTeam.members.map((m) => ({
+            id: m.id,
+            name: m.name,
+            orderIndex: m.orderIndex,
+            isCaptain: false,
+            isFromIndividual: false
+          }))
         }
       },
       { status: 201 }
     );
   } catch (error: any) {
-    if (error.message === 'CAPACITY_FULL') {
+    if (error?.message === 'CAPACITY_FULL') {
       return NextResponse.json(
-        { success: false, error: 'Đã đạt giới hạn tối đa 6 đội. Đăng ký hiện đã tạm đóng.' },
+        {
+          success: false,
+          error: 'Cổng đăng ký vừa hoàn tất slot cuối cùng (đủ 6/6 đội). Rất tiếc vị trí đã hết!'
+        },
         { status: 409 }
       );
     }
 
-    console.error('Registration error:', error);
+    console.error('Registration Transaction Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Lỗi máy chủ trong quá trình phân bổ slot đăng ký' },
+      { success: false, error: 'Lỗi giao dịch máy chủ khi cấp slot' },
       { status: 500 }
     );
   }
