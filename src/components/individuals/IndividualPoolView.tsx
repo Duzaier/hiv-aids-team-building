@@ -123,7 +123,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
               Danh Sách Đăng Ký Cá Nhân
             </h3>
             <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-              Dành cho những người tham gia chưa có đội nhóm riêng. Khi một đội thi đấu chưa đủ 5 thành viên, Admin sẽ bấm nút <strong>RANDOM</strong> để bốc thăm và phân bổ ngẫu nhiên người đăng ký vào các đội còn trống slot.
+              Dành cho những người tham gia chưa có đội nhóm riêng. Khi một đội thi đấu chưa đủ 5 thành viên, Ban Tổ Chức sẽ ghép ngẫu nhiên bạn vào các đội còn trống slot.
             </p>
           </div>
 
