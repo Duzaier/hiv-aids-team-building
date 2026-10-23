@@ -1,28 +1,52 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useSession, signOut } from 'next-auth/react';
 import { Team, User, Role } from '@/types';
-import { INITIAL_TEAMS, SLOT_METADATA } from '@/data/initialData';
+import { SLOT_METADATA } from '@/data/initialData';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { TeamGrid } from '@/components/teams/TeamGrid';
-import { RegistrationModal } from '@/components/teams/RegistrationModal';
-import { EditTeamModal } from '@/components/teams/EditTeamModal';
-import { AdminManagementPanel } from '@/components/admin/AdminManagementPanel';
-import { DeleteConfirmModal } from '@/components/admin/DeleteConfirmModal';
-import { LoginModal } from '@/components/auth/LoginModal';
+import { TeamGridSkeleton } from '@/components/ui/TeamGridSkeleton';
 import { X } from 'lucide-react';
 
+// Lazy loading overlays & admin panel for optimal initial bundle & performance
+const RegistrationModal = dynamic(
+  () => import('@/components/teams/RegistrationModal').then((m) => m.RegistrationModal),
+  { ssr: false }
+);
+
+const EditTeamModal = dynamic(
+  () => import('@/components/teams/EditTeamModal').then((m) => m.EditTeamModal),
+  { ssr: false }
+);
+
+const AdminManagementPanel = dynamic(
+  () => import('@/components/admin/AdminManagementPanel').then((m) => m.AdminManagementPanel),
+  { ssr: false }
+);
+
+const DeleteConfirmModal = dynamic(
+  () => import('@/components/admin/DeleteConfirmModal').then((m) => m.DeleteConfirmModal),
+  { ssr: false }
+);
+
+const LoginModal = dynamic(
+  () => import('@/components/auth/LoginModal').then((m) => m.LoginModal),
+  { ssr: false }
+);
+
 export default function Home() {
-  const { data: session, status } = useSession();
-  const [teams, setTeams] = useState<Team[]>(INITIAL_TEAMS);
+  const { data: session } = useSession();
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [isLoadingTeams, setIsLoadingTeams] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
   // Modal states
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [targetSlot, setTargetSlot] = useState<number>(5);
+  const [targetSlot, setTargetSlot] = useState<number>(1);
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [teamToEdit, setTeamToEdit] = useState<Team | null>(null);
@@ -68,8 +92,10 @@ export default function Home() {
           setTeams(merged);
         }
       }
-    } catch {
-      // Fallback to local state
+    } catch (err) {
+      console.error('Failed to fetch teams:', err);
+    } finally {
+      setIsLoadingTeams(false);
     }
   };
 
@@ -92,15 +118,13 @@ export default function Home() {
       : 'USER'
     : 'GUEST';
 
-  // Notification helper
   const showNotice = (type: 'success' | 'error' | 'info', message: string) => {
     setNotification({ type, message });
     setTimeout(() => {
       setNotification((prev) => (prev?.message === message ? null : prev));
-    }, 6000);
+    }, 4500);
   };
 
-  // Handlers
   const handleOpenRegister = (slotNum?: number) => {
     if (!currentUser) {
       setIsLoginModalOpen(true);
@@ -111,7 +135,7 @@ export default function Home() {
       return;
     }
     if (isFull) {
-      showNotice('error', 'Đã đủ 6/6 đội đăng ký. Cổng đăng ký hiện đã tạm đóng!');
+      showNotice('error', 'Đã đủ 6/6 đội đăng ký. Cổng đăng ký hiện đã tạm dừng!');
       return;
     }
 
@@ -179,27 +203,22 @@ export default function Home() {
     setIsEditOpen(true);
   };
 
-  const handleEditSubmit = async (updatedData: {
-    teamId: string;
-    teamName: string;
-    captainName: string;
-    members: string[];
-  }) => {
-    if (!currentUser) return;
+  const handleEditSubmit = async (updatedData: { teamName: string; captainName: string; members: string[] }) => {
+    if (!teamToEdit) return;
 
     try {
-      const url = isAdminEdit
-        ? `/api/admin/teams/${updatedData.teamId}`
-        : '/api/teams/me';
+      const endpoint = isAdminEdit
+        ? `/api/admin/teams/${teamToEdit.id}`
+        : `/api/teams/${teamToEdit.id}`;
 
-      const res = await fetch(url, {
-        method: 'PATCH',
+      const res = await fetch(endpoint, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': currentUser.id,
-          'x-user-email': currentUser.email,
-          'x-user-name': encodeURIComponent(currentUser.name),
-          'x-user-role': currentUser.role
+          'x-user-id': currentUser?.id || '',
+          'x-user-email': currentUser?.email || '',
+          'x-user-name': encodeURIComponent(currentUser?.name || ''),
+          'x-user-role': currentUser?.role || 'USER'
         },
         body: JSON.stringify({
           teamName: updatedData.teamName,
@@ -211,13 +230,13 @@ export default function Home() {
       const result = await res.json();
       if (result.success) {
         setIsEditOpen(false);
-        showNotice('success', result.message || 'Cập nhật thông tin đội thành công');
-        fetchTeams();
+        showNotice('success', 'Đã lưu thay đổi thông tin đội thành công');
+        await fetchTeams();
       } else {
         showNotice('error', result.error || 'Cập nhật thất bại');
       }
     } catch {
-      fetchTeams();
+      await fetchTeams();
       setIsEditOpen(false);
     }
   };
@@ -227,17 +246,17 @@ export default function Home() {
     setIsDeleteOpen(true);
   };
 
-  const handleDeleteConfirm = async (teamId: string, slotNumber: number) => {
-    if (!teamToDelete || !currentUser) return;
+  const handleDeleteConfirm = async () => {
+    if (!teamToDelete) return;
 
     try {
       const res = await fetch(`/api/admin/teams/${teamToDelete.id}`, {
         method: 'DELETE',
         headers: {
-          'x-user-id': currentUser.id,
-          'x-user-email': currentUser.email,
-          'x-user-name': encodeURIComponent(currentUser.name),
-          'x-user-role': currentUser.role
+          'x-user-id': currentUser?.id || '',
+          'x-user-email': currentUser?.email || '',
+          'x-user-name': encodeURIComponent(currentUser?.name || ''),
+          'x-user-role': currentUser?.role || 'USER'
         }
       });
 
@@ -245,12 +264,12 @@ export default function Home() {
       if (result.success) {
         setIsDeleteOpen(false);
         showNotice('success', result.message || `Đã giải phóng Slot #${teamToDelete.slotNumber}`);
-        fetchTeams();
+        await fetchTeams();
       } else {
         showNotice('error', result.error || 'Xóa thất bại');
       }
     } catch {
-      fetchTeams();
+      await fetchTeams();
       setIsDeleteOpen(false);
     }
   };
@@ -282,12 +301,13 @@ export default function Home() {
         </div>
       )}
 
-      {/* Header */}
+      {/* Header with Skeleton State */}
       <Header
         currentUser={currentUser}
         currentRole={currentRole}
         occupiedCount={occupiedCount}
         totalSlots={6}
+        isLoading={isLoadingTeams}
         onLoginClick={() => setIsLoginModalOpen(true)}
         onLogoutClick={() => signOut()}
         onOpenRegisterHero={() => handleOpenRegister()}
@@ -314,53 +334,65 @@ export default function Home() {
           </h2>
         </div>
 
-        {/* 6-Slot Grid */}
-        <TeamGrid
-          teams={teams}
-          currentUser={currentUser}
-          currentRole={currentRole}
-          ownedTeamId={userOwnedTeam?.id}
-          onRegisterClick={handleOpenRegister}
-          onEditClick={handleEditClick}
-          onAdminClick={handleAdminEditClick}
-          onLoginPrompt={() => setIsLoginModalOpen(true)}
-        />
+        {/* 6-Slot Grid with Skeleton Loading */}
+        {isLoadingTeams ? (
+          <TeamGridSkeleton />
+        ) : (
+          <TeamGrid
+            teams={teams}
+            currentUser={currentUser}
+            currentRole={currentRole}
+            ownedTeamId={userOwnedTeam?.id}
+            onRegisterClick={handleOpenRegister}
+            onEditClick={handleEditClick}
+            onAdminClick={handleAdminEditClick}
+            onLoginPrompt={() => setIsLoginModalOpen(true)}
+          />
+        )}
       </main>
 
       {/* Footer */}
       <Footer />
 
-      {/* Real Login Modal */}
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-      />
+      {/* Real Login Modal - Lazy Loaded */}
+      {isLoginModalOpen && (
+        <LoginModal
+          isOpen={isLoginModalOpen}
+          onClose={() => setIsLoginModalOpen(false)}
+        />
+      )}
 
-      {/* Registration Modal */}
-      <RegistrationModal
-        isOpen={isRegisterOpen}
-        targetSlot={targetSlot}
-        currentUser={currentUser}
-        onClose={() => setIsRegisterOpen(false)}
-        onSubmit={handleRegisterSubmit}
-      />
+      {/* Registration Modal - Lazy Loaded */}
+      {isRegisterOpen && (
+        <RegistrationModal
+          isOpen={isRegisterOpen}
+          targetSlot={targetSlot}
+          currentUser={currentUser}
+          onClose={() => setIsRegisterOpen(false)}
+          onSubmit={handleRegisterSubmit}
+        />
+      )}
 
-      {/* Edit Team Modal */}
-      <EditTeamModal
-        isOpen={isEditOpen}
-        team={teamToEdit}
-        isAdminMode={isAdminEdit}
-        onClose={() => setIsEditOpen(false)}
-        onSubmit={handleEditSubmit}
-      />
+      {/* Edit Team Modal - Lazy Loaded */}
+      {isEditOpen && teamToEdit && (
+        <EditTeamModal
+          isOpen={isEditOpen}
+          team={teamToEdit}
+          isAdminMode={isAdminEdit}
+          onClose={() => setIsEditOpen(false)}
+          onSubmit={handleEditSubmit}
+        />
+      )}
 
-      {/* Admin Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={isDeleteOpen}
-        team={teamToDelete}
-        onClose={() => setIsDeleteOpen(false)}
-        onConfirmDelete={handleDeleteConfirm}
-      />
+      {/* Admin Delete Confirmation Modal - Lazy Loaded */}
+      {isDeleteOpen && teamToDelete && (
+        <DeleteConfirmModal
+          isOpen={isDeleteOpen}
+          team={teamToDelete}
+          onClose={() => setIsDeleteOpen(false)}
+          onConfirmDelete={handleDeleteConfirm}
+        />
+      )}
     </div>
   );
 }

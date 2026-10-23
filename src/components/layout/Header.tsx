@@ -9,6 +9,7 @@ interface HeaderProps {
   currentRole: Role;
   occupiedCount: number;
   totalSlots: number;
+  isLoading?: boolean;
   onLoginClick: () => void;
   onLogoutClick: () => void;
   onOpenRegisterHero: () => void;
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentRole,
   occupiedCount,
   totalSlots,
+  isLoading = false,
   onLoginClick,
   onLogoutClick,
   onOpenRegisterHero,
@@ -47,6 +49,8 @@ export const Header: React.FC<HeaderProps> = ({
             <img
               src="/logo.png"
               alt="Logo Team Building"
+              loading="lazy"
+              decoding="async"
               className="w-10 h-10 rounded-xl object-cover shrink-0 shadow-sm border border-slate-800/80"
             />
             <div className="min-w-0">
@@ -71,6 +75,8 @@ export const Header: React.FC<HeaderProps> = ({
                   <img
                     src={currentUser.avatar}
                     alt={currentUser.name}
+                    loading="lazy"
+                    decoding="async"
                     referrerPolicy="no-referrer"
                     onError={() => setImageError(true)}
                     className="w-6 h-6 rounded-full border border-slate-700 object-cover shrink-0"
@@ -106,35 +112,49 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action & Metric Strip */}
         <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {/* Metric Badges */}
+          {/* Metric Badges with Skeleton Loading */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full md:w-auto">
             <div className="px-3 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-center min-w-[85px] sm:min-w-[110px]">
               <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mb-0.5">
                 Tổng Slot
               </span>
-              <span className="text-lg sm:text-xl font-black text-white">{totalSlots}</span>
+              {isLoading ? (
+                <div className="h-6 w-8 bg-slate-800 rounded animate-pulse mx-auto my-0.5" />
+              ) : (
+                <span className="text-lg sm:text-xl font-black text-white">{totalSlots}</span>
+              )}
             </div>
 
             <div className="px-3 py-2 rounded-xl bg-slate-950/80 border border-slate-800 text-center min-w-[85px] sm:min-w-[110px]">
               <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold mb-0.5">
                 Đã Đăng Ký
               </span>
-              <span className="text-lg sm:text-xl font-black text-white">{occupiedCount}</span>
+              {isLoading ? (
+                <div className="h-6 w-8 bg-slate-800 rounded animate-pulse mx-auto my-0.5" />
+              ) : (
+                <span className="text-lg sm:text-xl font-black text-white">{occupiedCount}</span>
+              )}
             </div>
 
             <div className="px-3 py-2 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-center min-w-[85px] sm:min-w-[110px]">
               <span className="text-[10px] text-emerald-400 uppercase tracking-wider block font-semibold mb-0.5">
                 Còn Trống
               </span>
-              <span className="text-lg sm:text-xl font-black text-emerald-300">
-                {availableCount}
-              </span>
+              {isLoading ? (
+                <div className="h-6 w-8 bg-emerald-950/80 rounded animate-pulse mx-auto my-0.5" />
+              ) : (
+                <span className="text-lg sm:text-xl font-black text-emerald-300">
+                  {availableCount}
+                </span>
+              )}
             </div>
           </div>
 
           {/* Primary CTA */}
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-            {hasTeam ? (
+            {isLoading ? (
+              <div className="w-full md:w-36 h-10 rounded-xl bg-slate-800 animate-pulse" />
+            ) : hasTeam ? (
               <button
                 onClick={onOpenMyTeamEdit}
                 className="w-full md:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow-sm transition-all text-center"
