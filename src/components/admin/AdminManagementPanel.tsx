@@ -22,6 +22,32 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
   onRejectMatch
 }) => {
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
+  const [processingMatchId, setProcessingMatchId] = useState<string | null>(null);
+  const [processingAction, setProcessingAction] = useState<'ACCEPT' | 'REJECT' | null>(null);
+
+  const handleAcceptMatch = async (matchId: string) => {
+    if (!onAcceptMatch || processingMatchId) return;
+    try {
+      setProcessingMatchId(matchId);
+      setProcessingAction('ACCEPT');
+      await onAcceptMatch(matchId);
+    } finally {
+      setProcessingMatchId(null);
+      setProcessingAction(null);
+    }
+  };
+
+  const handleRejectMatch = async (matchId: string) => {
+    if (!onRejectMatch || processingMatchId) return;
+    try {
+      setProcessingMatchId(matchId);
+      setProcessingAction('REJECT');
+      await onRejectMatch(matchId);
+    } finally {
+      setProcessingMatchId(null);
+      setProcessingAction(null);
+    }
+  };
   const pendingMatches = matches.filter((m) => m.status === 'PENDING');
 
   const toggleExpand = (teamId: string) => {
@@ -76,18 +102,34 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                 <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                   {onAcceptMatch && (
                     <button
-                      onClick={() => onAcceptMatch(m.id)}
-                      className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors"
+                      onClick={() => handleAcceptMatch(m.id)}
+                      disabled={!!processingMatchId}
+                      className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
                     >
-                      ✓ Duyệt Gộp
+                      {processingMatchId === m.id && processingAction === 'ACCEPT' ? (
+                        <>
+                          <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Đang duyệt...</span>
+                        </>
+                      ) : (
+                        <span>✓ Duyệt Gộp</span>
+                      )}
                     </button>
                   )}
                   {onRejectMatch && (
                     <button
-                      onClick={() => onRejectMatch(m.id)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors"
+                      onClick={() => handleRejectMatch(m.id)}
+                      disabled={!!processingMatchId}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
                     >
-                      ✕ Từ chối
+                      {processingMatchId === m.id && processingAction === 'REJECT' ? (
+                        <>
+                          <span className="w-3 h-3 border-2 border-slate-300/30 border-t-slate-300 rounded-full animate-spin" />
+                          <span>Đang từ chối...</span>
+                        </>
+                      ) : (
+                        <span>✕ Từ chối</span>
+                      )}
                     </button>
                   )}
                 </div>

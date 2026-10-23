@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Team, User, Role, TeamMatchRequest } from '@/types';
 import { SLOT_METADATA } from '@/data/initialData';
 import { Badge } from '@/components/ui/Badge';
@@ -54,6 +54,44 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   onCancelMatch
 }) => {
   const meta = SLOT_METADATA.find((m) => m.slotNumber === slotNumber) || SLOT_METADATA[0];
+  const [processingMatchId, setProcessingMatchId] = useState<string | null>(null);
+  const [processingAction, setProcessingAction] = useState<'ACCEPT' | 'REJECT' | 'CANCEL' | null>(null);
+
+  const handleAcceptMatch = async (matchId: string) => {
+    if (!onAcceptMatch || processingMatchId) return;
+    try {
+      setProcessingMatchId(matchId);
+      setProcessingAction('ACCEPT');
+      await onAcceptMatch(matchId);
+    } finally {
+      setProcessingMatchId(null);
+      setProcessingAction(null);
+    }
+  };
+
+  const handleRejectMatch = async (matchId: string) => {
+    if (!onRejectMatch || processingMatchId) return;
+    try {
+      setProcessingMatchId(matchId);
+      setProcessingAction('REJECT');
+      await onRejectMatch(matchId);
+    } finally {
+      setProcessingMatchId(null);
+      setProcessingAction(null);
+    }
+  };
+
+  const handleCancelMatch = async (matchId: string) => {
+    if (!onCancelMatch || processingMatchId) return;
+    try {
+      setProcessingMatchId(matchId);
+      setProcessingAction('CANCEL');
+      await onCancelMatch(matchId);
+    } finally {
+      setProcessingMatchId(null);
+      setProcessingAction(null);
+    }
+  };
   const isRegistered = !!team;
   const isMyTeam = isRegistered && (team.ownerId === currentUser?.id || team.id === ownedTeamId);
   const userAlreadyOwnsTeam = !!ownedTeamId || (currentRole === 'OWNER');
@@ -196,10 +234,18 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                   </div>
                   {isMyTeam && onCancelMatch && (
                     <button
-                      onClick={() => onCancelMatch(outgoingMatch.id)}
-                      className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 text-[10px] border border-rose-500/30 font-semibold shrink-0 transition-colors"
+                      onClick={() => handleCancelMatch(outgoingMatch.id)}
+                      disabled={processingMatchId === outgoingMatch.id}
+                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 text-[10px] border border-rose-500/30 font-semibold shrink-0 transition-colors disabled:opacity-50 flex items-center gap-1"
                     >
-                      Hủy
+                      {processingMatchId === outgoingMatch.id && processingAction === 'CANCEL' ? (
+                        <>
+                          <span className="w-2.5 h-2.5 border-2 border-rose-300/30 border-t-rose-300 rounded-full animate-spin" />
+                          <span>Đang hủy...</span>
+                        </>
+                      ) : (
+                        <span>Hủy</span>
+                      )}
                     </button>
                   )}
                 </div>
@@ -226,16 +272,36 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                       </p>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => onAcceptMatch && onAcceptMatch(m.id)}
-                          className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors text-center"
+                          onClick={() => handleAcceptMatch(m.id)}
+                          disabled={!!processingMatchId}
+                          className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors text-center flex items-center justify-center gap-1.5 disabled:opacity-50"
                         >
-                          <Check className="w-3.5 h-3.5" /><span>Chấp nhận gộp</span>
+                          {processingMatchId === m.id && processingAction === 'ACCEPT' ? (
+                            <>
+                              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span>Đang chấp nhận...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-3.5 h-3.5" /><span>Chấp nhận gộp</span>
+                            </>
+                          )}
                         </button>
                         <button
-                          onClick={() => onRejectMatch && onRejectMatch(m.id)}
-                          className="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors shrink-0"
+                          onClick={() => handleRejectMatch(m.id)}
+                          disabled={!!processingMatchId}
+                          className="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5 disabled:opacity-50"
                         >
-                          <X className="w-3.5 h-3.5" /><span>Từ chối</span>
+                          {processingMatchId === m.id && processingAction === 'REJECT' ? (
+                            <>
+                              <span className="w-3.5 h-3.5 border-2 border-slate-300/30 border-t-slate-300 rounded-full animate-spin" />
+                              <span>Đang từ chối...</span>
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-3.5 h-3.5" /><span>Từ chối</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>

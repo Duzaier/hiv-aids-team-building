@@ -76,7 +76,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
             />
           </svg>
-          Đăng nhập trực tiếp bằng Google
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
+              <span>Đang kết nối Google...</span>
+            </span>
+          ) : (
+            'Đăng nhập trực tiếp bằng Google'
+          )}
         </button>
 
         <div className="relative flex py-2 items-center">
@@ -121,7 +128,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             disabled={isLoading}
             className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold transition-colors disabled:opacity-50 cursor-pointer shadow-md"
           >
-            {isLoading ? 'Đang xác thực...' : 'Vào hệ thống'}
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Đang xác thực...</span>
+              </span>
+            ) : (
+              'Vào hệ thống'
+            )}
           </button>
         </form>
       </div>

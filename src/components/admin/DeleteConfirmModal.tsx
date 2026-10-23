@@ -8,7 +8,7 @@ interface DeleteConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   team: Team | null;
-  onConfirmDelete: (teamId: string, slotNumber: number) => void;
+  onConfirmDelete: (teamId: string, slotNumber: number) => Promise<void> | void;
 }
 
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
@@ -21,13 +21,14 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
 
   if (!team) return null;
 
-  const handleConfirm = () => {
-    setIsDeleting(true);
-    setTimeout(() => {
-      setIsDeleting(false);
-      onConfirmDelete(team.id, team.slotNumber);
+  const handleConfirm = async () => {
+    try {
+      setIsDeleting(true);
+      await onConfirmDelete(team.id, team.slotNumber);
       onClose();
-    }, 500);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -65,7 +66,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors disabled:opacity-50"
           >
             Hủy
           </button>
@@ -73,9 +74,16 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             type="button"
             onClick={handleConfirm}
             disabled={isDeleting}
-            className="px-5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-red-600 hover:bg-red-700 text-white shadow-sm transition-all"
+            className="px-5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-red-600 hover:bg-red-700 text-white shadow-sm transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
           >
-            {isDeleting ? 'Đang xóa...' : 'Xác nhận xóa'}
+            {isDeleting ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Đang xóa...</span>
+              </>
+            ) : (
+              <span>Xác nhận xóa</span>
+            )}
           </button>
         </div>
       </div>

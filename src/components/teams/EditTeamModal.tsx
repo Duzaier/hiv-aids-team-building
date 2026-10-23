@@ -26,6 +26,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
 }) => {
   const [members, setMembers] = useState<MemberFormItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (team) {
@@ -67,7 +68,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -98,11 +99,18 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
       phone: m.phone.trim()
     }));
 
-    onSubmit({
-      teamName: team.name,
-      captainName: '',
-      members: cleanMembers
-    });
+    try {
+      setIsSubmitting(true);
+      await onSubmit({
+        teamName: team.name,
+        captainName: '',
+        members: cleanMembers
+      });
+    } catch (err: any) {
+      setError(err?.message || 'Có lỗi xảy ra khi lưu thông tin');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -233,15 +241,24 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              disabled={isSubmitting}
+              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors shadow-sm"
+              disabled={isSubmitting}
+              className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1.5"
             >
-              Lưu thay đổi
+              {isSubmitting ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
+                  <span>Đang lưu...</span>
+                </>
+              ) : (
+                <span>Lưu thay đổi</span>
+              )}
             </button>
           </div>
         </form>
