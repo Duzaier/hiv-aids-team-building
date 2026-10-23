@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Team, User, Role } from '@/types';
+import { Team, User, Role, TeamMatchRequest } from '@/types';
 import { SLOT_METADATA } from '@/data/initialData';
 import { Badge } from '@/components/ui/Badge';
 
@@ -11,10 +11,16 @@ interface TeamCardProps {
   currentUser: User | null;
   currentRole: Role;
   ownedTeamId?: string;
+  myOwnedTeam?: Team | null;
+  matches?: TeamMatchRequest[];
   onRegisterClick: (slotNumber: number) => void;
   onEditClick: (team: Team) => void;
   onAdminClick: (team: Team) => void;
   onLoginPrompt: () => void;
+  onOpenMatchModal?: (team: Team) => void;
+  onAcceptMatch?: (matchId: string) => void;
+  onRejectMatch?: (matchId: string) => void;
+  onCancelMatch?: (matchId: string) => void;
 }
 
 export const TeamCard: React.FC<TeamCardProps> = ({
@@ -23,15 +29,40 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   currentUser,
   currentRole,
   ownedTeamId,
+  myOwnedTeam,
+  matches = [],
   onRegisterClick,
   onEditClick,
   onAdminClick,
-  onLoginPrompt
+  onLoginPrompt,
+  onOpenMatchModal,
+  onAcceptMatch,
+  onRejectMatch,
+  onCancelMatch
 }) => {
   const meta = SLOT_METADATA.find((m) => m.slotNumber === slotNumber) || SLOT_METADATA[0];
   const isRegistered = !!team;
   const isMyTeam = isRegistered && (team.ownerId === currentUser?.id || team.id === ownedTeamId);
   const userAlreadyOwnsTeam = !!ownedTeamId || (currentRole === 'OWNER');
+
+  const remainingSlots = isRegistered ? 5 - team.members.length : 5;
+
+  // Incoming matches waiting for this team to accept
+  const incomingMatches = isRegistered
+    ? matches.filter((m) => m.toTeamId === team.id && m.status === 'PENDING')
+    : [];
+
+  // Outgoing match sent by this team
+  const outgoingMatch = isRegistered
+    ? matches.find((m) => m.fromTeamId === team.id && m.status === 'PENDING')
+    : null;
+
+  // Can the current user's team merge into this team?
+  const canMyTeamFitHere =
+    isRegistered &&
+    !isMyTeam &&
+    myOwnedTeam &&
+    myOwnedTeam.members.length + team.members.length <= 5;
 
   return (
     <div
@@ -51,7 +82,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
       />
 
       <div className="p-4 sm:p-5 flex-1 flex flex-col">
-        {/* Header: Slot Number & Status */}
+        {/* Header: Slot Number & Status & Remaining Slots */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2.5">
             <span
@@ -72,11 +103,24 @@ export const TeamCard: React.FC<TeamCardProps> = ({
             </div>
           </div>
 
-          <div className="shrink-0">
-            {isMyTeam ? (
-              <Badge variant="my-team">Đội của bạn</Badge>
-            ) : isRegistered ? (
-              <Badge variant="registered">Đã ghi danh</Badge>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {isRegistered ? (
+              <>
+                {remainingSlots > 0 ? (
+                  <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md bg-cyan-950/80 text-cyan-300 border border-cyan-500/40">
+                    Trống {remainingSlots} slot
+                  </span>
+                ) : (
+                  <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
+                    Đủ 5/5
+                  </span>
+                )}
+                {isMyTeam ? (
+                  <Badge variant="my-team">Đội của bạn</Badge>
+                ) : (
+                  <Badge variant="registered">Đã ghi danh</Badge>
+                )}
+              </>
             ) : (
               <Badge variant="available">Còn trống</Badge>
             )}
@@ -98,13 +142,13 @@ export const TeamCard: React.FC<TeamCardProps> = ({
               </div>
 
               {/* Members Section */}
-              <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800 mb-4">
+              <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800 mb-3">
                 <div className="flex items-center justify-between mb-2 text-xs">
                   <span className="font-medium text-slate-300">
                     Danh sách thành viên
                   </span>
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wider">
-                    {team.members.length < 5 ? `Còn thiếu ${5 - team.members.length} slot` : 'Đã đủ đội hình'}
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">
+                    {remainingSlots > 0 ? `Còn thiếu ${remainingSlots} slot` : 'Đã đủ đội hình'}
                   </span>
                 </div>
 
@@ -128,29 +172,111 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                   ))}
                 </div>
               </div>
+
+              {/* Outgoing Match Request Alert */}
+              {outgoingMatch && (
+                <div className="mb-3 p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="font-semibold text-amber-200 block truncate">
+                      ⏳ Đang gửi yêu cầu gộp sang {outgoingMatch.toTeamName}
+                    </span>
+                    <span className="text-[10px] text-amber-400/80 block">
+                      Đang chờ đại diện {outgoingMatch.toTeamName} hoặc Admin xác nhận
+                    </span>
+                  </div>
+                  {isMyTeam && onCancelMatch && (
+                    <button
+                      onClick={() => onCancelMatch(outgoingMatch.id)}
+                      className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 text-[10px] border border-rose-500/30 font-semibold shrink-0 transition-colors"
+                    >
+                      Hủy
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Incoming Match Requests (Visible to Team Owner & Admin) */}
+              {incomingMatches.length > 0 && (isMyTeam || currentRole === 'ADMIN') && (
+                <div className="mb-3 space-y-2">
+                  {incomingMatches.map((m) => (
+                    <div
+                      key={m.id}
+                      className="p-3 rounded-xl bg-purple-950/60 border border-purple-500/50 text-xs animate-fade-in"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-bold text-purple-300 flex items-center gap-1.5 truncate">
+                          🤝 Yêu cầu gộp từ {m.fromTeamName}
+                        </span>
+                        <span className="text-[10px] text-purple-200 bg-purple-900/80 px-2 py-0.5 rounded font-bold shrink-0">
+                          +{m.fromMembersCount} người
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed mb-2.5">
+                        {m.fromTeamName} muốn chuyển <strong>{m.fromMembersCount} người</strong> sang {team.name} (đạt tổng <strong>{team.members.length + m.fromMembersCount}/5</strong> thành viên). Slot #{m.fromSlotNumber} sẽ được giải phóng thành 5 slot trống.
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => onAcceptMatch && onAcceptMatch(m.id)}
+                          className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors text-center"
+                        >
+                          ✓ Chấp nhận gộp
+                        </button>
+                        <button
+                          onClick={() => onRejectMatch && onRejectMatch(m.id)}
+                          className="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors shrink-0"
+                        >
+                          ✕ Từ chối
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Bottom Meta & Actions */}
-            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 gap-2">
+            <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
               <span className="text-[11px] truncate">Đăng ký: {team.registeredAt}</span>
 
-              {isMyTeam && (
-                <button
-                  onClick={() => onEditClick(team)}
-                  className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold text-xs transition-colors shrink-0"
-                >
-                  Chỉnh sửa
-                </button>
-              )}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {/* Match Team Button: if isMyTeam and team not full */}
+                {isMyTeam && remainingSlots > 0 && onOpenMatchModal && (
+                  <button
+                    onClick={() => onOpenMatchModal(team)}
+                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-600/30 to-indigo-600/30 hover:from-purple-600/40 hover:to-indigo-600/40 text-purple-300 border border-purple-500/50 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1"
+                  >
+                    🤝 Gộp Đội
+                  </button>
+                )}
 
-              {currentRole === 'ADMIN' && !isMyTeam && (
-                <button
-                  onClick={() => onAdminClick(team)}
-                  className="px-3 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-semibold text-xs transition-colors shrink-0"
-                >
-                  Quản lý Admin
-                </button>
-              )}
+                {/* Quick Match into this team if my team fits */}
+                {canMyTeamFitHere && onOpenMatchModal && myOwnedTeam && (
+                  <button
+                    onClick={() => onOpenMatchModal(myOwnedTeam)}
+                    className="px-2.5 py-1 rounded-lg bg-purple-950 hover:bg-purple-900 text-purple-200 border border-purple-500/50 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1"
+                  >
+                    🤝 Xin Gộp Vào
+                  </button>
+                )}
+
+                {isMyTeam && (
+                  <button
+                    onClick={() => onEditClick(team)}
+                    className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold text-xs transition-colors shrink-0"
+                  >
+                    Chỉnh sửa
+                  </button>
+                )}
+
+                {currentRole === 'ADMIN' && !isMyTeam && (
+                  <button
+                    onClick={() => onAdminClick(team)}
+                    className="px-3 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-semibold text-xs transition-colors shrink-0"
+                  >
+                    Quản lý Admin
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ) : (

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useSession, signOut } from 'next-auth/react';
-import { Team, User, Role, IndividualRegistration } from '@/types';
+import { Team, User, Role, IndividualRegistration, TeamMatchRequest } from '@/types';
 import { SLOT_METADATA } from '@/data/initialData';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -19,6 +19,11 @@ const RegistrationModal = dynamic(
 
 const EditTeamModal = dynamic(
   () => import('@/components/teams/EditTeamModal').then((m) => m.EditTeamModal),
+  { ssr: false }
+);
+
+const MatchTeamModal = dynamic(
+  () => import('@/components/teams/MatchTeamModal').then((m) => m.MatchTeamModal),
   { ssr: false }
 );
 
@@ -54,6 +59,11 @@ export default function Home() {
   // Teams state
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoadingTeams, setIsLoadingTeams] = useState(true);
+
+  // Match requests state
+  const [matches, setMatches] = useState<TeamMatchRequest[]>([]);
+  const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
+  const [teamToMatch, setTeamToMatch] = useState<Team | null>(null);
 
   // Individuals state
   const [individuals, setIndividuals] = useState<IndividualRegistration[]>([]);
@@ -118,6 +128,21 @@ export default function Home() {
     }
   };
 
+  // Sync match requests with API on load
+  const fetchMatches = async () => {
+    try {
+      const res = await fetch('/api/matches');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.matches) {
+          setMatches(data.matches);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch matches:', err);
+    }
+  };
+
   // Sync individuals with API on load
   const fetchIndividuals = async () => {
     try {
@@ -136,11 +161,12 @@ export default function Home() {
   };
 
   const refreshAll = async () => {
-    await Promise.all([fetchTeams(), fetchIndividuals()]);
+    await Promise.all([fetchTeams(), fetchMatches(), fetchIndividuals()]);
   };
 
   useEffect(() => {
     fetchTeams();
+    fetchMatches();
     fetchIndividuals();
   }, []);
 
@@ -310,6 +336,74 @@ export default function Home() {
     }
   };
 
+  // Match Team Handlers
+  const handleOpenMatchModal = (team: Team) => {
+    setTeamToMatch(team);
+    setIsMatchModalOpen(true);
+  };
+
+  const handleSendMatch = async (fromTeamId: string, toTeamId: string) => {
+    if (!currentUser) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/matches', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id,
+          'x-user-email': currentUser.email,
+          'x-user-name': encodeURIComponent(currentUser.name),
+          'x-user-role': currentUser.role
+        },
+        body: JSON.stringify({ fromTeamId, toTeamId })
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        showNotice('success', result.message || 'Đã gửi yêu cầu ghép đội thành công!');
+        await refreshAll();
+      } else {
+        showNotice('error', result.error || 'Gửi yêu cầu ghép đội thất bại');
+      }
+    } catch (err: any) {
+      showNotice('error', err?.message || 'Có lỗi kết nối khi gửi yêu cầu gộp đội.');
+    }
+  };
+
+  const handleMatchResponse = async (matchId: string, action: 'ACCEPT' | 'REJECT' | 'CANCEL') => {
+    if (!currentUser) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/matches/${matchId}/respond`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id,
+          'x-user-email': currentUser.email,
+          'x-user-name': encodeURIComponent(currentUser.name),
+          'x-user-role': currentUser.role
+        },
+        body: JSON.stringify({ action })
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        showNotice('success', result.message || 'Xử lý yêu cầu gộp đội thành công!');
+        await refreshAll();
+      } else {
+        showNotice('error', result.error || 'Xử lý yêu cầu thất bại');
+      }
+    } catch (err: any) {
+      showNotice('error', err?.message || 'Có lỗi kết nối khi xử lý yêu cầu.');
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-red-600 selection:text-white">
       {/* Global Toast Notification */}
@@ -379,18 +473,33 @@ export default function Home() {
             {currentRole === 'ADMIN' && (
               <AdminManagementPanel
                 teams={teams}
+                matches={matches}
                 onEditTeam={handleAdminEditClick}
                 onDeleteTeam={handleDeleteClick}
+                onAcceptMatch={(mId) => handleMatchResponse(mId, 'ACCEPT')}
+                onRejectMatch={(mId) => handleMatchResponse(mId, 'REJECT')}
               />
             )}
 
-            <div className="mb-6 sm:mb-8">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 block mb-0.5">
-                Bảng Tổng Sắp 6 Vị Trí
-              </span>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Danh Sách 6 Đội Thi Đấu
-              </h2>
+            <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 block mb-0.5">
+                  Bảng Tổng Sắp 6 Vị Trí
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Danh Sách 6 Đội Thi Đấu
+                </h2>
+              </div>
+
+              {/* My Team Match CTA button if owned team has < 5 members */}
+              {userOwnedTeam && userOwnedTeam.members.length < 5 && (
+                <button
+                  onClick={() => handleOpenMatchModal(userOwnedTeam)}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md transition-all self-start sm:self-auto flex items-center gap-2"
+                >
+                  🤝 Gộp Đội (Còn trống {5 - userOwnedTeam.members.length} slot)
+                </button>
+              )}
             </div>
 
             {/* 6-Slot Grid with Skeleton Loading */}
@@ -402,10 +511,16 @@ export default function Home() {
                 currentUser={currentUser}
                 currentRole={currentRole}
                 ownedTeamId={userOwnedTeam?.id}
+                myOwnedTeam={userOwnedTeam}
+                matches={matches}
                 onRegisterClick={handleOpenRegister}
                 onEditClick={handleEditClick}
                 onAdminClick={handleAdminEditClick}
                 onLoginPrompt={() => setIsLoginModalOpen(true)}
+                onOpenMatchModal={handleOpenMatchModal}
+                onAcceptMatch={(mId) => handleMatchResponse(mId, 'ACCEPT')}
+                onRejectMatch={(mId) => handleMatchResponse(mId, 'REJECT')}
+                onCancelMatch={(mId) => handleMatchResponse(mId, 'CANCEL')}
               />
             )}
           </div>
@@ -447,6 +562,22 @@ export default function Home() {
         />
       )}
 
+      {/* Match Team Modal - Lazy Loaded */}
+      {isMatchModalOpen && teamToMatch && (
+        <MatchTeamModal
+          isOpen={isMatchModalOpen}
+          onClose={() => {
+            setIsMatchModalOpen(false);
+            setTeamToMatch(null);
+          }}
+          myTeam={teamToMatch}
+          allTeams={teams}
+          matches={matches}
+          onSendMatch={handleSendMatch}
+          onCancelMatch={(mId) => handleMatchResponse(mId, 'CANCEL')}
+        />
+      )}
+
       {/* Individual Registration Modal - Lazy Loaded */}
       {isIndividualModalOpen && (
         <IndividualRegistrationModal
@@ -471,7 +602,7 @@ export default function Home() {
         />
       )}
 
-      {/* Admin Delete Confirmation Modal - Lazy Loaded */}
+      {/* Admin Delete Confirmation Modal */}
       {isDeleteOpen && teamToDelete && (
         <DeleteConfirmModal
           isOpen={isDeleteOpen}

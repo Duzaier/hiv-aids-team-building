@@ -22,16 +22,18 @@ model User {
 }
 
 model Team {
-  id           String       @id @default(cuid())
-  slotNumber   Int          @unique
-  name         String
-  captainName  String?      @default("")
-  ownerId      String       @unique
-  owner        User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members      TeamMember[]
-  version      Int          @default(1)
-  registeredAt DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id              String             @id @default(cuid())
+  slotNumber      Int                @unique
+  name            String
+  captainName     String?            @default("")
+  ownerId         String             @unique
+  owner           User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members         TeamMember[]
+  outgoingMatches TeamMatchRequest[] @relation("OutgoingMatches")
+  incomingMatches TeamMatchRequest[] @relation("IncomingMatches")
+  version         Int                @default(1)
+  registeredAt    DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 }
 
 model TeamMember {
@@ -43,6 +45,18 @@ model TeamMember {
   isCaptain        Boolean  @default(false)
   isFromIndividual Boolean  @default(false)
   individualId     String?
+}
+
+model TeamMatchRequest {
+  id          String   @id @default(cuid())
+  fromTeamId  String
+  fromTeam    Team     @relation("OutgoingMatches", fields: [fromTeamId], references: [id], onDelete: Cascade)
+  toTeamId    String
+  toTeam      Team     @relation("IncomingMatches", fields: [toTeamId], references: [id], onDelete: Cascade)
+  status      String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, CANCELLED
+  requestedBy String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model IndividualRegistration {

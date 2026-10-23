@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
-import { Team, User, Role } from '@/types';
+import { Team, User, Role, TeamMatchRequest } from '@/types';
 import { TeamCard } from './TeamCard';
 
 interface TeamGridProps {
@@ -9,10 +9,16 @@ interface TeamGridProps {
   currentUser: User | null;
   currentRole: Role;
   ownedTeamId?: string;
+  myOwnedTeam?: Team | null;
+  matches?: TeamMatchRequest[];
   onRegisterClick: (slotNumber: number) => void;
   onEditClick: (team: Team) => void;
   onAdminClick: (team: Team) => void;
   onLoginPrompt: () => void;
+  onOpenMatchModal?: (team: Team) => void;
+  onAcceptMatch?: (matchId: string) => void;
+  onRejectMatch?: (matchId: string) => void;
+  onCancelMatch?: (matchId: string) => void;
 }
 
 export const TeamGrid: React.FC<TeamGridProps> = ({
@@ -20,10 +26,16 @@ export const TeamGrid: React.FC<TeamGridProps> = ({
   currentUser,
   currentRole,
   ownedTeamId,
+  myOwnedTeam,
+  matches = [],
   onRegisterClick,
   onEditClick,
   onAdminClick,
-  onLoginPrompt
+  onLoginPrompt,
+  onOpenMatchModal,
+  onAcceptMatch,
+  onRejectMatch,
+  onCancelMatch
 }) => {
   // Always 6 slots (1 to 6)
   const slots = [1, 2, 3, 4, 5, 6];
@@ -40,10 +52,16 @@ export const TeamGrid: React.FC<TeamGridProps> = ({
             currentUser={currentUser}
             currentRole={currentRole}
             ownedTeamId={ownedTeamId}
+            myOwnedTeam={myOwnedTeam}
+            matches={matches}
             onRegisterClick={onRegisterClick}
             onEditClick={onEditClick}
             onAdminClick={onAdminClick}
             onLoginPrompt={onLoginPrompt}
+            onOpenMatchModal={onOpenMatchModal}
+            onAcceptMatch={onAcceptMatch}
+            onRejectMatch={onRejectMatch}
+            onCancelMatch={onCancelMatch}
           />
         );
       })}

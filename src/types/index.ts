@@ -32,6 +32,22 @@ export interface Team {
   badgeTitle: string;
 }
 
+export interface TeamMatchRequest {
+  id: string;
+  fromTeamId: string;
+  fromTeamName: string;
+  fromSlotNumber: number;
+  fromMembersCount: number;
+  fromMembers: TeamMember[];
+  toTeamId: string;
+  toTeamName: string;
+  toSlotNumber: number;
+  toMembersCount: number;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED';
+  requestedBy: string;
+  createdAt: string;
+}
+
 export interface IndividualRegistration {
   id: string;
   userId?: string | null;
