@@ -126,14 +126,14 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             ) : isFull ? (
               <div className="w-full md:w-auto px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs sm:text-sm font-medium text-center">
-                Đã đủ 6/6 đội (Tạm đóng đăng ký)
+                Đã đủ 6/6 đội (Tạm dừng đăng ký)
               </div>
             ) : (
               <button
                 onClick={onOpenRegisterHero}
                 className="w-full md:w-auto px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-red-600/20 transition-all text-center"
               >
-                Đăng ký đội (Còn {availableCount} vị trí)
+                Đăng ký đội
               </button>
             )}
           </div>
