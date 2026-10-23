@@ -69,6 +69,7 @@ export default function Home() {
   const [individuals, setIndividuals] = useState<IndividualRegistration[]>([]);
   const [isLoadingIndividuals, setIsLoadingIndividuals] = useState(true);
   const [isIndividualModalOpen, setIsIndividualModalOpen] = useState(false);
+  const [individualToEdit, setIndividualToEdit] = useState<IndividualRegistration | null>(null);
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
@@ -443,6 +444,7 @@ export default function Home() {
         {/* Navigation Tab Bar: Theo Đội vs Cá Nhân */}
         <div className="flex items-center gap-2 p-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl w-fit mb-6 sm:mb-8 shadow-sm">
           <button
+            id='tab-btn-teams'
             onClick={() => setActiveTab('teams')}
             className={`px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'teams'
@@ -455,6 +457,7 @@ export default function Home() {
           </button>
 
           <button
+            id='tab-btn-individuals'
             onClick={() => setActiveTab('individuals')}
             className={`px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'individuals'
@@ -533,7 +536,14 @@ export default function Home() {
             currentUser={currentUser}
             currentRole={currentRole}
             isLoading={isLoadingIndividuals}
-            onOpenRegisterIndividual={() => setIsIndividualModalOpen(true)}
+            onOpenRegisterIndividual={() => {
+              setIndividualToEdit(null);
+              setIsIndividualModalOpen(true);
+            }}
+            onOpenEditIndividual={(ind) => {
+              setIndividualToEdit(ind);
+              setIsIndividualModalOpen(true);
+            }}
             onRefresh={refreshAll}
             onShowNotice={showNotice}
           />
@@ -583,7 +593,11 @@ export default function Home() {
         <IndividualRegistrationModal
           isOpen={isIndividualModalOpen}
           currentUser={currentUser}
-          onClose={() => setIsIndividualModalOpen(false)}
+          initialData={individualToEdit}
+          onClose={() => {
+            setIsIndividualModalOpen(false);
+            setIndividualToEdit(null);
+          }}
           onSuccess={(msg) => {
             showNotice('success', msg);
             refreshAll();

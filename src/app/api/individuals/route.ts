@@ -132,3 +132,128 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+// PATCH /api/individuals - Update individual registration info
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getServerSession(req);
+    const body = await req.json();
+
+    const { id, name, studentId, email, phone } = body;
+    if (!id || typeof id !== "string") {
+      return NextResponse.json(
+        { success: false, error: "Thiếu mã đăng ký cá nhân cần chỉnh sửa" },
+        { status: 400 }
+      );
+    }
+
+    const parseResult = individualRegistrationSchema.safeParse({ name, studentId, email, phone });
+    if (!parseResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: parseResult.error.issues?.[0]?.message || "Dữ liệu không hợp lệ",
+          validationErrors: parseResult.error.flatten().fieldErrors
+        },
+        { status: 400 }
+      );
+    }
+
+    const existingInd = await prisma.individualRegistration.findUnique({
+      where: { id }
+    });
+
+    if (!existingInd) {
+      return NextResponse.json(
+        { success: false, error: "Không tìm thấy thông tin đăng ký cá nhân" },
+        { status: 404 }
+      );
+    }
+
+    // Permission check
+    const isAdmin = session?.user?.role === "ADMIN";
+    const isOwner =
+      (session?.user?.id && existingInd.userId === session.user.id) ||
+      (session?.user?.email && existingInd.email.toLowerCase() === session.user.email.toLowerCase());
+
+    if (existingInd.userId && session?.user?.id && existingInd.userId !== session.user.id && !isAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Bạn không có quyền chỉnh sửa thông tin đăng ký này" },
+        { status: 403 }
+      );
+    }
+
+    const cleanName = parseResult.data.name.trim();
+    const cleanStudentId = parseResult.data.studentId.trim();
+    const cleanEmail = parseResult.data.email.toLowerCase().trim();
+    const cleanPhone = parseResult.data.phone.trim();
+
+    // Check if new email conflicts with another registrant
+    if (cleanEmail !== existingInd.email.toLowerCase()) {
+      const emailConflict = await prisma.individualRegistration.findFirst({
+        where: {
+          email: cleanEmail,
+          NOT: { id }
+        }
+      });
+      if (emailConflict) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Email "` + cleanEmail + `" đã được sử dụng bởi một đăng ký khác.`
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Atomic update both registration and matching team member
+    const updated = await prisma.$transaction(async (tx) => {
+      const ind = await tx.individualRegistration.update({
+        where: { id },
+        data: {
+          name: cleanName,
+          studentId: cleanStudentId,
+          email: cleanEmail,
+          phone: cleanPhone,
+          ...(session?.user?.id && !existingInd.userId ? { userId: session.user.id } : {})
+        }
+      });
+
+      // Synchronize TeamMember if already assigned to a team
+      await tx.teamMember.updateMany({
+        where: { individualId: id },
+        data: {
+          name: cleanName,
+          studentId: cleanStudentId,
+          email: cleanEmail,
+          phone: cleanPhone
+        }
+      });
+
+      return ind;
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Đã cập nhật thông tin đăng ký cá nhân thành công cho ${updated.name}!`,
+      individual: {
+        id: updated.id,
+        name: updated.name,
+        studentId: updated.studentId,
+        email: updated.email,
+        phone: updated.phone,
+        assignedTeamId: updated.assignedTeamId,
+        assignedSlot: updated.assignedSlot,
+        assignedAt: updated.assignedAt ? updated.assignedAt.toISOString().replace("T", " ").substring(0, 16) : null,
+        registeredAt: updated.registeredAt.toISOString().replace("T", " ").substring(0, 16)
+      }
+    });
+  } catch (error) {
+    console.error("Error updating individual registration:", error);
+    return NextResponse.json(
+      { success: false, error: "Lỗi máy chủ khi cập nhật thông tin cá nhân" },
+      { status: 500 }
+    );
+  }
+}

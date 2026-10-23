@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { IndividualRegistration, Role, User } from '@/types';
-import { Dices, RefreshCcw, UserPlus, Users, Clock, CheckCircle2 } from 'lucide-react';
+import { Dices, RefreshCcw, UserPlus, Users, Clock, CheckCircle2, Edit3 } from 'lucide-react';
 
 interface IndividualPoolViewProps {
   individuals: IndividualRegistration[];
@@ -10,6 +10,7 @@ interface IndividualPoolViewProps {
   currentRole: Role;
   isLoading: boolean;
   onOpenRegisterIndividual: () => void;
+  onOpenEditIndividual?: (ind: IndividualRegistration) => void;
   onRefresh: () => void;
   onShowNotice: (type: 'success' | 'error' | 'info', message: string) => void;
 }
@@ -20,6 +21,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
   currentRole,
   isLoading,
   onOpenRegisterIndividual,
+  onOpenEditIndividual,
   onRefresh,
   onShowNotice
 }) => {
@@ -32,6 +34,24 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
   const totalCount = individuals.length;
   const assignedCount = individuals.filter((i) => !!i.assignedTeamId).length;
   const waitingCount = totalCount - assignedCount;
+
+  // Current user registration
+  const myRegistration = React.useMemo(() => {
+    let savedId: string | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        savedId = localStorage.getItem('my_individual_reg_id');
+      } catch (e) {}
+    }
+    return (
+      individuals.find(
+        (i) =>
+          (currentUser?.id && i.userId === currentUser.id) ||
+          (currentUser?.email && i.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+          (savedId && i.id === savedId)
+      ) || null
+    );
+  }, [individuals, currentUser]);
 
   // Filtered by search
   const filtered = individuals.filter((i) => {
@@ -129,13 +149,26 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
 
           {/* Action CTAs */}
           <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={onOpenRegisterIndividual}
-              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition-all flex items-center gap-2"
-            >
-              <UserPlus className="w-4 h-4" />
-              Đăng Ký Cá Nhân
-            </button>
+            {myRegistration ? (
+              <button
+                id='btn-edit-my-individual'
+                onClick={() => onOpenEditIndividual && onOpenEditIndividual(myRegistration)}
+                className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition-all flex items-center gap-2 cursor-pointer"
+                title="Chỉnh sửa thông tin cá nhân đã đăng ký"
+              >
+                <Edit3 className="w-4 h-4" />
+                Chỉnh Sửa Đăng Ký Của Bạn
+              </button>
+            ) : (
+              <button
+                id='btn-open-register-individual'
+                onClick={onOpenRegisterIndividual}
+                className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4" />
+                Đăng Ký Cá Nhân
+              </button>
+            )}
 
             {isAdmin && (
               <>
@@ -168,6 +201,40 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
             )}
           </div>
         </div>
+
+        {myRegistration && (
+          <div className="p-4 rounded-xl bg-purple-950/40 border border-purple-500/40 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="px-2 py-0.5 rounded-md bg-purple-600 text-white font-bold text-[10px] uppercase tracking-wider">
+                  Đăng ký của bạn
+                </span>
+                {myRegistration.assignedTeamId ? (
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold">
+                    ✓ Đã ghép vào Đội ${myRegistration.assignedSlot}
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[10px] font-semibold">
+                    ⏳ Đang trong danh sách chờ ghép
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-300">
+                <span>Họ tên: <strong className="text-white font-bold">${myRegistration.name}</strong></span>
+                <span>MSSV: <strong className="text-blue-300 font-mono">${myRegistration.studentId || 'Chưa cập nhật'}</strong></span>
+                <span>Gmail: <strong className="text-white">${myRegistration.email}</strong></span>
+                <span>SĐT (Zalo): <strong className="text-white">${myRegistration.phone || 'Chưa cập nhật'}</strong></span>
+              </div>
+            </div>
+            <button
+              onClick={() => onOpenEditIndividual && onOpenEditIndividual(myRegistration)}
+              className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              Chỉnh sửa thông tin
+            </button>
+          </div>
+        )}
 
         {/* 3 Metrics Strip */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -292,13 +359,23 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                     </div>
                   </div>
 
-                  {isAssigned && (
-                    <div className="text-right sm:text-right shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    {(isAdmin || (myRegistration && myRegistration.id === person.id) || (currentUser && currentUser.email && person.email.toLowerCase() === currentUser.email.toLowerCase())) && (
+                      <button
+                        onClick={() => onOpenEditIndividual && onOpenEditIndividual(person)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-purple-600 text-slate-300 hover:text-white border border-slate-700 hover:border-purple-500 text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer"
+                        title="Chỉnh sửa thông tin nếu điền sai"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Sửa</span>
+                      </button>
+                    )}
+                    {isAssigned && (
                       <span className="text-[11px] font-bold text-purple-300 bg-purple-950/60 border border-purple-500/40 px-2.5 py-1 rounded-lg inline-block">
-                        Slot #{person.assignedSlot}
+                        Slot #${person.assignedSlot}
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}

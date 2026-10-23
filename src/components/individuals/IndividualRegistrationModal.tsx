@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User } from '@/types';
-import { X } from 'lucide-react';
+import { User, IndividualRegistration } from '@/types';
+import { X, Edit3, UserPlus } from 'lucide-react';
 
 interface IndividualRegistrationModalProps {
   isOpen: boolean;
   currentUser: User | null;
+  initialData?: IndividualRegistration | null;
   onClose: () => void;
   onSuccess: (message: string) => void;
 }
@@ -14,9 +15,11 @@ interface IndividualRegistrationModalProps {
 export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalProps> = ({
   isOpen,
   currentUser,
+  initialData,
   onClose,
   onSuccess
 }) => {
+  const isEdit = Boolean(initialData?.id);
   const [name, setName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [email, setEmail] = useState('');
@@ -26,14 +29,21 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
 
   useEffect(() => {
     if (isOpen) {
-      setName(currentUser?.name || '');
-      setStudentId('');
-      setEmail(currentUser?.email || '');
-      setPhone('');
+      if (initialData) {
+        setName(initialData.name || '');
+        setStudentId(initialData.studentId || '');
+        setEmail(initialData.email || '');
+        setPhone(initialData.phone || '');
+      } else {
+        setName(currentUser?.name || '');
+        setStudentId('');
+        setEmail(currentUser?.email || '');
+        setPhone('');
+      }
       setError(null);
       setIsSubmitting(false);
     }
-  }, [isOpen, currentUser]);
+  }, [isOpen, currentUser, initialData]);
 
   if (!isOpen) return null;
 
@@ -65,25 +75,30 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
 
     try {
       setIsSubmitting(true);
+      const method = isEdit ? 'PATCH' : 'POST';
+      const payload = isEdit
+        ? { id: initialData?.id, name: cleanName, studentId: cleanStudentId, email: cleanEmail, phone: cleanPhone }
+        : { name: cleanName, studentId: cleanStudentId, email: cleanEmail, phone: cleanPhone };
+
       const res = await fetch('/api/individuals', {
-        method: 'POST',
+        method,
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          name: cleanName,
-          studentId: cleanStudentId,
-          email: cleanEmail,
-          phone: cleanPhone
-        })
+        body: JSON.stringify(payload)
       });
 
       const result = await res.json();
       if (result.success) {
+        if (!isEdit && result.individual?.id && typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('my_individual_reg_id', result.individual.id);
+          } catch (e) {}
+        }
         onClose();
-        onSuccess(result.message || 'Đăng ký diện cá nhân thành công!');
+        onSuccess(result.message || (isEdit ? 'Cập nhật thông tin thành công!' : 'Đăng ký diện cá nhân thành công!'));
       } else {
-        setError(result.error || 'Đăng ký thất bại. Vui lòng thử lại.');
+        setError(result.error || (isEdit ? 'Cập nhật thất bại. Vui lòng thử lại.' : 'Đăng ký thất bại. Vui lòng thử lại.'));
       }
     } catch (err: any) {
       setError(err?.message || 'Có lỗi kết nối máy chủ');
@@ -98,9 +113,9 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400 block">
-              Dành Cho Người Chưa Có Nhóm
+              {isEdit ? 'Chỉnh Sửa Thông Tin' : 'Dành Cho Người Chưa Có Nhóm'}
             </span>
-            <h3 className="text-lg font-black text-white">Đăng Ký Diện Cá Nhân</h3>
+            <h3 className="text-lg font-black text-white">{isEdit ? 'Sửa Đăng Ký Cá Nhân' : 'Đăng Ký Diện Cá Nhân'}</h3>
           </div>
           <button
             onClick={onClose}
@@ -112,7 +127,7 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
         </div>
 
         <div className="mb-4 p-3 rounded-xl bg-purple-950/40 border border-purple-500/30 text-xs text-purple-200 leading-relaxed">
-          Bạn sẽ được đưa vào danh sách chờ ghép đội tự do. Ban Tổ Chức sẽ ghép ngẫu nhiên bạn vào các đội còn trống slot (dưới 5 thành viên).
+          {isEdit ? 'Bạn có thể chỉnh sửa lại Họ tên, MSSV, Gmail hoặc SĐT (Zalo) nếu lỡ điền sai. Hệ thống sẽ tự động đồng bộ sang đội thi đấu nếu bạn đã được xếp vào đội.' : 'Bạn sẽ được đưa vào danh sách chờ ghép đội tự do. Ban Tổ Chức sẽ ghép ngẫu nhiên bạn vào các đội còn trống slot (dưới 5 thành viên).'}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
@@ -211,10 +226,10 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
               {isSubmitting ? (
                 <>
                   <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Đang gửi...
+                  {isEdit ? 'Đang lưu...' : 'Đang gửi...'}
                 </>
               ) : (
-                'ĐĂNG KÝ'
+                isEdit ? 'LƯU THAY ĐỔI' : 'ĐĂNG KÝ'
               )}
             </button>
           </div>

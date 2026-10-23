@@ -136,9 +136,6 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                 <div className="text-[11px] text-slate-400 truncate">
                   Người đại diện: <span className="text-slate-200 font-medium">{team.ownerName}</span>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 shrink-0 font-medium">
-                  {team.members.length}/5 người
-                </span>
               </div>
 
               {/* Members Section */}
@@ -146,9 +143,6 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                 <div className="flex items-center justify-between mb-2 text-xs">
                   <span className="font-medium text-slate-300">
                     Danh sách thành viên
-                  </span>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">
-                    {remainingSlots > 0 ? `Còn thiếu ${remainingSlots} slot` : 'Đã đủ đội hình'}
                   </span>
                 </div>
 
