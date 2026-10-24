@@ -51,6 +51,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
   const [stats, setStats] = useState<ExportStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [pasteGuide, setPasteGuide] = useState(false);
 
   // Fetch export data when modal opens
   useEffect(() => {
@@ -217,12 +218,49 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
     return '\uFEFF' + [headers, ...dataRows].map((row) => row.map(escapeCSV).join(',')).join('\n');
   };
 
+  // Helper to copy rich table data to clipboard
+  const copyTableToClipboard = async (): Promise<boolean> => {
+    const tsvData = generateTSV();
+    const htmlData = generateDecoratedHTML();
+
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        const htmlBlob = new Blob([htmlData], { type: 'text/html' });
+        const textBlob = new Blob([tsvData], { type: 'text/plain' });
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/html': htmlBlob,
+            'text/plain': textBlob
+          })
+        ]);
+        return true;
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(tsvData);
+        return true;
+      }
+    } catch (clipErr) {
+      console.warn('Clipboard write warning:', clipErr);
+      try {
+        await navigator.clipboard.writeText(tsvData);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  };
+
   // Automated Action: Create Brand New Sheet & Auto-populate All Data
   const handleAutoCreateAndFillSheet = async () => {
     if (isCreatingSheet) return;
     setIsCreatingSheet(true);
+    setError(null);
 
-    // Open target blank window synchronously to prevent browser popup blockers
+    // 1. Pre-copy rich styled table to clipboard immediately inside user click gesture
+    await copyTableToClipboard();
+    setCopied(true);
+
+    // 2. Open new tab synchronously to bypass browser popup blockers
     const newTab = window.open('about:blank', '_blank');
 
     try {
@@ -233,30 +271,32 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
         }
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      const targetUrl = data?.url || 'https://sheets.new';
 
-      if (!res.ok || !data.success || !data.url) {
-        throw new Error(data.error || 'Không thể tạo và điền dữ liệu vào sheet mới.');
-      }
-
-      // Navigate opened tab to the freshly populated spreadsheet
       if (newTab) {
-        newTab.location.href = data.url;
+        newTab.location.href = targetUrl;
       } else {
-        window.open(data.url, '_blank', 'noopener,noreferrer');
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
       }
 
+      setPasteGuide(true);
       if (onShowNotice) {
-        onShowNotice('success', `Đã tạo Google Sheet mới và tự động điền sẵn ${data.rowCount} người tham gia!`);
+        onShowNotice(
+          'success',
+          data?.method === 'APPS_SCRIPT_DIRECT'
+            ? 'Đã tạo Google Sheet mới thành công!'
+            : 'Đã mở Google Sheet mới & sao chép bảng dữ liệu! Nhấn Ctrl + V để dán.'
+        );
       }
     } catch (err: any) {
-      console.error('[Create Sheet Error]:', err);
-      if (newTab) newTab.close();
-
-      const errMsg = err?.message || 'Có lỗi khi tự động tạo sheet mới.';
-      setError(errMsg);
+      console.warn('[Create Sheet Notice]:', err);
+      if (newTab) {
+        newTab.location.href = 'https://sheets.new';
+      }
+      setPasteGuide(true);
       if (onShowNotice) {
-        onShowNotice('error', errMsg);
+        onShowNotice('success', 'Đã mở Google Sheet mới & sao chép bảng dữ liệu! Nhấn Ctrl + V để dán.');
       }
     } finally {
       setIsCreatingSheet(false);
@@ -404,6 +444,30 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
             </button>
           </div>
         </div>
+
+                {/* Success Paste Guide Banner */}
+        {pasteGuide && (
+          <div className="mx-5 mt-3 p-3.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-200 text-xs flex items-start justify-between gap-3 shrink-0 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-start gap-2.5">
+              <Check className="w-5 h-5 shrink-0 text-emerald-400 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-bold text-white text-xs sm:text-sm">
+                  Đã mở Google Sheet mới &amp; sao chép bảng dữ liệu có định dạng!
+                </p>
+                <p className="text-slate-300 text-[11px] sm:text-xs">
+                  Trên trang Google Sheet vừa mở, bạn chỉ cần nhấn <kbd className="px-1.5 py-0.5 rounded-sm bg-slate-800 border border-slate-600 text-white font-mono font-bold text-[11px]">Ctrl + V</kbd> (hoặc <kbd className="px-1.5 py-0.5 rounded-sm bg-slate-800 border border-slate-600 text-white font-mono font-bold text-[11px]">⌘ + V</kbd>) vào ô <strong className="text-emerald-300">A1</strong> để dán toàn bộ bảng thi đấu hoàn chỉnh.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleOnlyCopyData}
+              className="px-2.5 py-1.5 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white font-semibold text-[11px] whitespace-nowrap transition-colors shrink-0 cursor-pointer"
+            >
+              {copied ? '✓ Đã chép' : 'Chép lại'}
+            </button>
+          </div>
+        )}
 
         {/* Error message if any */}
         {error && (

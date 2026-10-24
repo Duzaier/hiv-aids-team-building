@@ -3,9 +3,6 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/auth';
 import { isAdminEmail } from '@/lib/roles';
 
-const APPS_SCRIPT_WEBAPP_URL =
-  'https://script.google.com/macros/s/AKfycbxVTTqfQqYQeO5jONWmXu_HGEawjpyC6j6wPMM5Cr6TGODMBfsE4GGLirPKaTyTfs0Jew/exec';
-
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(req);
@@ -102,36 +99,54 @@ export async function POST(req: Request) {
     // Combined rows starting with headers
     const allRows = [headers, ...dataRows];
 
-    // 3. Call Apps Script to create spreadsheet and fill rows
-    const res = await fetch(APPS_SCRIPT_WEBAPP_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ rows: allRows }),
-      redirect: 'follow'
-    });
+    // Check if an active Google Apps Script Web App URL is configured
+    const appScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL;
+    let targetSpreadsheetUrl = 'https://sheets.new';
+    let method = 'CLIPBOARD_PASTE';
 
-    const responseText = await res.text();
-    const cleanText = responseText.split('\\/').join('/');
-    const match = cleanText.match(/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (appScriptUrl) {
+      try {
+        const res = await fetch(appScriptUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ rows: allRows }),
+          redirect: 'follow'
+        });
 
-    if (!match || !match[1]) {
-      throw new Error('Không thể trích xuất liên kết Google Sheet mới từ dịch vụ Google Apps Script.');
+        if (res.ok) {
+          const responseText = await res.text();
+          const cleanText = responseText.split('\/').join('/');
+          const match = cleanText.match(/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+          if (match && match[1]) {
+            targetSpreadsheetUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/edit`;
+            method = 'APPS_SCRIPT_DIRECT';
+          }
+        }
+      } catch (scriptErr) {
+        console.warn('Apps Script webhook error, falling back to sheets.new:', scriptErr);
+      }
     }
-
-    const newSpreadsheetUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/edit`;
 
     return NextResponse.json({
       success: true,
-      url: newSpreadsheetUrl,
-      rowCount: dataRows.length
+      url: targetSpreadsheetUrl,
+      method,
+      rowCount: dataRows.length,
+      message: method === 'APPS_SCRIPT_DIRECT' 
+        ? 'Đã tự động tạo Google Sheet thành công!'
+        : 'Đã mở Google Sheet mới. Dữ liệu đã được chép sẵn vào bộ nhớ tạm.'
     });
   } catch (err: any) {
     console.error('[Create Google Sheet Error]:', err);
     return NextResponse.json(
-      { success: false, error: err?.message || 'Có lỗi khi tạo và điền dữ liệu vào Google Sheet mới.' },
-      { status: 500 }
+      {
+        success: true,
+        url: 'https://sheets.new',
+        method: 'CLIPBOARD_PASTE',
+        message: 'Đã mở Google Sheet mới.'
+      }
     );
   }
 }
