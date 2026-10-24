@@ -97,6 +97,7 @@ export default function Home() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDirectMergeOpen, setIsDirectMergeOpen] = useState(false);
   const [directMergeSourceTeam, setDirectMergeSourceTeam] = useState<Team | null>(null);
+  const [directMergeMemberId, setDirectMergeMemberId] = useState<string | null>(null);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
 
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -224,8 +225,9 @@ export default function Home() {
       : 'USER'
     : 'GUEST';
 
-  const handleOpenDirectMerge = (team?: Team) => {
+  const handleOpenDirectMerge = (team?: Team, memberId?: string) => {
     setDirectMergeSourceTeam(team || null);
+    setDirectMergeMemberId(memberId || null);
     setIsDirectMergeOpen(true);
   };
 
@@ -592,6 +594,8 @@ export default function Home() {
                     onEditClick={handleEditClick}
                     onViewDetails={handleOpenTeamDetails}
                     onAdminClick={handleAdminEditClick}
+                    onDeleteTeam={handleDeleteClick}
+                    onAdminDirectMerge={handleOpenDirectMerge}
                     onLoginPrompt={() => setIsLoginModalOpen(true)}
                     onOpenMatchModal={handleOpenMatchModal}
                     onAcceptMatch={(mId) => handleMatchResponse(mId, 'ACCEPT')}
@@ -697,6 +701,38 @@ export default function Home() {
           isAdminMode={isAdminEdit}
           onClose={() => setIsEditOpen(false)}
           onSubmit={handleEditSubmit}
+        />
+      )}
+
+            {/* Delete Confirmation Modal - Lazy Loaded */}
+      {isDeleteOpen && teamToDelete && (
+        <DeleteConfirmModal
+          isOpen={isDeleteOpen}
+          team={teamToDelete}
+          onClose={() => {
+            setIsDeleteOpen(false);
+            setTeamToDelete(null);
+          }}
+          onConfirmDelete={handleDeleteConfirm}
+        />
+      )}
+
+      {/* Admin Direct Merge & Member Transfer Modal - Lazy Loaded */}
+      {isDirectMergeOpen && (
+        <AdminDirectMergeModal
+          isOpen={isDirectMergeOpen}
+          teams={teams}
+          initialFromTeam={directMergeSourceTeam}
+          initialMemberId={directMergeMemberId}
+          onClose={() => {
+            setIsDirectMergeOpen(false);
+            setDirectMergeSourceTeam(null);
+            setDirectMergeMemberId(null);
+          }}
+          onSuccess={(msg) => {
+            showNotice('success', msg);
+            refreshAll();
+          }}
         />
       )}
 

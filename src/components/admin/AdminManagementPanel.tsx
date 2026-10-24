@@ -2,11 +2,22 @@
 
 import React, { useState } from 'react';
 import { Team, TeamMatchRequest } from '@/types';
-import { Users, ChevronDown, ChevronUp, Phone, Mail, GraduationCap, Eye, EyeOff, FileSpreadsheet, HeartHandshake } from 'lucide-react';
+import {
+  Users,
+  ChevronDown,
+  Phone,
+  Mail,
+  GraduationCap,
+  Eye,
+  EyeOff,
+  FileSpreadsheet,
+  HeartHandshake,
+  ArrowRightLeft
+} from 'lucide-react';
 import { ExportGoogleSheetModal } from './ExportGoogleSheetModal';
 
 interface AdminManagementPanelProps {
-  onDirectMerge?: (team?: Team) => void;
+  onDirectMerge?: (team?: Team, preselectedMemberId?: string) => void;
   teams: Team[];
   matches?: TeamMatchRequest[];
   onEditTeam: (team: Team) => void;
@@ -58,6 +69,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
       setProcessingAction(null);
     }
   };
+
   const pendingMatches = matches.filter((m) => m.status === 'PENDING');
 
   const toggleExpand = (teamId: string) => {
@@ -76,12 +88,13 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
             <button
               onClick={() => onDirectMerge()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600/25 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
-              title="Admin gộp trực tiếp 2 đội với nhau mà không cần request"
+              title="Admin gộp đội hoặc chuyển người tùy ý giữa các đội mà không cần gửi request"
             >
               <HeartHandshake className="w-3.5 h-3.5 text-purple-300" />
-              <span>Gộp Đội Trực Tiếp</span>
+              <span>Gộp / Chuyển Đội</span>
             </button>
           )}
+
           <button
             onClick={() => setIsExportModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
@@ -141,7 +154,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                   </div>
                   <div className="text-[11px] text-slate-400 mt-0.5">
                     Tổng sau gộp: <strong className="text-emerald-400">{m.fromMembersCount + m.toMembersCount}/5 thành viên</strong>
-                    {' • '}
+                    {' — '}
                     Vị trí #{m.fromSlotNumber} sẽ được mở lại cho đội khác.
                   </div>
                 </div>
@@ -150,33 +163,19 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                   {onAcceptMatch && (
                     <button
                       onClick={() => handleAcceptMatch(m.id)}
-                      disabled={!!processingMatchId}
-                      className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      disabled={Boolean(processingMatchId)}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors disabled:opacity-50 cursor-pointer"
                     >
-                      {processingMatchId === m.id && processingAction === 'ACCEPT' ? (
-                        <>
-                          <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Đang duyệt...</span>
-                        </>
-                      ) : (
-                        <span>✓ Duyệt Gộp</span>
-                      )}
+                      {processingMatchId === m.id && processingAction === 'ACCEPT' ? 'Đang duyệt...' : 'Chấp thuận gộp'}
                     </button>
                   )}
                   {onRejectMatch && (
                     <button
                       onClick={() => handleRejectMatch(m.id)}
-                      disabled={!!processingMatchId}
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      disabled={Boolean(processingMatchId)}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors disabled:opacity-50 cursor-pointer"
                     >
-                      {processingMatchId === m.id && processingAction === 'REJECT' ? (
-                        <>
-                          <span className="w-3 h-3 border-2 border-slate-300/30 border-t-slate-300 rounded-full animate-spin" />
-                          <span>Đang từ chối...</span>
-                        </>
-                      ) : (
-                        <span>✕ Từ chối</span>
-                      )}
+                      {processingMatchId === m.id && processingAction === 'REJECT' ? 'Đang từ chối...' : 'Từ chối'}
                     </button>
                   )}
                 </div>
@@ -245,14 +244,14 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                         )}
                       </td>
                       <td className="py-3 px-3 text-right space-x-2">
-                        {onDirectMerge && team.members.length < 5 && (
+                        {onDirectMerge && team.members.length > 0 && (
                           <button
                             onClick={() => onDirectMerge(team)}
                             className="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-[11px] font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer"
-                            title="Gộp đội này sang đội khác trực tiếp"
+                            title="Gộp đội này hoặc chuyển người sang đội khác tùy ý"
                           >
                             <HeartHandshake className="w-3 h-3" />
-                            <span>Gộp</span>
+                            <span>Gộp/Chuyển</span>
                           </button>
                         )}
                         <button
@@ -274,9 +273,20 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                     {isExpanded && (
                       <tr className="bg-slate-950/90">
                         <td colSpan={5} className="p-4 border-t border-b border-purple-500/20">
-                          <div className="text-xs font-bold text-purple-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                            <Users className="w-4 h-4" />
-                            <span>Danh Sách Chi Tiết Thành Viên {team.name} (Để Quản Lý & Liên Hệ)</span>
+                          <div className="text-xs font-bold text-purple-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <Users className="w-4 h-4" />
+                              <span>Danh Sách Chi Tiết Thành Viên {team.name} (Để Quản Lý & Chuyển Người)</span>
+                            </div>
+                            {onDirectMerge && (
+                              <button
+                                onClick={() => onDirectMerge(team)}
+                                className="px-2.5 py-1 rounded-md bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                              >
+                                <HeartHandshake className="w-3.5 h-3.5" />
+                                <span>Mở Gộp / Chuyển Đội Này</span>
+                              </button>
+                            )}
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
                             {team.members.map((m, idx) => (
@@ -306,6 +316,19 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                                   <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                                   <span>SĐT (Zalo): <strong className="text-emerald-300">{m.phone || 'Chưa cập nhật'}</strong></span>
                                 </div>
+
+                                {/* Direct Transfer Action For This Specific Member */}
+                                {onDirectMerge && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onDirectMerge(team, m.id)}
+                                    className="w-full mt-2 py-1 px-2 rounded-md bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-[10px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                                    title={`Chuyển ${m.name} sang đội khác`}
+                                  >
+                                    <ArrowRightLeft className="w-3 h-3 text-purple-400" />
+                                    <span>Chuyển bạn này sang đội khác</span>
+                                  </button>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -320,7 +343,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
         </table>
       </div>
 
-      {/* Google Sheets Export Modal */}
+      {/* Export Google Sheet Modal */}
       <ExportGoogleSheetModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
