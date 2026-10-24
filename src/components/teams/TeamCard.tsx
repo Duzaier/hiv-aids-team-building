@@ -399,18 +399,18 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                     {team.members.length < 5 && onOpenMatchModal && (
                       <button
                         onClick={() => onOpenMatchModal(team)}
-                        className="px-2.5 py-1.5 rounded-lg bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-500/50 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        className="px-2.5 py-1.5 rounded-lg bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
                         title="Gửi yêu cầu gộp đội sang đội khác"
                       >
                         <HeartHandshake className="w-3.5 h-3.5 text-purple-300" />
-                        <span>Gộp đội</span>
+                        <span>Gộp</span>
                       </button>
                     )}
                     {onViewDetails && (
                       <button
                         onClick={() => onViewDetails(team)}
                         className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
-                        title="Xem chi tiết các thành viên"
+                        title="Xem thông tin thành viên"
                       >
                         <Eye className="w-3 h-3 text-slate-400" />
                         <span>Chi tiết</span>
@@ -418,31 +418,31 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                     )}
                     <button
                       onClick={() => onEditClick(team)}
-                      className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
                     >
                       <Pencil className="w-3 h-3" />
-                      <span>Chỉnh sửa</span>
+                      <span>Sửa</span>
                     </button>
                   </div>
                 )}
 
                 {currentRole === 'ADMIN' && (
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 flex-wrap">
                     {team.members.length < 5 && onAdminDirectMerge && (
                       <button
                         onClick={() => onAdminDirectMerge(team)}
-                        className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
-                        title="Admin gộp trực tiếp đội này sang đội khác"
+                        className="px-2 py-1.5 rounded-lg bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        title="Gộp đội này sang đội khác trực tiếp"
                       >
-                        <HeartHandshake className="w-3.5 h-3.5 text-purple-300" />
-                        <span>Gộp đội</span>
+                        <HeartHandshake className="w-3 h-3 text-purple-300" />
+                        <span>Gộp</span>
                       </button>
                     )}
                     {!isMyTeam && onViewDetails && (
                       <button
                         onClick={() => onViewDetails(team)}
-                        className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
-                        title="Xem chi tiết các thành viên"
+                        className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        title="Xem chi tiết thành viên"
                       >
                         <Eye className="w-3 h-3 text-slate-400" />
                         <span>Chi tiết</span>
@@ -451,20 +451,20 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                     {!isMyTeam && (
                       <button
                         onClick={() => onAdminClick(team)}
-                        className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                        className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
                       >
                         <Pencil className="w-3 h-3" />
-                        <span>Sửa đội</span>
+                        <span>Sửa</span>
                       </button>
                     )}
                     {onDeleteTeam && (
                       <button
                         onClick={() => onDeleteTeam(team)}
-                        className="px-2.5 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        className="px-2 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
                         title="Xóa đội và giải phóng slot này"
                       >
-                        <Trash2 className="w-3 h-3 text-red-400" />
-                        <span>Xóa đội</span>
+                        <Trash2 className="w-3 h-3 text-rose-400" />
+                        <span>Xóa</span>
                       </button>
                     )}
                   </div>

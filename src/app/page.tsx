@@ -9,7 +9,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { TeamGrid } from '@/components/teams/TeamGrid';
 import { TeamGridSkeleton } from '@/components/ui/TeamGridSkeleton';
-import { X, Users, UserCheck, HeartHandshake, Eye, EyeOff, Lock } from 'lucide-react';
+import { X, Users, UserCheck, HeartHandshake, Lock } from 'lucide-react';
 import { isAdminEmail } from '@/lib/roles';
 
 // Lazy loading overlays & tabs for optimal initial bundle & performance
@@ -571,12 +571,7 @@ export default function Home() {
             )}
 
             {/* SƠ ĐỒ 6 ĐỘI: Mặc định ẩn đối với Admin, có thể mở/đóng tùy ý qua nút ở Header Admin. Đối với User luôn hiển thị. */}
-            {currentRole === 'ADMIN' && !showAdminTeamGrid ? (
-              <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-dashed border-slate-800 bg-slate-900/40 text-slate-400 text-xs mb-8">
-                <EyeOff className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>Sơ đồ 6 đội đang được ẩn theo mặc định. Bấm nút <strong>"Hiện sơ đồ 6 đội"</strong> ở góc phải bảng quản trị phía trên nếu muốn xem.</span>
-              </div>
-            ) : (
+            {currentRole === 'ADMIN' && !showAdminTeamGrid ? null : (
               <div>
                 <div className="mb-6 sm:mb-8">
                   <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">

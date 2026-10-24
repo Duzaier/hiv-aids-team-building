@@ -222,14 +222,21 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
           {/* Action CTAs */}
           <div className="flex flex-wrap items-center gap-2.5">
             {!myRegistration && (
-              <button
-                id="btn-open-register-individual"
-                onClick={onOpenRegisterIndividual}
-                className="group px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-sm transition-all duration-150 flex items-center gap-2 cursor-pointer border border-purple-500 active:scale-95"
-              >
-                <UserPlus className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
-                <span>Đăng Ký Cá Nhân</span>
-              </button>
+              isCapacityFull ? (
+                <div className="px-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-400 font-semibold text-xs flex items-center gap-1.5 cursor-not-allowed">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Đã đủ 30 người (Khóa)</span>
+                </div>
+              ) : (
+                <button
+                  id="btn-open-register-individual"
+                  onClick={onOpenRegisterIndividual}
+                  className="group px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-sm transition-all duration-150 flex items-center gap-2 cursor-pointer border border-purple-500 active:scale-95"
+                >
+                  <UserPlus className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                  <span>Đăng Ký Cá Nhân</span>
+                </button>
+              )
             )}
 
             {isAdmin && (
@@ -310,42 +317,30 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
           </div>
         )}
 
-        {/* 3 Metrics Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-slate-800/80 flex items-center justify-center text-slate-300 shrink-0">
-              <Users className="w-4 h-4" />
+        {/* Sleek Minimalist Stats Bar */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="text-[11px] sm:text-xs text-slate-400 font-medium truncate">Tổng cá nhân</span>
             </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                Tổng Cá Nhân
-              </span>
-              <span className="text-lg font-black text-white">{totalCount} người</span>
-            </div>
+            <span className="text-sm sm:text-base font-black text-white shrink-0 ml-1.5 sm:ml-2">{totalCount}</span>
           </div>
 
-          <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-              <Clock className="w-4 h-4" />
+          <div className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-amber-950/20 border border-amber-500/25 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-[11px] sm:text-xs text-amber-400/90 font-medium truncate">Chờ ghép</span>
             </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-amber-400 block tracking-wider">
-                Đang Chờ Ghép Đội
-              </span>
-              <span className="text-lg font-black text-amber-300">{waitingCount} người</span>
-            </div>
+            <span className="text-sm sm:text-base font-black text-amber-300 shrink-0 ml-1.5 sm:ml-2">{waitingCount}</span>
           </div>
 
-          <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-              <CheckCircle2 className="w-4 h-4" />
+          <div className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/25 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="text-[11px] sm:text-xs text-emerald-400/90 font-medium truncate">Đã vào đội</span>
             </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-emerald-400 block tracking-wider">
-                Đã Phân Bổ Vào Đội
-              </span>
-              <span className="text-lg font-black text-emerald-300">{assignedCount} người</span>
-            </div>
+            <span className="text-sm sm:text-base font-black text-emerald-300 shrink-0 ml-1.5 sm:ml-2">{assignedCount}</span>
           </div>
         </div>
       </div>
