@@ -218,6 +218,17 @@ export default function Home() {
     : 'GUEST';
 
   const handleOpenTeamDetails = (team: Team) => {
+    const isOwner = userOwnedTeam?.id === team.id;
+    const isMember = userJoinedTeam?.id === team.id || team.members.some(
+      (m) => currentUser?.email && m.email && m.email.toLowerCase() === currentUser.email.toLowerCase()
+    );
+    const isAdmin = currentRole === 'ADMIN';
+
+    if (!isOwner && !isMember && !isAdmin) {
+      showNotice('info', 'Bạn chỉ có quyền xem thông tin chi tiết của đội mình tham gia.');
+      return;
+    }
+
     setTeamForDetails(team);
     setIsDetailsOpen(true);
   };

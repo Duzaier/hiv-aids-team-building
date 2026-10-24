@@ -457,7 +457,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                     )}
 
                     {isAssigned && (
-                      onViewTeam && person.assignedTeamId ? (
+                      (isAdmin || (myRegistration && myRegistration.id === person.id) || (currentUser && currentUser.email && person.email.toLowerCase() === currentUser.email.toLowerCase())) && onViewTeam && person.assignedTeamId ? (
                         <button
                           type="button"
                           onClick={() => onViewTeam(person.assignedTeamId!)}
@@ -467,7 +467,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                           <span>ĐỘI {person.assignedSlot}</span>
                         </button>
                       ) : (
-                        <span className="text-[11px] font-bold text-purple-300 bg-purple-950/60 border border-purple-500/40 px-2.5 py-1 rounded-lg inline-block uppercase tracking-wide">
+                        <span className="text-[11px] font-bold text-slate-400 bg-slate-900/90 border border-slate-800 px-2.5 py-1 rounded-lg inline-block uppercase tracking-wide">
                           ĐỘI {person.assignedSlot}
                         </span>
                       )

@@ -16,7 +16,8 @@ import {
   Check,
   X,
   Eye,
-  Trash2
+  Trash2,
+  Lock
 } from 'lucide-react';
 
 interface TeamCardProps {
@@ -188,135 +189,159 @@ export const TeamCard: React.FC<TeamCardProps> = ({
         {/* Content Body */}
         {isRegistered ? (
           <div className="flex-1 flex flex-col justify-between">
-            <div>
-              {/* Member count & Owner info */}
-              <div className="flex items-center justify-between gap-2 mb-2.5">
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
-                  <UserIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>Người đại diện: <strong className="text-slate-200 font-semibold">{team.ownerName}</strong></span>
+            {isMyTeam || currentRole === 'ADMIN' ? (
+              <div>
+                {/* Member count & Owner info (chỉ hiển thị cho đội của mình hoặc Admin) */}
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
+                    <UserIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>Người đại diện: <strong className="text-slate-200 font-semibold">{team.ownerName}</strong></span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Members Section */}
-              <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800 mb-3">
-                <div className="flex items-center justify-between mb-2 text-xs">
-                  <span className="font-medium text-slate-300">
-                    Danh sách thành viên ({team.members.length}/5)
+                {/* Members Section (chỉ hiển thị cho đội của mình hoặc Admin) */}
+                <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800 mb-3">
+                  <div className="flex items-center justify-between mb-2 text-xs">
+                    <span className="font-medium text-slate-300">
+                      Danh sách thành viên ({team.members.length}/5)
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {team.members.map((member) => (
+                      <span
+                        key={member.id}
+                        className={`px-2.5 py-1 rounded-md text-[11px] max-w-full truncate transition-all flex items-center gap-1.5 ${
+                          member.isFromIndividual
+                            ? 'bg-purple-950/50 text-purple-300 border border-purple-500/40 font-medium'
+                            : 'bg-slate-900 border border-slate-800 text-slate-300'
+                        }`}
+                      >
+                        <span>{member.name}</span>
+                        {member.isFromIndividual && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-purple-900/50 text-purple-300 font-medium tracking-wide border border-purple-500/30">
+                            Ghép
+                          </span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Outgoing Match Request Alert */}
+                {outgoingMatch && (
+                  <div className="mb-3 p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="font-semibold text-amber-200 block truncate">
+                        Đang gửi yêu cầu gộp sang {outgoingMatch.toTeamName}
+                      </span>
+                      <span className="text-[10px] text-amber-400/80 block">
+                        Đang chờ đại diện {outgoingMatch.toTeamName} hoặc Admin xác nhận
+                      </span>
+                    </div>
+                    {isMyTeam && onCancelMatch && (
+                      <button
+                        onClick={() => handleCancelMatch(outgoingMatch.id)}
+                        disabled={processingMatchId === outgoingMatch.id}
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 text-[10px] border border-rose-500/30 font-semibold shrink-0 transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                      >
+                        {processingMatchId === outgoingMatch.id && processingAction === 'CANCEL' ? (
+                          <>
+                            <span className="w-2.5 h-2.5 border-2 border-rose-300/30 border-t-rose-300 rounded-full animate-spin" />
+                            <span>Đang hủy...</span>
+                          </>
+                        ) : (
+                          <span>Hủy</span>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Incoming Match Requests (Visible to Team Owner & Admin) */}
+                {incomingMatches.length > 0 && (isMyTeam || currentRole === 'ADMIN') && (
+                  <div className="mb-3 space-y-2">
+                    {incomingMatches.map((m) => (
+                      <div
+                        key={m.id}
+                        className="p-3 rounded-xl bg-purple-950/60 border border-purple-500/50 text-xs animate-fade-in"
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="font-bold text-purple-300 flex items-center gap-1.5 truncate">
+                            <HeartHandshake className="w-4 h-4 text-purple-400 shrink-0" />
+                            <span>Yêu cầu gộp từ {m.fromTeamName}</span>
+                          </span>
+                          <span className="text-[10px] text-purple-200 bg-purple-900/80 px-2 py-0.5 rounded font-bold shrink-0">
+                            +{m.fromMembersCount} người
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-relaxed mb-2.5">
+                          {m.fromTeamName} muốn chuyển <strong>{m.fromMembersCount} người</strong> sang {team.name} (đạt tổng <strong>{team.members.length + m.fromMembersCount}/5</strong> thành viên). Slot #{m.fromSlotNumber} sẽ được giải phóng thành 5 slot trống.
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAcceptMatch(m.id)}
+                            disabled={!!processingMatchId}
+                            className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors text-center flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                          >
+                            {processingMatchId === m.id && processingAction === 'ACCEPT' ? (
+                              <>
+                                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span>Đang chấp nhận...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Chấp nhận gộp</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleRejectMatch(m.id)}
+                            disabled={!!processingMatchId}
+                            className="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                          >
+                            {processingMatchId === m.id && processingAction === 'REJECT' ? (
+                              <>
+                                <span className="w-3.5 h-3.5 border-2 border-slate-300/30 border-t-slate-300 rounded-full animate-spin" />
+                                <span>Đang từ chối...</span>
+                              </>
+                            ) : (
+                              <>
+                                <X className="w-3.5 h-3.5" />
+                                <span>Từ chối</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                {/* Đội của người khác: Ẩn thông tin cá nhân & thành viên */}
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span className="text-[11px] text-slate-400">
+                    Sĩ số: <strong className="text-slate-200 font-semibold">{team.members.length}/5 thành viên</strong>
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-400 font-medium">
+                    {remainingSlots === 0 ? 'Đã đủ 5 người' : `Còn trống ${remainingSlots} slot`}
                   </span>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5">
-                  {team.members.map((member) => (
-                    <span
-                      key={member.id}
-                      className={`px-2.5 py-1 rounded-md text-[11px] max-w-full truncate transition-all flex items-center gap-1.5 ${
-                        member.isFromIndividual
-                          ? 'bg-purple-950/50 text-purple-300 border border-purple-500/40 font-medium'
-                          : 'bg-slate-900 border border-slate-800 text-slate-300'
-                      }`}
-                    >
-                      <span>{member.name}</span>
-                      {member.isFromIndividual && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-purple-900/50 text-purple-300 font-medium tracking-wide border border-purple-500/30">
-                          Ghép
-                        </span>
-                      )}
-                    </span>
-                  ))}
+                <div className="bg-slate-950/70 rounded-xl p-4 border border-slate-800/80 mb-3 flex flex-col items-center justify-center text-center py-6 space-y-1.5">
+                  <div className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mb-0.5">
+                    <Lock className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-300">Thông tin đội được bảo mật</span>
+                  <span className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
+                    Bạn chỉ có thể xem danh sách thành viên của đội mình tham gia.
+                  </span>
                 </div>
               </div>
-
-              {/* Outgoing Match Request Alert */}
-              {outgoingMatch && (
-                <div className="mb-3 p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <span className="font-semibold text-amber-200 block truncate">
-                      Đang gửi yêu cầu gộp sang {outgoingMatch.toTeamName}
-                    </span>
-                    <span className="text-[10px] text-amber-400/80 block">
-                      Đang chờ đại diện {outgoingMatch.toTeamName} hoặc Admin xác nhận
-                    </span>
-                  </div>
-                  {isMyTeam && onCancelMatch && (
-                    <button
-                      onClick={() => handleCancelMatch(outgoingMatch.id)}
-                      disabled={processingMatchId === outgoingMatch.id}
-                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 text-[10px] border border-rose-500/30 font-semibold shrink-0 transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
-                    >
-                      {processingMatchId === outgoingMatch.id && processingAction === 'CANCEL' ? (
-                        <>
-                          <span className="w-2.5 h-2.5 border-2 border-rose-300/30 border-t-rose-300 rounded-full animate-spin" />
-                          <span>Đang hủy...</span>
-                        </>
-                      ) : (
-                        <span>Hủy</span>
-                      )}
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Incoming Match Requests (Visible to Team Owner & Admin) */}
-              {incomingMatches.length > 0 && (isMyTeam || currentRole === 'ADMIN') && (
-                <div className="mb-3 space-y-2">
-                  {incomingMatches.map((m) => (
-                    <div
-                      key={m.id}
-                      className="p-3 rounded-xl bg-purple-950/60 border border-purple-500/50 text-xs animate-fade-in"
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="font-bold text-purple-300 flex items-center gap-1.5 truncate">
-                          <HeartHandshake className="w-4 h-4 text-purple-400 shrink-0" />
-                          <span>Yêu cầu gộp từ {m.fromTeamName}</span>
-                        </span>
-                        <span className="text-[10px] text-purple-200 bg-purple-900/80 px-2 py-0.5 rounded font-bold shrink-0">
-                          +{m.fromMembersCount} người
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-300 leading-relaxed mb-2.5">
-                        {m.fromTeamName} đề xuất gộp <strong>{m.fromMembersCount} thành viên</strong> vào {team.name} (đội sẽ có <strong>{team.members.length + m.fromMembersCount}/5</strong> người). Vị trí #{m.fromSlotNumber} sẽ được mở lại cho đội khác.
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAcceptMatch(m.id)}
-                          disabled={!!processingMatchId}
-                          className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors text-center flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                        >
-                          {processingMatchId === m.id && processingAction === 'ACCEPT' ? (
-                            <>
-                              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              <span>Đang chấp nhận...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Đồng ý gộp</span>
-                            </>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleRejectMatch(m.id)}
-                          disabled={!!processingMatchId}
-                          className="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                        >
-                          {processingMatchId === m.id && processingAction === 'REJECT' ? (
-                            <>
-                              <span className="w-3.5 h-3.5 border-2 border-slate-300/30 border-t-slate-300 rounded-full animate-spin" />
-                              <span>Đang từ chối...</span>
-                            </>
-                          ) : (
-                            <>
-                              <X className="w-3.5 h-3.5" />
-                              <span>Từ chối</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
 
             {/* Bottom Meta & Actions */}
             <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
@@ -412,17 +437,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                   </div>
                 )}
 
-                {/* Other teams for regular users: Read-only view */}
-                {!isMyTeam && currentRole !== 'ADMIN' && onViewDetails && (
-                  <button
-                    onClick={() => onViewDetails(team)}
-                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
-                    title="Xem chi tiết thành viên của đội"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Xem chi tiết đội</span>
-                  </button>
-                )}
+
               </div>
             </div>
           </div>
