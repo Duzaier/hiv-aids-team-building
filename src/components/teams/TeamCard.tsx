@@ -265,7 +265,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                 )}
 
                 {/* Incoming Match Requests (Visible to Team Owner & Admin) */}
-                {incomingMatches.length > 0 && (isMyTeam || currentRole === 'ADMIN') && (
+                {incomingMatches.length > 0 && isMyTeam && currentRole !== 'ADMIN' && (
                   <div className="mb-3 space-y-2">
                     {incomingMatches.map((m) => (
                       <div
@@ -394,7 +394,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                 )}
 
                 {/* Team Captain: Edit full team or view roster */}
-                {isTeamCaptain && (
+                {isTeamCaptain && currentRole !== 'ADMIN' && (
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {team.members.length < 5 && onOpenMatchModal && (
                       <button
@@ -428,6 +428,16 @@ export const TeamCard: React.FC<TeamCardProps> = ({
 
                 {currentRole === 'ADMIN' && (
                   <div className="flex items-center gap-1 flex-wrap">
+                    {onViewDetails && (
+                      <button
+                        onClick={() => onViewDetails(team)}
+                        className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        title="Xem chi tiết thành viên"
+                      >
+                        <Eye className="w-3 h-3 text-slate-400" />
+                        <span>Chi tiết</span>
+                      </button>
+                    )}
                     {team.members.length < 5 && onAdminDirectMerge && (
                       <button
                         onClick={() => onAdminDirectMerge(team)}
@@ -438,25 +448,14 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                         <span>Gộp</span>
                       </button>
                     )}
-                    {!isMyTeam && onViewDetails && (
-                      <button
-                        onClick={() => onViewDetails(team)}
-                        className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
-                        title="Xem chi tiết thành viên"
-                      >
-                        <Eye className="w-3 h-3 text-slate-400" />
-                        <span>Chi tiết</span>
-                      </button>
-                    )}
-                    {!isMyTeam && (
-                      <button
-                        onClick={() => onAdminClick(team)}
-                        className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Pencil className="w-3 h-3" />
-                        <span>Sửa</span>
-                      </button>
-                    )}
+                    <button
+                      onClick={() => onAdminClick(team)}
+                      className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                      title="Chỉnh sửa thông tin đội"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      <span>Sửa</span>
+                    </button>
                     {onDeleteTeam && (
                       <button
                         onClick={() => onDeleteTeam(team)}
