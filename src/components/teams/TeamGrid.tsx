@@ -17,6 +17,7 @@ interface TeamGridProps {
   onViewDetails?: (team: Team) => void;
   onAdminClick: (team: Team) => void;
   onDeleteTeam?: (team: Team) => void;
+  onAdminDirectMerge?: (team: Team) => void;
   onLoginPrompt: () => void;
   onOpenMatchModal?: (team: Team, targetTeam?: Team) => void;
   onAcceptMatch?: (matchId: string) => void;
@@ -37,6 +38,7 @@ export const TeamGrid: React.FC<TeamGridProps> = ({
   onViewDetails,
   onAdminClick,
   onDeleteTeam,
+  onAdminDirectMerge,
   onLoginPrompt,
   onOpenMatchModal,
   onAcceptMatch,
@@ -66,6 +68,7 @@ export const TeamGrid: React.FC<TeamGridProps> = ({
             onViewDetails={onViewDetails}
             onAdminClick={onAdminClick}
             onDeleteTeam={onDeleteTeam}
+            onAdminDirectMerge={onAdminDirectMerge}
             onLoginPrompt={onLoginPrompt}
             onOpenMatchModal={onOpenMatchModal}
             onAcceptMatch={onAcceptMatch}

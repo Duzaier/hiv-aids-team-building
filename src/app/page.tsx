@@ -53,6 +53,11 @@ const IndividualRegistrationModal = dynamic(
   { ssr: false }
 );
 
+const AdminDirectMergeModal = dynamic(
+  () => import('@/components/admin/AdminDirectMergeModal').then((m) => m.AdminDirectMergeModal),
+  { ssr: false }
+);
+
 const TeamMemberDetailsModal = dynamic(
   () => import('@/components/teams/TeamMemberDetailsModal').then((m) => m.TeamMemberDetailsModal),
   { ssr: false }
@@ -90,6 +95,8 @@ export default function Home() {
   const [isAdminEdit, setIsAdminEdit] = useState(false);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDirectMergeOpen, setIsDirectMergeOpen] = useState(false);
+  const [directMergeSourceTeam, setDirectMergeSourceTeam] = useState<Team | null>(null);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
 
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -216,6 +223,11 @@ export default function Home() {
       ? 'OWNER'
       : 'USER'
     : 'GUEST';
+
+  const handleOpenDirectMerge = (team?: Team) => {
+    setDirectMergeSourceTeam(team || null);
+    setIsDirectMergeOpen(true);
+  };
 
   const handleOpenTeamDetails = (team: Team) => {
     const isOwner = userOwnedTeam?.id === team.id;
@@ -541,6 +553,7 @@ export default function Home() {
                 matches={matches}
                 onEditTeam={handleAdminEditClick}
                 onDeleteTeam={handleDeleteClick}
+                onDirectMerge={handleOpenDirectMerge}
                 onAcceptMatch={(mId) => handleMatchResponse(mId, 'ACCEPT')}
                 onRejectMatch={(mId) => handleMatchResponse(mId, 'REJECT')}
                 showTeamGrid={showAdminTeamGrid}

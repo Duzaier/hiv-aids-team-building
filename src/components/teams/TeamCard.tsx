@@ -34,6 +34,7 @@ interface TeamCardProps {
   onViewDetails?: (team: Team) => void;
   onAdminClick: (team: Team) => void;
   onDeleteTeam?: (team: Team) => void;
+  onAdminDirectMerge?: (team: Team) => void;
   onLoginPrompt: () => void;
   onOpenMatchModal?: (team: Team, targetTeam?: Team) => void;
   onAcceptMatch?: (matchId: string) => void;
@@ -55,6 +56,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   onViewDetails,
   onAdminClick,
   onDeleteTeam,
+  onAdminDirectMerge,
   onLoginPrompt,
   onOpenMatchModal,
   onAcceptMatch,
@@ -422,6 +424,16 @@ export const TeamCard: React.FC<TeamCardProps> = ({
 
                 {currentRole === 'ADMIN' && (
                   <div className="flex items-center gap-1.5">
+                    {team.members.length < 5 && onAdminDirectMerge && (
+                      <button
+                        onClick={() => onAdminDirectMerge(team)}
+                        className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        title="Admin gộp trực tiếp đội này sang đội khác"
+                      >
+                        <HeartHandshake className="w-3.5 h-3.5 text-purple-300" />
+                        <span>Gộp đội</span>
+                      </button>
+                    )}
                     {!isMyTeam && onViewDetails && (
                       <button
                         onClick={() => onViewDetails(team)}

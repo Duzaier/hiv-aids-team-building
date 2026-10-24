@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import { Team, TeamMatchRequest } from '@/types';
-import { Users, ChevronDown, ChevronUp, Phone, Mail, GraduationCap, Eye, EyeOff, FileSpreadsheet } from 'lucide-react';
+import { Users, ChevronDown, ChevronUp, Phone, Mail, GraduationCap, Eye, EyeOff, FileSpreadsheet, HeartHandshake } from 'lucide-react';
 import { ExportGoogleSheetModal } from './ExportGoogleSheetModal';
 
 interface AdminManagementPanelProps {
+  onDirectMerge?: (team?: Team) => void;
   teams: Team[];
   matches?: TeamMatchRequest[];
   onEditTeam: (team: Team) => void;
@@ -26,7 +27,8 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
   onRejectMatch,
   showTeamGrid,
   onToggleTeamGrid,
-  onShowNotice
+  onShowNotice,
+  onDirectMerge
 }) => {
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const [processingMatchId, setProcessingMatchId] = useState<string | null>(null);
@@ -70,6 +72,16 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
         </h3>
 
         <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          {onDirectMerge && (
+            <button
+              onClick={() => onDirectMerge()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-600/25 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
+              title="Admin gộp trực tiếp 2 đội với nhau mà không cần request"
+            >
+              <HeartHandshake className="w-3.5 h-3.5 text-purple-300" />
+              <span>Gộp Đội Trực Tiếp</span>
+            </button>
+          )}
           <button
             onClick={() => setIsExportModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
@@ -233,6 +245,16 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                         )}
                       </td>
                       <td className="py-3 px-3 text-right space-x-2">
+                        {onDirectMerge && team.members.length < 5 && (
+                          <button
+                            onClick={() => onDirectMerge(team)}
+                            className="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-[11px] font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                            title="Gộp đội này sang đội khác trực tiếp"
+                          >
+                            <HeartHandshake className="w-3 h-3" />
+                            <span>Gộp</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => onEditTeam(team)}
                           className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-semibold transition-colors"
