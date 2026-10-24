@@ -129,7 +129,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
         <thead>
           <tr>
             <th colspan="9" style="background-color: #dc2626; color: #ffffff; font-size: 15pt; font-weight: bold; text-align: center; padding: 14px 10px; border: 1px solid #b91c1c; font-family: Arial, sans-serif;">
-              HỘI THAO &amp; TEAM BUILDING 2026 — CHUNG TAY ĐẨY LÙI HIV/AIDS
+              TEAM BUILDING 2026 — CHUNG TAY ĐẨY LÙI HIV/AIDS
             </th>
           </tr>
           <tr>
@@ -319,7 +319,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
       const now = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 
       const data: (string | number)[][] = [
-        ['HỘI THAO & TEAM BUILDING 2026 — CHUNG TAY ĐẨY LÙI HIV/AIDS'],
+        ['TEAM BUILDING 2026 — CHUNG TAY ĐẨY LÙI HIV/AIDS'],
         [`DANH SÁCH TỔNG HỢP VẬN ĐỘNG VIÊN & CÁ NHÂN ĐĂNG KÝ (Thời điểm xuất: ${now})`],
         [],
         ['STT', 'Họ và tên', 'MSSV', 'Email (Gmail)', 'Số điện thoại (Zalo)', 'Đội tham gia', 'Vai trò', 'Hình thức đăng ký', 'Thời gian ghi danh']
@@ -578,7 +578,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
           <div className="rounded-xl border border-slate-800 bg-slate-950/70 overflow-hidden shadow-inner">
             {/* Banner Header Decor in Table */}
             <div className="bg-red-600 text-white font-extrabold text-center py-2.5 px-4 text-xs sm:text-sm tracking-wide">
-              HỘI THAO &amp; TEAM BUILDING 2026 — CHUNG TAY ĐẨY LÙI HIV/AIDS
+              TEAM BUILDING 2026 — CHUNG TAY ĐẨY LÙI HIV/AIDS
             </div>
             <div className="bg-red-800 text-red-100 text-[11px] italic text-center py-1 px-4 border-b border-red-900/50">
               DANH SÁCH TỔNG HỢP VẬN ĐỘNG VIÊN &amp; CÁ NHÂN ĐĂNG KÝ
@@ -670,7 +670,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
                 <pre className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] text-emerald-300 font-mono overflow-x-auto select-all">
 {`function doPost(e) {
   var data = JSON.parse(e.postData.contents);
-  var ss = SpreadsheetApp.create("HỘI THAO 2026 - CHUNG TAY ĐẨY LÙI HIV/AIDS");
+  var ss = SpreadsheetApp.create("TEAM BUILDING 2026 - CHUNG TAY ĐẨY LÙI HIV/AIDS");
   var sheet = ss.getActiveSheet();
   if (data.rows && data.rows.length > 0) {
     sheet.getRange(1, 1, data.rows.length, data.rows[0].length).setValues(data.rows);

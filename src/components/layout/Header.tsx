@@ -40,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
               Đăng Ký Team Building 2026
             </span>
             <span className="text-[11px] font-medium text-slate-400 block tracking-wide truncate">
-              Hội thao truyền thông phòng chống HIV/AIDS
+              Truyền thông phòng chống HIV/AIDS
             </span>
           </div>
         </div>

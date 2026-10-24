@@ -13,7 +13,7 @@ export const Footer: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 text-[11px] text-slate-400 text-center sm:text-left">
           <span className="font-medium text-slate-300">
-            Hội Thao & Team Building Truyền Thông HIV/AIDS 2026
+            Team Building Truyền Thông HIV/AIDS 2026
           </span>
           <span className="text-slate-500">
             © 2026 Ban Tổ Chức.
