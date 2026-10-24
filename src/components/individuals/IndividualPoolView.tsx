@@ -6,7 +6,6 @@ import {
   Users,
   UserPlus,
   HeartHandshake,
-  Sparkles,
   Shuffle,
   RotateCcw,
   Pencil,
@@ -14,9 +13,8 @@ import {
   CheckCircle2,
   Clock,
   Search,
-  GraduationCap,
-  Mail,
-  Phone
+  Trash2,
+  Eye
 } from 'lucide-react';
 
 interface IndividualPoolViewProps {
@@ -26,6 +24,7 @@ interface IndividualPoolViewProps {
   isLoading: boolean;
   onOpenRegisterIndividual: () => void;
   onOpenEditIndividual?: (ind: IndividualRegistration) => void;
+  onViewTeam?: (teamId: string) => void;
   onRefresh: () => void;
   onShowNotice: (type: 'success' | 'error' | 'info', message: string) => void;
 }
@@ -37,11 +36,13 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
   isLoading,
   onOpenRegisterIndividual,
   onOpenEditIndividual,
+  onViewTeam,
   onRefresh,
   onShowNotice
 }) => {
   const [isRandomizing, setIsRandomizing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const isAdmin = currentRole === 'ADMIN';
@@ -74,9 +75,56 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
     return (
       i.name.toLowerCase().includes(q) ||
       i.email.toLowerCase().includes(q) ||
+      (i.studentId && i.studentId.toLowerCase().includes(q)) ||
       (i.phone && i.phone.includes(q))
     );
   });
+
+  const handleDeleteIndividual = async (person: IndividualRegistration) => {
+    const isSelf =
+      (myRegistration && myRegistration.id === person.id) ||
+      (currentUser?.email && person.email.toLowerCase() === currentUser.email.toLowerCase());
+
+    const warningDetail = person.assignedTeamId
+      ? `\n\nLưu ý: Bạn này hiện đang thuộc Đội ${person.assignedSlot}. Khi xóa sẽ đồng thời rút bạn khỏi đội.`
+      : '';
+
+    const confirmMsg = isAdmin
+      ? `Bạn có chắc muốn xóa "${person.name}" khỏi danh sách đăng ký không?${warningDetail}`
+      : `Bạn có chắc muốn hủy đăng ký tham gia không?${warningDetail}`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setDeletingId(person.id);
+      const res = await fetch(`/api/individuals?id=${person.id}`, {
+        method: 'DELETE',
+        headers: {
+          'x-user-id': currentUser?.id || '',
+          'x-user-email': currentUser?.email || '',
+          'x-user-name': encodeURIComponent(currentUser?.name || ''),
+          'x-user-role': currentUser?.role || 'USER'
+        }
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        onShowNotice('success', result.message || `Đã xóa cá nhân "${person.name}" thành công.`);
+        if (isSelf) {
+          try {
+            localStorage.removeItem('my_individual_reg_id');
+          } catch (e) {}
+        }
+        onRefresh();
+      } else {
+        onShowNotice('error', result.error || 'Xóa cá nhân thất bại.');
+      }
+    } catch (err: any) {
+      onShowNotice('error', err?.message || 'Có lỗi kết nối máy chủ khi xóa cá nhân.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const handleRandomize = async () => {
     if (!isAdmin) return;
@@ -151,11 +199,11 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Top Action & Stat Banner */}
-      <div className="p-4 sm:p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-md">
+      <div className="p-4 sm:p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-rose-600/20 shrink-0">
+              <span className="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center text-white shadow-xs shrink-0">
                 <HeartHandshake className="w-4 h-4" />
               </span>
               <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
@@ -163,29 +211,19 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
               </h3>
             </div>
             <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-              Dành cho những người tham gia chưa có đội nhóm riêng. Khi một đội thi đấu chưa đủ 5 thành viên, Ban Tổ Chức sẽ ghép ngẫu nhiên bạn vào các đội còn trống slot.
+              Dành cho các bạn chưa có đội. Ban tổ chức sẽ tự động chia đều người vào các đội còn thiếu trước giờ thi đấu.
             </p>
           </div>
 
           {/* Action CTAs */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {myRegistration ? (
+            {!myRegistration && (
               <button
-                id='btn-edit-my-individual'
-                onClick={() => onOpenEditIndividual && onOpenEditIndividual(myRegistration)}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/20 transition-all flex items-center gap-2 cursor-pointer border border-amber-400/30"
-                title="Chỉnh sửa thông tin cá nhân đã đăng ký"
-              >
-                <Pencil className="w-4 h-4" />
-                <span>Chỉnh Sửa Đăng Ký Của Bạn</span>
-              </button>
-            ) : (
-              <button
-                id='btn-open-register-individual'
+                id="btn-open-register-individual"
                 onClick={onOpenRegisterIndividual}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-pink-600 to-purple-600 hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-rose-600/25 transition-all flex items-center gap-2 cursor-pointer border border-rose-500/40"
+                className="group px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-sm transition-all duration-150 flex items-center gap-2 cursor-pointer border border-purple-500 active:scale-95"
               >
-                <UserPlus className="w-4 h-4" />
+                <UserPlus className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
                 <span>Đăng Ký Cá Nhân</span>
               </button>
             )}
@@ -195,25 +233,25 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                 <button
                   onClick={handleRandomize}
                   disabled={isRandomizing || waitingCount === 0}
-                  className={`px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-2 ${
+                  className={`group px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm transition-all duration-150 flex items-center gap-2 ${
                     isRandomizing || waitingCount === 0
                       ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/60'
-                      : 'bg-linear-to-r from-red-600 via-purple-600 to-indigo-600 hover:opacity-95 text-white shadow-purple-600/30 animate-pulse'
+                      : 'bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-500 cursor-pointer active:scale-95'
                   }`}
-                  title="Random phân bổ các cá nhân đang chờ vào các đội chưa đủ 5 người"
+                  title="Chia đều các bạn đang chờ vào các đội"
                 >
-                  <Shuffle className={`w-4 h-4 ${isRandomizing ? 'animate-spin' : ''}`} />
-                  <span>{isRandomizing ? 'Đang quay ngẫu nhiên...' : `Tự Động Ghép Đội (${waitingCount})`}</span>
+                  <Shuffle className={`w-4 h-4 shrink-0 transition-transform duration-300 ${isRandomizing ? 'animate-spin' : 'group-hover:rotate-180'}`} />
+                  <span>{isRandomizing ? 'Đang chia đội...' : `Chia đều vào các đội (${waitingCount})`}</span>
                 </button>
 
                 {assignedCount > 0 && (
                   <button
                     onClick={handleReset}
                     disabled={isResetting}
-                    className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5"
+                    className="group px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer active:scale-95"
                     title="Hoàn tác đưa cá nhân trở lại danh sách chờ"
                   >
-                    <RotateCcw className={`w-3.5 h-3.5 ${isResetting ? 'animate-spin' : ''}`} />
+                    <RotateCcw className={`w-3.5 h-3.5 shrink-0 transition-transform duration-300 ${isResetting ? 'animate-spin' : 'group-hover:-rotate-90'}`} />
                     <span>Hoàn tác</span>
                   </button>
                 )}
@@ -230,8 +268,8 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                   Đăng ký của bạn
                 </span>
                 {myRegistration.assignedTeamId ? (
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold">
-                    ✓ Đã ghép vào Đội ${myRegistration.assignedSlot}
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold flex items-center gap-1.5">
+                    <span>✓ Đã ghép vào Đội {myRegistration.assignedSlot}</span>
                   </span>
                 ) : (
                   <span className="px-2 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[10px] font-semibold">
@@ -240,19 +278,31 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-300">
-                <span>Họ tên: <strong className="text-white font-bold">${myRegistration.name}</strong></span>
-                <span>MSSV: <strong className="text-blue-300 font-mono">${myRegistration.studentId || 'Chưa cập nhật'}</strong></span>
-                <span>Gmail: <strong className="text-white">${myRegistration.email}</strong></span>
-                <span>SĐT (Zalo): <strong className="text-white">${myRegistration.phone || 'Chưa cập nhật'}</strong></span>
+                <span>Họ tên: <strong className="text-white font-bold">{myRegistration.name}</strong></span>
+                <span>MSSV: <strong className="text-blue-300 font-mono">{myRegistration.studentId || 'Chưa cập nhật'}</strong></span>
+                <span>Gmail: <strong className="text-white">{myRegistration.email}</strong></span>
+                <span>SĐT (Zalo): <strong className="text-white">{myRegistration.phone || 'Chưa cập nhật'}</strong></span>
               </div>
             </div>
-            <button
-              onClick={() => onOpenEditIndividual && onOpenEditIndividual(myRegistration)}
-              className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              Chỉnh sửa thông tin
-            </button>
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {myRegistration.assignedTeamId && onViewTeam && (
+                <button
+                  type="button"
+                  onClick={() => onViewTeam(myRegistration.assignedTeamId!)}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer active:scale-95"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Xem Đội {myRegistration.assignedSlot}</span>
+                </button>
+              )}
+              <button
+                onClick={() => onOpenEditIndividual && onOpenEditIndividual(myRegistration)}
+                className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer active:scale-95"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                Chỉnh sửa
+              </button>
+            </div>
           </div>
         )}
 
@@ -326,10 +376,10 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
           <div className="p-10 text-center text-xs text-slate-500 space-y-2">
             <Users className="w-8 h-8 mx-auto text-slate-600 mb-1" />
             <p className="font-medium text-slate-400">
-              {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có ai đăng ký diện cá nhân'}
+              {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có ai đăng ký'}
             </p>
-            <p className="text-[11px] text-slate-600">
-              Nếu bạn chưa có nhóm, hãy bấm nút <strong>"Đăng Ký Cá Nhân"</strong> để được ghép đội ngẫu nhiên!
+            <p className="text-[11px] text-slate-500">
+              Bạn chưa có đội? Bấm nút <strong>"Đăng Ký Cá Nhân"</strong> bên trên để vào danh sách chia đội.
             </p>
           </div>
         ) : (
@@ -386,17 +436,41 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                     {(isAdmin || (myRegistration && myRegistration.id === person.id) || (currentUser && currentUser.email && person.email.toLowerCase() === currentUser.email.toLowerCase())) && (
                       <button
                         onClick={() => onOpenEditIndividual && onOpenEditIndividual(person)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-purple-600 text-slate-300 hover:text-white border border-slate-700 hover:border-purple-500 text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-purple-600 text-slate-300 hover:text-white border border-slate-700 hover:border-purple-500 text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer active:scale-95"
                         title="Chỉnh sửa thông tin nếu điền sai"
                       >
                         <Edit3 className="w-3 h-3" />
                         <span>Sửa</span>
                       </button>
                     )}
+
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDeleteIndividual(person)}
+                        disabled={deletingId === person.id}
+                        className="group px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-400 hover:text-white border border-slate-700 hover:border-rose-500 text-[11px] font-medium transition-all duration-150 flex items-center gap-1 cursor-pointer active:scale-95"
+                        title={isAdmin ? "Xóa cá nhân khỏi danh sách đăng ký ghép đội (Quyền Admin)" : "Hủy đăng ký cá nhân của bạn"}
+                      >
+                        <Trash2 className="w-3 h-3 transition-transform duration-200 group-hover:scale-110" />
+                        <span>{deletingId === person.id ? 'Đang xóa...' : (isAdmin ? 'Xóa' : 'Hủy')}</span>
+                      </button>
+                    )}
+
                     {isAssigned && (
-                      <span className="text-[11px] font-bold text-purple-300 bg-purple-950/60 border border-purple-500/40 px-2.5 py-1 rounded-lg inline-block">
-                        Slot #${person.assignedSlot}
-                      </span>
+                      onViewTeam && person.assignedTeamId ? (
+                        <button
+                          type="button"
+                          onClick={() => onViewTeam(person.assignedTeamId!)}
+                          className="text-[11px] font-bold text-purple-300 hover:text-white bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/40 hover:border-purple-400 px-2.5 py-1 rounded-lg inline-flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95 uppercase tracking-wide"
+                          title={`Xem chi tiết Đội ${person.assignedSlot}`}
+                        >
+                          <span>ĐỘI {person.assignedSlot}</span>
+                        </button>
+                      ) : (
+                        <span className="text-[11px] font-bold text-purple-300 bg-purple-950/60 border border-purple-500/40 px-2.5 py-1 rounded-lg inline-block uppercase tracking-wide">
+                          ĐỘI {person.assignedSlot}
+                        </span>
+                      )
                     )}
                   </div>
                 </div>
