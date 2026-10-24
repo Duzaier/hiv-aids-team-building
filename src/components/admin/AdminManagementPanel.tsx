@@ -4,15 +4,18 @@ import React, { useState } from 'react';
 import { Team, TeamMatchRequest } from '@/types';
 import {
   Users,
-  ChevronDown,
   Phone,
   Mail,
   GraduationCap,
   FileSpreadsheet,
   HeartHandshake,
   LayoutGrid,
-  Table as TableIcon
+  Table as TableIcon,
+  Pencil,
+  Trash2
 } from 'lucide-react';
+import { MorphIcon } from 'morphicons/react';
+import { ChevronDown, ChevronUp } from 'lucide';
 import { ExportGoogleSheetModal } from './ExportGoogleSheetModal';
 
 interface AdminManagementPanelProps {
@@ -94,17 +97,17 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
         <div className="flex items-center gap-2 flex-wrap shrink-0">
           <button
             onClick={() => setIsExportModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-all cursor-pointer active:scale-95 shadow-xs"
+            className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-all cursor-pointer active:scale-95 shadow-xs"
             title="Xuất bảng dữ liệu sang Excel / Google Sheet"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400 transition-transform duration-200 group-hover:scale-110" />
             <span>Xuất Bảng Dữ Liệu</span>
           </button>
 
           {onToggleTeamGrid && (
             <button
               onClick={onToggleTeamGrid}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer active:scale-95 shadow-xs ${
+              className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer active:scale-95 shadow-xs ${
                 showTeamGrid
                   ? 'bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 border-purple-500/40'
                   : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
@@ -113,12 +116,12 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
             >
               {showTeamGrid ? (
                 <>
-                  <TableIcon className="w-3.5 h-3.5 text-purple-400" />
+                  <TableIcon className="w-3.5 h-3.5 text-purple-400 transition-transform duration-200 group-hover:scale-110" />
                   <span>Xem dạng Bảng</span>
                 </>
               ) : (
                 <>
-                  <LayoutGrid className="w-3.5 h-3.5 text-slate-400" />
+                  <LayoutGrid className="w-3.5 h-3.5 text-slate-400 transition-transform duration-200 group-hover:scale-110" />
                   <span>Xem dạng Sơ Đồ</span>
                 </>
               )}
@@ -161,7 +164,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                     <button
                       onClick={() => handleAcceptMatch(m.id)}
                       disabled={Boolean(processingMatchId)}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors disabled:opacity-50 cursor-pointer"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
                     >
                       {processingMatchId === m.id && processingAction === 'ACCEPT' ? 'Đang duyệt...' : 'Chấp thuận'}
                     </button>
@@ -170,7 +173,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                     <button
                       onClick={() => handleRejectMatch(m.id)}
                       disabled={Boolean(processingMatchId)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors disabled:opacity-50 cursor-pointer"
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
                     >
                       {processingMatchId === m.id && processingAction === 'REJECT' ? 'Đang từ chối...' : 'Từ chối'}
                     </button>
@@ -230,13 +233,21 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                               </span>
                             )}
 
+                            {/* Morphing chevron accordion trigger */}
                             <button
                               onClick={() => toggleExpand(team.id)}
-                              className="p-1 rounded-md hover:bg-slate-800 text-purple-300 hover:text-purple-200 transition-colors flex items-center gap-0.5 text-[10px] cursor-pointer"
+                              className="px-2 py-1 rounded-lg bg-slate-800/70 hover:bg-slate-700 text-purple-300 hover:text-white transition-all flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer border border-slate-700/60 active:scale-95"
                               title="Xem chi tiết thành viên"
+                              aria-expanded={isExpanded}
                             >
-                              <span>Chi tiết</span>
-                              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
+                              <span>{isExpanded ? 'Thu gọn' : 'Chi tiết'}</span>
+                              <MorphIcon
+                                icon={isExpanded ? ChevronUp : ChevronDown}
+                                size={12}
+                                strokeWidth={2.2}
+                                spring="snappy"
+                                reducedMotion="user"
+                              />
                             </button>
                           </div>
                         </td>
@@ -244,24 +255,26 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                           {onDirectMerge && team.members.length > 0 && (
                             <button
                               onClick={() => onDirectMerge(team)}
-                              className="px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-[11px] font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                              className="group px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-[11px] font-semibold transition-all inline-flex items-center gap-1 cursor-pointer active:scale-95"
                               title="Gộp đội này hoặc chuyển thành viên sang đội khác"
                             >
-                              <HeartHandshake className="w-3 h-3" />
+                              <HeartHandshake className="w-3.5 h-3.5 text-purple-400 transition-transform duration-200 group-hover:scale-110" />
                               <span>Gộp/Chuyển</span>
                             </button>
                           )}
                           <button
                             onClick={() => onEditTeam(team)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold transition-colors cursor-pointer"
+                            className="group px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-[11px] font-semibold transition-all cursor-pointer active:scale-95 inline-flex items-center gap-1"
                           >
-                            Sửa
+                            <Pencil className="w-3 h-3 text-slate-400 transition-transform duration-200 group-hover:-rotate-12 group-hover:text-amber-300" />
+                            <span>Sửa</span>
                           </button>
                           <button
                             onClick={() => onDeleteTeam(team)}
-                            className="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-[11px] font-semibold transition-colors cursor-pointer"
+                            className="group px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 hover:text-rose-100 border border-rose-500/30 text-[11px] font-semibold transition-all cursor-pointer active:scale-95 inline-flex items-center gap-1"
                           >
-                            Xóa
+                            <Trash2 className="w-3 h-3 text-rose-400 transition-transform duration-200 group-hover:scale-110" />
+                            <span>Xóa</span>
                           </button>
                         </td>
                       </tr>
@@ -269,7 +282,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                       {/* Clean Member Details Accordion: Minimal Profile Badges */}
                       {isExpanded && (
                         <tr className="bg-slate-950/70">
-                          <td colSpan={4} className="p-3.5 border-t border-b border-slate-800">
+                          <td colSpan={4} className="p-3.5 border-t border-b border-slate-800 animate-in fade-in duration-200">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                               {team.members.map((m, idx) => (
                                 <div

@@ -427,42 +427,42 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                 )}
 
                 {currentRole === 'ADMIN' && (
-                  <div className="flex items-center gap-1 flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {onViewDetails && (
                       <button
                         onClick={() => onViewDetails(team)}
-                        className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        className="group px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 active:scale-95 font-semibold text-xs transition-all shrink-0 flex items-center gap-1 cursor-pointer"
                         title="Xem chi tiết thành viên"
                       >
-                        <Eye className="w-3 h-3 text-slate-400" />
+                        <Eye className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-200 group-hover:scale-110 transition-all duration-200" />
                         <span>Chi tiết</span>
                       </button>
                     )}
                     {team.members.length < 5 && onAdminDirectMerge && (
                       <button
                         onClick={() => onAdminDirectMerge(team)}
-                        className="px-2 py-1.5 rounded-lg bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        className="group px-2.5 py-1.5 rounded-lg bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 hover:text-purple-100 border border-purple-500/30 active:scale-95 font-semibold text-xs transition-all shrink-0 flex items-center gap-1 cursor-pointer"
                         title="Gộp đội này sang đội khác trực tiếp"
                       >
-                        <HeartHandshake className="w-3 h-3 text-purple-300" />
+                        <HeartHandshake className="w-3.5 h-3.5 text-purple-300 group-hover:scale-110 group-hover:rotate-6 transition-all duration-200" />
                         <span>Gộp</span>
                       </button>
                     )}
                     <button
                       onClick={() => onAdminClick(team)}
-                      className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                      className="group px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 active:scale-95 font-semibold text-xs transition-all shrink-0 flex items-center gap-1 cursor-pointer"
                       title="Chỉnh sửa thông tin đội"
                     >
-                      <Pencil className="w-3 h-3" />
+                      <Pencil className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-300 group-hover:-rotate-12 transition-all duration-200" />
                       <span>Sửa</span>
                     </button>
                     {onDeleteTeam && (
                       <button
                         onClick={() => onDeleteTeam(team)}
-                        className="px-2 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        className="group px-2.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 hover:text-rose-100 border border-rose-500/30 active:scale-95 font-semibold text-xs transition-all shrink-0 flex items-center gap-1 cursor-pointer"
                         title="Xóa đội và giải phóng slot này"
                       >
-                        <Trash2 className="w-3 h-3 text-rose-400" />
+                        <Trash2 className="w-3.5 h-3.5 text-rose-400 group-hover:scale-110 group-hover:rotate-6 transition-all duration-200" />
                         <span>Xóa</span>
                       </button>
                     )}

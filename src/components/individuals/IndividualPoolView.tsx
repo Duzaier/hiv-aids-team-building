@@ -435,10 +435,10 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                     {(isAdmin || (myRegistration && myRegistration.id === person.id) || (currentUser && currentUser.email && person.email.toLowerCase() === currentUser.email.toLowerCase())) && (
                       <button
                         onClick={() => onOpenEditIndividual && onOpenEditIndividual(person)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-purple-600 text-slate-300 hover:text-white border border-slate-700 hover:border-purple-500 text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                        className="group px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-purple-600 text-slate-300 hover:text-white border border-slate-700 hover:border-purple-500 text-[11px] font-medium transition-all flex items-center gap-1 cursor-pointer active:scale-95"
                         title="Chỉnh sửa thông tin nếu điền sai"
                       >
-                        <Edit3 className="w-3 h-3" />
+                        <Edit3 className="w-3 h-3 text-slate-400 group-hover:text-white group-hover:-rotate-12 transition-transform duration-200" />
                         <span>Sửa</span>
                       </button>
                     )}
@@ -450,7 +450,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
                         className="group px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-400 hover:text-white border border-slate-700 hover:border-rose-500 text-[11px] font-medium transition-all duration-150 flex items-center gap-1 cursor-pointer active:scale-95"
                         title={isAdmin ? "Xóa cá nhân khỏi danh sách đăng ký ghép đội (Quyền Admin)" : "Hủy đăng ký cá nhân của bạn"}
                       >
-                        <Trash2 className="w-3 h-3 transition-transform duration-200 group-hover:scale-110" />
+                        <Trash2 className="w-3 h-3 text-slate-400 group-hover:text-white group-hover:scale-110 group-hover:rotate-6 transition-transform duration-200" />
                         <span>{deletingId === person.id ? 'Đang xóa...' : (isAdmin ? 'Xóa' : 'Hủy')}</span>
                       </button>
                     )}

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { MorphIcon } from 'morphicons/react';
+import { Copy as CopyIcon, Check as CheckIcon, ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon } from 'lucide';
 import {
   X,
   FileSpreadsheet,
@@ -459,7 +461,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
             <button
               onClick={handleOpenGoogleSheetWithClipboard}
               disabled={loading || rows.length === 0 || isCreatingSheet}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold text-xs shadow-md shadow-emerald-950/40 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="group px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold text-xs shadow-md shadow-emerald-950/40 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               title="Mở Google Sheet mới và tự động chép sẵn bảng dữ liệu để bạn bấm Ctrl + V"
             >
               {isCreatingSheet ? (
@@ -469,7 +471,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
                 </>
               ) : (
                 <>
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLink className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                   <span>Mở Google Sheet &amp; Dán</span>
                 </>
               )}
@@ -479,7 +481,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
             <button
               onClick={handleDownloadXLSX}
               disabled={loading || rows.length === 0 || isExportingExcel}
-              className="px-3.5 py-2 rounded-xl bg-blue-600/90 hover:bg-blue-500 active:scale-95 text-white font-semibold text-xs shadow-md shadow-blue-950/40 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="group px-3.5 py-2 rounded-xl bg-blue-600/90 hover:bg-blue-500 active:scale-95 text-white font-semibold text-xs shadow-md shadow-blue-950/40 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               title="Tải ngay file Excel (.xlsx) đã điền sẵn 100% dữ liệu, mở là dùng ngay"
             >
               {isExportingExcel ? (
@@ -489,7 +491,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
                 </>
               ) : (
                 <>
-                  <FileCheck className="w-4 h-4 text-blue-200" />
+                  <FileCheck className="w-4 h-4 text-blue-200 transition-transform duration-200 group-hover:scale-110" />
                   <span>Tải File Excel (.xlsx)</span>
                 </>
               )}
@@ -500,11 +502,17 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
             <button
               onClick={handleOnlyCopyData}
               disabled={loading || rows.length === 0}
-              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-medium text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="group px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-medium text-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               title="Sao chép bảng dữ liệu đã decor vào bộ nhớ tạm"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Đã Chép!' : 'Chép Bảng'}</span>
+              <MorphIcon
+                icon={copied ? CheckIcon : CopyIcon}
+                size={14}
+                strokeWidth={2}
+                spring="snappy"
+                reducedMotion="user"
+              />
+              <span className={copied ? 'text-emerald-300 font-semibold' : ''}>{copied ? 'Đã Chép!' : 'Chép Bảng'}</span>
             </button>
 
             <button
@@ -513,7 +521,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
               className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-medium text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               title="Tải file CSV tiếng Việt"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-y-0.5" />
               <span>Tải CSV</span>
             </button>
           </div>
@@ -655,7 +663,14 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
                 <HelpCircle className="w-3.5 h-3.5 text-purple-400" />
                 <span>Bạn muốn hệ thống tự động tạo file lưu thẳng vào Google Drive (không cần bấm Ctrl + V)?</span>
               </span>
-              {showAppsScriptGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              <MorphIcon
+                icon={showAppsScriptGuide ? ChevronUpIcon : ChevronDownIcon}
+                size={14}
+                strokeWidth={2}
+                spring="snappy"
+                reducedMotion="user"
+                className="text-slate-400"
+              />
             </button>
 
             {showAppsScriptGuide && (
