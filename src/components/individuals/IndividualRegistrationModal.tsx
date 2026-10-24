@@ -35,7 +35,7 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
         setEmail(initialData.email || '');
         setPhone(initialData.phone || '');
       } else {
-        setName(currentUser?.name || '');
+        setName('');
         setStudentId('');
         setEmail(currentUser?.email || '');
         setPhone('');

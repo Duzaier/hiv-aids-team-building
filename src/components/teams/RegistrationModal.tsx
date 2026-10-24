@@ -47,7 +47,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       // Pre-fill member 1 with current user if logged in (minimum 1 member)
       setMembers([
         {
-          name: currentUser?.name || '',
+          name: '',
           studentId: '',
           email: currentUser?.email || '',
           phone: ''
