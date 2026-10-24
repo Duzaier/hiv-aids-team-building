@@ -24,6 +24,8 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email) return null;
         const email = credentials.email.trim().toLowerCase();
+        // Tài khoản Admin bắt buộc đăng nhập bằng Google thật, không cho đăng nhập nhanh bằng email
+        if (isAdminEmail(email)) return null;
         const name = credentials.name?.trim() || email.split('@')[0];
         const role = isAdminEmail(email) ? 'ADMIN' : 'USER';
 

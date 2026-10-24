@@ -1,16 +1,13 @@
-﻿export const DEFAULT_ADMIN_EMAILS = [
-  'phudt.ce192043@gmail.com'
-];
+// Chỉ duy nhất tài khoản này có quyền Admin. Các tài khoản khác luôn là USER.
+export const ADMIN_EMAIL = 'phudt.ce192043@gmail.com';
+
+export const DEFAULT_ADMIN_EMAILS = [ADMIN_EMAIL];
 
 export function getAdminEmails(): string[] {
-  const envAdmins = (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  return Array.from(new Set([...DEFAULT_ADMIN_EMAILS.map((e) => e.toLowerCase()), ...envAdmins]));
+  return [ADMIN_EMAIL];
 }
 
 export function isAdminEmail(email?: string | null): boolean {
   if (!email) return false;
-  return getAdminEmails().includes(email.trim().toLowerCase());
+  return email.trim().toLowerCase() === ADMIN_EMAIL;
 }

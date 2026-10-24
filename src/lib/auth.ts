@@ -1,4 +1,4 @@
-﻿import { getServerSession as getNextAuthSession } from 'next-auth';
+import { getServerSession as getNextAuthSession } from 'next-auth';
 import { authOptions } from './authOptions';
 import { prisma } from './prisma';
 import { isAdminEmail } from './roles';
@@ -39,27 +39,31 @@ export async function getServerSession(req?: Request): Promise<AuthSession> {
 
   // 2. Check for request header override (useful for API testing)
   if (req) {
-    const overrideUserId = req.headers.get('x-user-id');
+    let overrideUserId = req.headers.get('x-user-id');
     const overrideEmail = req.headers.get('x-user-email');
 
-    if (overrideUserId) {
-      let user = await prisma.user.findUnique({
-        where: { id: overrideUserId }
-      });
+    if (overrideUserId || overrideEmail) {
+      if (!overrideUserId && overrideEmail) {
+        overrideUserId = 'mock-' + overrideEmail.replace(/[^a-zA-Z0-9]/g, '-');
+      }
+
+      let user = overrideUserId
+        ? await prisma.user.findUnique({ where: { id: overrideUserId } })
+        : null;
 
       if (!user && overrideEmail) {
         user = await prisma.user.upsert({
           where: { email: overrideEmail },
           update: {
-            role: isAdminEmail(overrideEmail) ? 'ADMIN' : 'USER'
+            role: 'USER'
           },
           create: {
-            id: overrideUserId,
+            id: overrideUserId!,
             email: overrideEmail,
             name: req.headers.get('x-user-name')
               ? decodeURIComponent(req.headers.get('x-user-name')!)
               : overrideEmail.split('@')[0],
-            role: isAdminEmail(overrideEmail) ? 'ADMIN' : 'USER'
+            role: 'USER'
           }
         });
       }
@@ -71,7 +75,7 @@ export async function getServerSession(req?: Request): Promise<AuthSession> {
             email: user.email,
             name: user.name,
             image: user.image,
-            role: isAdminEmail(user.email) ? 'ADMIN' : 'USER'
+            role: 'USER' // header override không bao giờ được cấp quyền Admin
           }
         };
       }
