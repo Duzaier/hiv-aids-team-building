@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { Team, TeamMatchRequest } from '@/types';
-import { Users, ChevronDown, ChevronUp, Phone, Mail, GraduationCap } from 'lucide-react';
+import { Users, ChevronDown, ChevronUp, Phone, Mail, GraduationCap, Eye, EyeOff, FileSpreadsheet } from 'lucide-react';
+import { ExportGoogleSheetModal } from './ExportGoogleSheetModal';
 
 interface AdminManagementPanelProps {
   teams: Team[];
@@ -11,6 +12,9 @@ interface AdminManagementPanelProps {
   onDeleteTeam: (team: Team) => void;
   onAcceptMatch?: (matchId: string) => void;
   onRejectMatch?: (matchId: string) => void;
+  showTeamGrid?: boolean;
+  onToggleTeamGrid?: () => void;
+  onShowNotice?: (type: 'success' | 'error' | 'info', message: string) => void;
 }
 
 export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
@@ -19,11 +23,15 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
   onEditTeam,
   onDeleteTeam,
   onAcceptMatch,
-  onRejectMatch
+  onRejectMatch,
+  showTeamGrid,
+  onToggleTeamGrid,
+  onShowNotice
 }) => {
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const [processingMatchId, setProcessingMatchId] = useState<string | null>(null);
   const [processingAction, setProcessingAction] = useState<'ACCEPT' | 'REJECT' | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const handleAcceptMatch = async (matchId: string) => {
     if (!onAcceptMatch || processingMatchId) return;
@@ -56,17 +64,44 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
 
   return (
     <div className="mb-8 p-4 sm:p-6 rounded-2xl bg-slate-900 border border-purple-500/30 shadow-lg space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
-        <div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400 block">
-            Bảng Quản Trị Viên (Admin Privileges)
-          </span>
-          <h3 className="text-lg sm:text-xl font-black text-white">
-            Quản Lý 6 Đội Thi Đấu & Ghép Đội
-          </h3>
-        </div>
-        <div className="px-3 py-1 rounded-full bg-purple-950/60 border border-purple-500/30 text-purple-300 text-xs font-semibold self-start sm:self-auto">
-          Quyền Admin cao nhất
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+        <h3 className="text-lg sm:text-xl font-black text-white">
+          Quản Lý Các Đội Thi Đấu
+        </h3>
+
+        <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+          <button
+            onClick={() => setIsExportModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
+            title="Xuất danh sách người tham gia sang Google Sheet"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Xuất Google Sheet</span>
+          </button>
+
+          {onToggleTeamGrid && (
+            <button
+              onClick={onToggleTeamGrid}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                showTeamGrid
+                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                  : 'bg-purple-950/70 hover:bg-purple-900/80 text-purple-200 border-purple-500/40 shadow-sm'
+              }`}
+              title={showTeamGrid ? 'Ẩn sơ đồ 6 đội bên dưới' : 'Hiển thị sơ đồ 6 đội bên dưới'}
+            >
+              {showTeamGrid ? (
+                <>
+                  <EyeOff className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Ẩn sơ đồ 6 đội</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Hiện sơ đồ 6 đội</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -75,10 +110,10 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
         <div className="p-4 rounded-xl bg-purple-950/40 border border-purple-500/50">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
-              🤝 Yêu Cầu Ghép / Gộp Đội Đang Chờ Phê Duyệt ({pendingMatches.length})
+              Yêu cầu gộp đội đang chờ duyệt ({pendingMatches.length})
             </h4>
             <span className="text-[10px] text-purple-300 bg-purple-900/60 px-2 py-0.5 rounded">
-              Admin có quyền duyệt ngay
+              Duyệt trực tiếp
             </span>
           </div>
 
@@ -95,7 +130,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                   <div className="text-[11px] text-slate-400 mt-0.5">
                     Tổng sau gộp: <strong className="text-emerald-400">{m.fromMembersCount + m.toMembersCount}/5 thành viên</strong>
                     {' • '}
-                    Slot #{m.fromSlotNumber} sẽ được giải phóng trở thành 5 slot trống.
+                    Vị trí #{m.fromSlotNumber} sẽ được mở lại cho đội khác.
                   </div>
                 </div>
 
@@ -144,18 +179,17 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 font-semibold text-[11px]">
-              <th className="py-2.5 px-3">Slot</th>
               <th className="py-2.5 px-3">Tên Đội</th>
               <th className="py-2.5 px-3">Người Đại Diện</th>
               <th className="py-2.5 px-3">Sĩ Số</th>
-              <th className="py-2.5 px-3">Trạng Thái Slot</th>
+              <th className="py-2.5 px-3">Tình Trạng</th>
               <th className="py-2.5 px-3 text-right">Thao Tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60">
             {teams.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-6 text-center text-slate-500 text-xs">
+                <td colSpan={5} className="py-6 text-center text-slate-500 text-xs">
                   Chưa có đội nào đăng ký thi đấu.
                 </td>
               </tr>
@@ -168,12 +202,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                   <React.Fragment key={team.id}>
                     <tr className="hover:bg-slate-800/30 transition-colors">
                       <td className="py-3 px-3">
-                        <span className="font-bold text-slate-200">
-                          Slot #{team.slotNumber}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="font-semibold text-white block">{team.name}</span>
+                        <span className="font-bold text-white block">{team.name}</span>
                       </td>
                       <td className="py-3 px-3 text-slate-300">
                         <span>{team.ownerName}</span>
@@ -184,18 +213,18 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                           <span className="font-semibold">{team.members.length}/5 người</span>
                           <button
                             onClick={() => toggleExpand(team.id)}
-                            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-colors flex items-center gap-0.5 text-[10px] text-purple-300"
+                            className="p-1 rounded-md hover:bg-slate-800 text-purple-300 hover:text-purple-200 transition-colors flex items-center gap-1 text-[10px] cursor-pointer"
                             title="Xem chi tiết MSSV, Gmail, SĐT các thành viên"
                           >
                             <span>Chi tiết</span>
-                            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
                           </button>
                         </div>
                       </td>
                       <td className="py-3 px-3">
                         {isNeedMembers ? (
                           <span className="px-2 py-0.5 rounded text-[10px] bg-cyan-950/50 text-cyan-300 border border-cyan-500/30 font-medium">
-                            Còn trống {5 - team.members.length} slot
+                            Còn thiếu {5 - team.members.length} người
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950/50 text-emerald-300 border border-emerald-500/30 font-medium">
@@ -214,7 +243,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                           onClick={() => onDeleteTeam(team)}
                           className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-[11px] font-semibold transition-colors"
                         >
-                          Giải phóng slot
+                          Xóa đội
                         </button>
                       </td>
                     </tr>
@@ -222,7 +251,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                     {/* Expanded Members Contact Details for Admin */}
                     {isExpanded && (
                       <tr className="bg-slate-950/90">
-                        <td colSpan={6} className="p-4 border-t border-b border-purple-500/20">
+                        <td colSpan={5} className="p-4 border-t border-b border-purple-500/20">
                           <div className="text-xs font-bold text-purple-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                             <Users className="w-4 h-4" />
                             <span>Danh Sách Chi Tiết Thành Viên {team.name} (Để Quản Lý & Liên Hệ)</span>
@@ -238,7 +267,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                                     #{idx + 1}. {m.name}
                                   </span>
                                   {m.isFromIndividual && (
-                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-900/60 text-purple-300">
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-purple-900/50 text-purple-300 border border-purple-500/30 font-medium">
                                       Ghép
                                     </span>
                                   )}
@@ -268,6 +297,13 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Google Sheets Export Modal */}
+      <ExportGoogleSheetModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onShowNotice={onShowNotice}
+      />
     </div>
   );
 };
