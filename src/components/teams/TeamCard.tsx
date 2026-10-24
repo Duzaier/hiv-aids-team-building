@@ -8,14 +8,15 @@ import {
   Shield,
   Users,
   User as UserIcon,
-  Sparkles,
   Clock,
   HeartHandshake,
   Pencil,
   PlusCircle,
   CheckCircle2,
   Check,
-  X
+  X,
+  Eye,
+  Trash2
 } from 'lucide-react';
 
 interface TeamCardProps {
@@ -24,11 +25,14 @@ interface TeamCardProps {
   currentUser: User | null;
   currentRole: Role;
   ownedTeamId?: string;
+  joinedTeamId?: string;
   myOwnedTeam?: Team | null;
   matches?: TeamMatchRequest[];
   onRegisterClick: (slotNumber: number) => void;
   onEditClick: (team: Team) => void;
+  onViewDetails?: (team: Team) => void;
   onAdminClick: (team: Team) => void;
+  onDeleteTeam?: (team: Team) => void;
   onLoginPrompt: () => void;
   onOpenMatchModal?: (team: Team, targetTeam?: Team) => void;
   onAcceptMatch?: (matchId: string) => void;
@@ -42,11 +46,14 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   currentUser,
   currentRole,
   ownedTeamId,
+  joinedTeamId,
   myOwnedTeam,
   matches = [],
   onRegisterClick,
   onEditClick,
+  onViewDetails,
   onAdminClick,
+  onDeleteTeam,
   onLoginPrompt,
   onOpenMatchModal,
   onAcceptMatch,
@@ -93,8 +100,17 @@ export const TeamCard: React.FC<TeamCardProps> = ({
     }
   };
   const isRegistered = !!team;
-  const isMyTeam = isRegistered && (team.ownerId === currentUser?.id || team.id === ownedTeamId);
-  const userAlreadyOwnsTeam = !!ownedTeamId || (currentRole === 'OWNER');
+  const isTeamCaptain = isRegistered && (team.ownerId === currentUser?.id || team.id === ownedTeamId);
+  const isTeamMember =
+    isRegistered &&
+    !!currentUser &&
+    (team.id === joinedTeamId ||
+      team.members.some(
+        (m) =>
+          currentUser.email && m.email && m.email.toLowerCase() === currentUser.email.toLowerCase()
+      ));
+  const isMyTeam = isTeamCaptain || isTeamMember;
+  const userAlreadyOwnsTeam = !!ownedTeamId || (currentRole === 'OWNER') || isTeamMember;
 
   const remainingSlots = isRegistered ? 5 - team.members.length : 5;
 
@@ -117,7 +133,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
 
   return (
     <div
-      className={`relative rounded-2xl transition-all duration-200 flex flex-col justify-between overflow-hidden ${
+      className={`relative group rounded-2xl transition-all duration-200 flex flex-col justify-between overflow-hidden ${
         isMyTeam
           ? 'bg-slate-900 border-2 border-amber-500/80 shadow-lg'
           : isRegistered
@@ -127,54 +143,42 @@ export const TeamCard: React.FC<TeamCardProps> = ({
     >
       {/* Top Banner Accent Line */}
       <div
-        className={`h-1.5 w-full bg-gradient-to-r ${meta.accentColor} ${
-          !isRegistered ? 'opacity-30' : ''
+        className={`h-1.5 w-full ${meta.accentColor} ${
+          !isRegistered ? 'opacity-40' : ''
         }`}
       />
 
       <div className="p-4 sm:p-5 flex-1 flex flex-col">
-        {/* Header: Slot Number & Status & Remaining Slots */}
+        {/* Header: Team & Status & Remaining Slots */}
         <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2.5">
-            <span
-              className={`inline-flex items-center justify-center w-7 h-7 rounded-lg font-black text-xs shrink-0 ${
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div
+              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200 group-hover:scale-105 ${
                 isMyTeam
-                  ? 'bg-amber-500 text-slate-950 font-bold'
+                  ? 'bg-amber-500/15 text-amber-400 border-amber-500/30 shadow-xs'
                   : isRegistered
-                  ? 'bg-red-600 text-white font-bold'
-                  : 'bg-slate-800 text-slate-400'
+                  ? 'bg-red-500/15 text-red-400 border-red-500/30 shadow-xs'
+                  : 'bg-slate-900/90 text-slate-400 border-slate-800'
               }`}
             >
-              0{slotNumber}
-            </span>
-            <div className="min-w-0 flex items-center gap-1.5">
-              <Shield className={`w-3.5 h-3.5 shrink-0 ${isRegistered ? 'text-rose-500' : 'text-slate-500'}`} />
-              <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-white block truncate">
-                ĐỘI {slotNumber}
+              <Shield className="w-5 h-5 shrink-0 stroke-[2.2]" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-sm sm:text-base font-extrabold uppercase tracking-wide text-white block truncate">
+                {team ? team.name : `ĐỘI ${slotNumber}`}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
             {isRegistered ? (
-              <>
-                {remainingSlots > 0 ? (
-                  <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md bg-sky-950/80 text-sky-300 border border-sky-500/40 flex items-center gap-1">
-                    <Users className="w-3 h-3 text-sky-400" />
-                    <span>Trống {remainingSlots} slot</span>
-                  </span>
-                ) : (
-                  <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                    <span>Đủ 5/5</span>
-                  </span>
-                )}
-                {isMyTeam ? (
-                  <Badge variant="my-team">Đội của bạn</Badge>
-                ) : (
-                  <Badge variant="registered">Đã ghi danh</Badge>
-                )}
-              </>
+              isMyTeam ? (
+                <Badge variant="my-team">
+                  {isTeamCaptain ? 'Đội của bạn' : 'Đội bạn tham gia'}
+                </Badge>
+              ) : (
+                <Badge variant="registered">Đã ghi danh</Badge>
+              )
             ) : (
               <Badge variant="available">Còn trống</Badge>
             )}
@@ -187,8 +191,9 @@ export const TeamCard: React.FC<TeamCardProps> = ({
             <div>
               {/* Member count & Owner info */}
               <div className="flex items-center justify-between gap-2 mb-2.5">
-                <div className="text-[11px] text-slate-400 truncate">
-                  <UserIcon className="w-3 h-3 text-slate-500 shrink-0" /><span>Người đại diện: <strong className="text-slate-200 font-semibold">{team.ownerName}</strong></span>
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
+                  <UserIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span>Người đại diện: <strong className="text-slate-200 font-semibold">{team.ownerName}</strong></span>
                 </div>
               </div>
 
@@ -196,7 +201,8 @@ export const TeamCard: React.FC<TeamCardProps> = ({
               <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800 mb-3">
                 <div className="flex items-center justify-between mb-2 text-xs">
                   <span className="font-medium text-slate-300">
-                    Danh sách thành viên ({team.members.length}/5)</span>
+                    Danh sách thành viên ({team.members.length}/5)
+                  </span>
                 </div>
 
                 <div className="flex flex-wrap gap-1.5">
@@ -211,8 +217,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                     >
                       <span>{member.name}</span>
                       {member.isFromIndividual && (
-                        <span className="text-[9px] px-1 py-0.2 rounded bg-purple-500/30 text-purple-200 flex items-center gap-0.5 border border-purple-400/30 font-semibold">
-                          <Sparkles className="w-2.5 h-2.5 text-purple-300" />
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-purple-900/50 text-purple-300 font-medium tracking-wide border border-purple-500/30">
                           Ghép
                         </span>
                       )}
@@ -236,7 +241,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                     <button
                       onClick={() => handleCancelMatch(outgoingMatch.id)}
                       disabled={processingMatchId === outgoingMatch.id}
-                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 text-[10px] border border-rose-500/30 font-semibold shrink-0 transition-colors disabled:opacity-50 flex items-center gap-1"
+                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 text-[10px] border border-rose-500/30 font-semibold shrink-0 transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
                     >
                       {processingMatchId === outgoingMatch.id && processingAction === 'CANCEL' ? (
                         <>
@@ -261,20 +266,21 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="font-bold text-purple-300 flex items-center gap-1.5 truncate">
-                          <HeartHandshake className="w-4 h-4 text-purple-400 shrink-0" /><span>Yêu cầu gộp từ {m.fromTeamName}</span>
+                          <HeartHandshake className="w-4 h-4 text-purple-400 shrink-0" />
+                          <span>Yêu cầu gộp từ {m.fromTeamName}</span>
                         </span>
                         <span className="text-[10px] text-purple-200 bg-purple-900/80 px-2 py-0.5 rounded font-bold shrink-0">
                           +{m.fromMembersCount} người
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-300 leading-relaxed mb-2.5">
-                        {m.fromTeamName} muốn chuyển <strong>{m.fromMembersCount} người</strong> sang {team.name} (đạt tổng <strong>{team.members.length + m.fromMembersCount}/5</strong> thành viên). Slot #{m.fromSlotNumber} sẽ được giải phóng thành 5 slot trống.
+                        {m.fromTeamName} đề xuất gộp <strong>{m.fromMembersCount} thành viên</strong> vào {team.name} (đội sẽ có <strong>{team.members.length + m.fromMembersCount}/5</strong> người). Vị trí #{m.fromSlotNumber} sẽ được mở lại cho đội khác.
                       </p>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleAcceptMatch(m.id)}
                           disabled={!!processingMatchId}
-                          className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors text-center flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors text-center flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                         >
                           {processingMatchId === m.id && processingAction === 'ACCEPT' ? (
                             <>
@@ -283,14 +289,15 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                             </>
                           ) : (
                             <>
-                              <Check className="w-3.5 h-3.5" /><span>Chấp nhận gộp</span>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Đồng ý gộp</span>
                             </>
                           )}
                         </button>
                         <button
                           onClick={() => handleRejectMatch(m.id)}
                           disabled={!!processingMatchId}
-                          className="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          className="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                         >
                           {processingMatchId === m.id && processingAction === 'REJECT' ? (
                             <>
@@ -299,7 +306,8 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                             </>
                           ) : (
                             <>
-                              <X className="w-3.5 h-3.5" /><span>Từ chối</span>
+                              <X className="w-3.5 h-3.5" />
+                              <span>Từ chối</span>
                             </>
                           )}
                         </button>
@@ -319,47 +327,146 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                 {canMyTeamFitHere && onOpenMatchModal && myOwnedTeam && (
                   <button
                     onClick={() => onOpenMatchModal(myOwnedTeam, team)}
-                    className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-900/80 to-indigo-900/80 hover:from-purple-800 hover:to-indigo-800 text-purple-200 border border-purple-500/50 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="px-2.5 py-1.5 rounded-lg bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-500/50 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <HeartHandshake className="w-3.5 h-3.5 text-purple-300" /><span>Xin Gộp Vào</span>
+                    <HeartHandshake className="w-3.5 h-3.5 text-purple-300" />
+                    <span>Yêu Cầu Gộp</span>
                   </button>
                 )}
 
-                {isMyTeam && (
+                {/* Member who joined/randomized: View roster & edit personal info */}
+                {isTeamMember && !isTeamCaptain && (
                   <button
-                    onClick={() => onEditClick(team)}
-                    className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold text-xs transition-colors shrink-0"
+                    onClick={() => (onViewDetails ? onViewDetails(team) : onEditClick(team))}
+                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <Pencil className="w-3 h-3" /><span>Chỉnh sửa</span>
+                    <Eye className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Xem chi tiết đội</span>
                   </button>
                 )}
 
-                {currentRole === 'ADMIN' && !isMyTeam && (
+                {/* Team Captain: Edit full team or view roster */}
+                {isTeamCaptain && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {team.members.length < 5 && onOpenMatchModal && (
+                      <button
+                        onClick={() => onOpenMatchModal(team)}
+                        className="px-2.5 py-1.5 rounded-lg bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-500/50 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        title="Gửi yêu cầu gộp đội sang đội khác"
+                      >
+                        <HeartHandshake className="w-3.5 h-3.5 text-purple-300" />
+                        <span>Gộp đội</span>
+                      </button>
+                    )}
+                    {onViewDetails && (
+                      <button
+                        onClick={() => onViewDetails(team)}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        title="Xem chi tiết các thành viên"
+                      >
+                        <Eye className="w-3 h-3 text-slate-400" />
+                        <span>Chi tiết</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onEditClick(team)}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      <span>Chỉnh sửa</span>
+                    </button>
+                  </div>
+                )}
+
+                {currentRole === 'ADMIN' && (
+                  <div className="flex items-center gap-1.5">
+                    {!isMyTeam && onViewDetails && (
+                      <button
+                        onClick={() => onViewDetails(team)}
+                        className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        title="Xem chi tiết các thành viên"
+                      >
+                        <Eye className="w-3 h-3 text-slate-400" />
+                        <span>Chi tiết</span>
+                      </button>
+                    )}
+                    {!isMyTeam && (
+                      <button
+                        onClick={() => onAdminClick(team)}
+                        className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        <span>Sửa đội</span>
+                      </button>
+                    )}
+                    {onDeleteTeam && (
+                      <button
+                        onClick={() => onDeleteTeam(team)}
+                        className="px-2.5 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                        title="Xóa đội và giải phóng slot này"
+                      >
+                        <Trash2 className="w-3 h-3 text-red-400" />
+                        <span>Xóa đội</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Other teams for regular users: Read-only view */}
+                {!isMyTeam && currentRole !== 'ADMIN' && onViewDetails && (
                   <button
-                    onClick={() => onAdminClick(team)}
-                    className="px-3 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 font-semibold text-xs transition-colors shrink-0"
+                    onClick={() => onViewDetails(team)}
+                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    title="Xem chi tiết thành viên của đội"
                   >
-                    <Shield className="w-3 h-3" /><span>Quản lý Admin</span>
+                    <Eye className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Xem chi tiết đội</span>
                   </button>
                 )}
               </div>
             </div>
           </div>
         ) : (
-          /* Available Empty State */
-          <div className="flex-1 flex flex-col justify-end pt-12 pb-1">
+          /* Available Empty State with balanced height and helpful UI */
+          <div className="flex-1 flex flex-col justify-between pt-4 pb-1 min-h-[170px]">
+            <div>
+              {/* Motto / Theme */}
+              {meta.motto && (
+                <p className="text-[11px] text-slate-400 italic line-clamp-2 mb-3">
+                  "{meta.motto}"
+                </p>
+              )}
+              {/* 5 Slot visual indicator */}
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 mb-4">
+                <div className="flex items-center justify-between text-[11px] text-slate-400 mb-2">
+                  <span>Trạng thái vị trí</span>
+                  <span className="text-emerald-400 font-semibold">Còn trống 5 thành viên</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[1, 2, 3, 4, 5].map((slotIndex) => (
+                    <div
+                      key={slotIndex}
+                      className="h-2 rounded-full bg-slate-800 border border-slate-700/50"
+                      title={`Vị trí thành viên ${slotIndex} còn trống`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* CTA Button */}
             <div>
               {userAlreadyOwnsTeam ? (
                 <div className="w-full py-2.5 px-3 rounded-xl text-center bg-slate-900 border border-slate-800 text-xs text-slate-400 font-medium">
-                  Tài khoản đã có đội
+                  Bạn đã đăng ký 1 đội thi đấu
                 </div>
               ) : (
                 <button
                   onClick={() => (currentRole === 'GUEST' ? onLoginPrompt() : onRegisterClick(slotNumber))}
-                  className="w-full py-2.5 px-3 rounded-xl font-bold text-xs bg-red-600 hover:bg-red-500 text-white shadow-sm transition-colors text-center uppercase tracking-wider"
+                  className="group w-full py-2.5 px-3 rounded-xl font-bold text-xs bg-red-600 hover:bg-red-500 active:scale-[0.99] text-white shadow-sm transition-all duration-150 text-center uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  ĐĂNG KÝ
+                  <PlusCircle className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:rotate-90" />
+                  <span>Đăng Ký Đội Này</span>
                 </button>
               )}
             </div>

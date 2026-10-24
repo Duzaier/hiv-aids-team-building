@@ -9,7 +9,8 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { TeamGrid } from '@/components/teams/TeamGrid';
 import { TeamGridSkeleton } from '@/components/ui/TeamGridSkeleton';
-import { X, Users, UserCheck, HeartHandshake } from 'lucide-react';
+import { X, Users, UserCheck, HeartHandshake, Eye, EyeOff } from 'lucide-react';
+import { isAdminEmail } from '@/lib/roles';
 
 // Lazy loading overlays & tabs for optimal initial bundle & performance
 const RegistrationModal = dynamic(
@@ -52,6 +53,11 @@ const IndividualRegistrationModal = dynamic(
   { ssr: false }
 );
 
+const TeamMemberDetailsModal = dynamic(
+  () => import('@/components/teams/TeamMemberDetailsModal').then((m) => m.TeamMemberDetailsModal),
+  { ssr: false }
+);
+
 export default function Home() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<'teams' | 'individuals'>('teams');
@@ -86,6 +92,12 @@ export default function Home() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
 
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [teamForDetails, setTeamForDetails] = useState<Team | null>(null);
+
+  // Admin toggle for 6-team diagram (hidden by default for admin)
+  const [showAdminTeamGrid, setShowAdminTeamGrid] = useState<boolean>(false);
+
   // Convert NextAuth session to app User object
   const currentUser: User | null = session?.user
     ? {
@@ -93,7 +105,7 @@ export default function Home() {
         name: session.user.name || session.user.email?.split('@')[0] || 'Người dùng',
         email: session.user.email || '',
         avatar: session.user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(session.user.name || 'User')}`,
-        role: ((session.user as any).role as 'USER' | 'ADMIN') || 'USER'
+        role: isAdminEmail(session.user.email) ? 'ADMIN' : (((session.user as any).role as 'USER' | 'ADMIN') || 'USER')
       }
     : null;
 
@@ -175,17 +187,40 @@ export default function Home() {
   const occupiedCount = teams.length;
   const isFull = occupiedCount >= 6;
 
+  // Find user's individual registration (if any)
+  const myIndividual = individuals.find(
+    (ind) =>
+      (currentUser?.id && ind.userId === currentUser.id) ||
+      (currentUser?.email && ind.email?.toLowerCase() === currentUser.email.toLowerCase())
+  );
+
+  // Find team user joined (either via individual allocation or direct member list)
+  const userJoinedTeam = teams.find(
+    (t) =>
+      (myIndividual?.assignedTeamId && t.id === myIndividual.assignedTeamId) ||
+      t.members.some(
+        (m) =>
+          (currentUser?.email && m.email && m.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+          (myIndividual && m.individualId && m.individualId === myIndividual.id)
+      )
+  );
+
   // Determine if current user owns a team
   const userOwnedTeam = teams.find((t) => t.ownerId === currentUser?.id || (currentUser?.email && t.ownerEmail === currentUser.email));
-  const hasTeam = !!userOwnedTeam;
+  const hasTeam = !!userOwnedTeam || !!userJoinedTeam;
 
   const currentRole: Role = currentUser
     ? currentUser.role === 'ADMIN'
       ? 'ADMIN'
-      : hasTeam
+      : userOwnedTeam
       ? 'OWNER'
       : 'USER'
     : 'GUEST';
+
+  const handleOpenTeamDetails = (team: Team) => {
+    setTeamForDetails(team);
+    setIsDetailsOpen(true);
+  };
 
   const showNotice = (type: 'success' | 'error' | 'info', message: string) => {
     setNotification({ type, message });
@@ -444,15 +479,23 @@ export default function Home() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Navigation Tab Bar: Theo Đội vs Cá Nhân */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-slate-900/90 border border-slate-800/80 rounded-2xl w-fit mb-6 sm:mb-8 shadow-xl backdrop-blur-md">
+        <div className="flex items-center gap-1.5 p-1.5 bg-slate-900 border border-slate-800 rounded-2xl w-fit mb-6 sm:mb-8 shadow-sm">
           <button
             id="tab-btn-teams"
             onClick={() => setActiveTab('teams')}
-            className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'teams' ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg shadow-rose-600/30 border border-rose-500/40' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'}`}
+            className={`group px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+              activeTab === 'teams'
+                ? 'bg-red-600 text-white shadow-sm border border-red-500'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70 border border-transparent'
+            }`}
           >
-            <Users className="w-4 h-4" />
+            <Users className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-105" />
             <span>Theo Đội</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider ${activeTab === 'teams' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider transition-colors ${
+                activeTab === 'teams' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+              }`}
+            >
               {teams.length}/6
             </span>
           </button>
@@ -460,11 +503,19 @@ export default function Home() {
           <button
             id="tab-btn-individuals"
             onClick={() => setActiveTab('individuals')}
-            className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${activeTab === 'individuals' ? 'bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/25 border border-purple-500/40' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'}`}
+            className={`group px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+              activeTab === 'individuals'
+                ? 'bg-purple-600 text-white shadow-sm border border-purple-500'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/70 border border-transparent'
+            }`}
           >
-            <HeartHandshake className="w-4 h-4" />
+            <HeartHandshake className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-105" />
             <span>Cá Nhân Ghép Đội</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider ${activeTab === 'individuals' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}>
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider transition-colors ${
+                activeTab === 'individuals' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+              }`}
+            >
               {individuals.length}
             </span>
           </button>
@@ -481,50 +532,53 @@ export default function Home() {
                 onDeleteTeam={handleDeleteClick}
                 onAcceptMatch={(mId) => handleMatchResponse(mId, 'ACCEPT')}
                 onRejectMatch={(mId) => handleMatchResponse(mId, 'REJECT')}
+                showTeamGrid={showAdminTeamGrid}
+                onToggleTeamGrid={() => setShowAdminTeamGrid((prev) => !prev)}
+                onShowNotice={showNotice}
               />
             )}
 
-            <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 block mb-0.5">
-                  Bảng Tổng Sắp 6 Vị Trí
-                </span>
-                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  Danh Sách 6 Đội Thi Đấu
-                </h2>
+            {/* SƠ ĐỒ 6 ĐỘI: Mặc định ẩn đối với Admin, có thể mở/đóng tùy ý qua nút ở Header Admin. Đối với User luôn hiển thị. */}
+            {currentRole === 'ADMIN' && !showAdminTeamGrid ? (
+              <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-dashed border-slate-800 bg-slate-900/40 text-slate-400 text-xs mb-8">
+                <EyeOff className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>Sơ đồ 6 đội đang được ẩn theo mặc định. Bấm nút <strong>"Hiện sơ đồ 6 đội"</strong> ở góc phải bảng quản trị phía trên nếu muốn xem.</span>
               </div>
-
-              {/* My Team Match CTA button if owned team has < 5 members */}
-              {userOwnedTeam && userOwnedTeam.members.length < 5 && (
-                <button
-                  onClick={() => handleOpenMatchModal(userOwnedTeam)}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md transition-all self-start sm:self-auto flex items-center gap-2"
-                >
-                  🤝 Gộp Đội (Còn trống {5 - userOwnedTeam.members.length} slot)
-                </button>
-              )}
-            </div>
-
-            {/* 6-Slot Grid with Skeleton Loading */}
-            {isLoadingTeams ? (
-              <TeamGridSkeleton />
             ) : (
-              <TeamGrid
-                teams={teams}
-                currentUser={currentUser}
-                currentRole={currentRole}
-                ownedTeamId={userOwnedTeam?.id}
-                myOwnedTeam={userOwnedTeam}
-                matches={matches}
-                onRegisterClick={handleOpenRegister}
-                onEditClick={handleEditClick}
-                onAdminClick={handleAdminEditClick}
-                onLoginPrompt={() => setIsLoginModalOpen(true)}
-                onOpenMatchModal={handleOpenMatchModal}
-                onAcceptMatch={(mId) => handleMatchResponse(mId, 'ACCEPT')}
-                onRejectMatch={(mId) => handleMatchResponse(mId, 'REJECT')}
-                onCancelMatch={(mId) => handleMatchResponse(mId, 'CANCEL')}
-              />
+              <div>
+                <div className="mb-6 sm:mb-8">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-red-500 block mb-0.5">
+                    Sơ đồ 6 đội
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Danh Sách Đội Tham Gia
+                  </h2>
+                </div>
+
+                {/* 6-Slot Grid with Skeleton Loading */}
+                {isLoadingTeams ? (
+                  <TeamGridSkeleton />
+                ) : (
+                  <TeamGrid
+                    teams={teams}
+                    currentUser={currentUser}
+                    currentRole={currentRole}
+                    ownedTeamId={userOwnedTeam?.id}
+                    joinedTeamId={userJoinedTeam?.id}
+                    myOwnedTeam={userOwnedTeam}
+                    matches={matches}
+                    onRegisterClick={handleOpenRegister}
+                    onEditClick={handleEditClick}
+                    onViewDetails={handleOpenTeamDetails}
+                    onAdminClick={handleAdminEditClick}
+                    onLoginPrompt={() => setIsLoginModalOpen(true)}
+                    onOpenMatchModal={handleOpenMatchModal}
+                    onAcceptMatch={(mId) => handleMatchResponse(mId, 'ACCEPT')}
+                    onRejectMatch={(mId) => handleMatchResponse(mId, 'REJECT')}
+                    onCancelMatch={(mId) => handleMatchResponse(mId, 'CANCEL')}
+                  />
+                )}
+              </div>
             )}
           </div>
         )}
@@ -543,6 +597,13 @@ export default function Home() {
             onOpenEditIndividual={(ind) => {
               setIndividualToEdit(ind);
               setIsIndividualModalOpen(true);
+            }}
+            onViewTeam={(teamId) => {
+              const target = teams.find((t) => t.id === teamId);
+              if (target) {
+                setActiveTab('teams');
+                handleOpenTeamDetails(target);
+              }
             }}
             onRefresh={refreshAll}
             onShowNotice={showNotice}
@@ -618,13 +679,19 @@ export default function Home() {
         />
       )}
 
-      {/* Admin Delete Confirmation Modal */}
-      {isDeleteOpen && teamToDelete && (
-        <DeleteConfirmModal
-          isOpen={isDeleteOpen}
-          team={teamToDelete}
-          onClose={() => setIsDeleteOpen(false)}
-          onConfirmDelete={handleDeleteConfirm}
+      {/* Team Member Details & Personal Info Modal - Lazy Loaded */}
+      {isDetailsOpen && teamForDetails && (
+        <TeamMemberDetailsModal
+          isOpen={isDetailsOpen}
+          team={teamForDetails}
+          currentUser={currentUser}
+          myIndividualId={myIndividual?.id}
+          onClose={() => {
+            setIsDetailsOpen(false);
+            setTeamForDetails(null);
+          }}
+          onRefresh={refreshAll}
+          onShowNotice={showNotice}
         />
       )}
     </div>

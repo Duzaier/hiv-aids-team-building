@@ -9,11 +9,14 @@ interface TeamGridProps {
   currentUser: User | null;
   currentRole: Role;
   ownedTeamId?: string;
+  joinedTeamId?: string;
   myOwnedTeam?: Team | null;
   matches?: TeamMatchRequest[];
   onRegisterClick: (slotNumber: number) => void;
   onEditClick: (team: Team) => void;
+  onViewDetails?: (team: Team) => void;
   onAdminClick: (team: Team) => void;
+  onDeleteTeam?: (team: Team) => void;
   onLoginPrompt: () => void;
   onOpenMatchModal?: (team: Team, targetTeam?: Team) => void;
   onAcceptMatch?: (matchId: string) => void;
@@ -26,11 +29,14 @@ export const TeamGrid: React.FC<TeamGridProps> = ({
   currentUser,
   currentRole,
   ownedTeamId,
+  joinedTeamId,
   myOwnedTeam,
   matches = [],
   onRegisterClick,
   onEditClick,
+  onViewDetails,
   onAdminClick,
+  onDeleteTeam,
   onLoginPrompt,
   onOpenMatchModal,
   onAcceptMatch,
@@ -52,11 +58,14 @@ export const TeamGrid: React.FC<TeamGridProps> = ({
             currentUser={currentUser}
             currentRole={currentRole}
             ownedTeamId={ownedTeamId}
+            joinedTeamId={joinedTeamId}
             myOwnedTeam={myOwnedTeam}
             matches={matches}
             onRegisterClick={onRegisterClick}
             onEditClick={onEditClick}
+            onViewDetails={onViewDetails}
             onAdminClick={onAdminClick}
+            onDeleteTeam={onDeleteTeam}
             onLoginPrompt={onLoginPrompt}
             onOpenMatchModal={onOpenMatchModal}
             onAcceptMatch={onAcceptMatch}

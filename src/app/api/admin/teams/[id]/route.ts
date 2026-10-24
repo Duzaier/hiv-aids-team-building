@@ -148,17 +148,50 @@ export async function DELETE(
     }
 
     await prisma.$transaction(async (tx) => {
+      // 1. Tự động đưa các cá nhân được ghép ngẫu nhiên vào đội này trở lại hàng chờ ghép đội (unassigned pool)
+      await tx.individualRegistration.updateMany({
+        where: {
+          OR: [
+            { assignedTeamId: existingTeam.id },
+            { assignedSlot: existingTeam.slotNumber }
+          ]
+        },
+        data: {
+          assignedTeamId: null,
+          assignedSlot: null,
+          assignedAt: null
+        }
+      });
+
+      const individualEmails = existingTeam.members
+        .filter((m) => m.isFromIndividual || m.individualId)
+        .map((m) => m.email)
+        .filter(Boolean) as string[];
+
+      if (individualEmails.length > 0) {
+        await tx.individualRegistration.updateMany({
+          where: { email: { in: individualEmails } },
+          data: {
+            assignedTeamId: null,
+            assignedSlot: null,
+            assignedAt: null
+          }
+        });
+      }
+
+      // 2. Xóa đội (tự động cascade xóa TeamMember và TeamMatchRequest)
       await tx.team.delete({
         where: { id: existingTeam.id }
       });
 
+      // 3. Ghi log kiểm toán
       await tx.auditLog.create({
         data: {
           adminId: adminUser.id,
           action: 'SLOT_FREED',
           targetSlot: existingTeam.slotNumber,
           targetTeamName: existingTeam.name,
-          details: `Admin đã giải phóng Slot #${existingTeam.slotNumber} (trước đó là ${existingTeam.name})`
+          details: `Admin đã xóa Đội ${existingTeam.name} (Slot #${existingTeam.slotNumber}). Các cá nhân ghép ngẫu nhiên (nếu có) đã tự động trở lại hàng chờ ghép đội.`
         }
       });
     });

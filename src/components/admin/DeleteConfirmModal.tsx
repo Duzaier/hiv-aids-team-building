@@ -20,6 +20,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   if (!team) return null;
+  const randomAssignedCount = team.members.filter((m) => m.isFromIndividual).length;
 
   const handleConfirm = async () => {
     try {
@@ -36,15 +37,29 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Xác Nhận Xóa Đội"
-      subtitle="Thao tác dành riêng cho Quản trị viên."
+      subtitle="Thao tác dành cho Quản trị viên."
     >
       <div className="space-y-3.5">
         <div className="p-3 rounded-xl bg-red-950/40 border border-red-500/30 text-xs sm:text-sm text-red-200 space-y-1">
-          <p className="font-bold text-white">Bạn có chắc chắn muốn xóa?</p>
+          <p className="font-bold text-white">Bạn có chắc muốn xóa đội này không?</p>
           <p className="text-xs text-red-300">
-            Đội <strong>{team.name}</strong> (Slot #{team.slotNumber}) sẽ bị xóa và vị trí này lập tức trở lại trạng thái còn trống.
+            Đội <strong>{team.name}</strong> (Slot #{team.slotNumber}) sẽ bị xóa và vị trí này sẽ mở lại cho đội khác.
           </p>
         </div>
+
+        {randomAssignedCount > 0 && (
+          <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/30 text-xs text-purple-200 flex items-start gap-2.5">
+            <span className="text-base shrink-0">💡</span>
+            <div>
+              <p className="font-bold text-purple-100">
+                Đội này đang có {randomAssignedCount} cá nhân được ghép ngẫu nhiên vào.
+              </p>
+              <p className="text-purple-300/90 text-[11px] mt-0.5 leading-relaxed">
+                Khi xóa đội, toàn bộ các cá nhân này sẽ tự động quay trở lại hàng chờ ghép đội (Chờ ghép đội) để được bốc thăm ngẫu nhiên ở các đợt tiếp theo.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1">
           <div className="flex justify-between">
