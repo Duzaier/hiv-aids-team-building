@@ -1,3 +1,4 @@
+import { sendTeamMatchRequestEmails } from '@/lib/mail';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/auth';
@@ -184,6 +185,18 @@ export async function POST(req: NextRequest) {
         requestedBy: dbUser.id
       }
     });
+
+    // Send email notification to target team captain and to Admin
+    try {
+      await sendTeamMatchRequestEmails({
+        fromTeam,
+        toTeam,
+        requesterName: dbUser.name || session.user.name || 'Người dùng',
+        requesterEmail: dbUser.email || session.user.email
+      });
+    } catch (emailErr) {
+      console.error('Failed to send match request notification emails:', emailErr);
+    }
 
     return NextResponse.json({
       success: true,
