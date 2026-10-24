@@ -445,12 +445,6 @@ export const TeamCard: React.FC<TeamCardProps> = ({
           /* Available Empty State with balanced height and helpful UI */
           <div className="flex-1 flex flex-col justify-between pt-4 pb-1 min-h-[170px]">
             <div>
-              {/* Motto / Theme */}
-              {meta.motto && (
-                <p className="text-[11px] text-slate-400 italic line-clamp-2 mb-3">
-                  "{meta.motto}"
-                </p>
-              )}
               {/* 5 Slot visual indicator */}
               <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 mb-4">
                 <div className="flex items-center justify-between text-[11px] text-slate-400 mb-2">

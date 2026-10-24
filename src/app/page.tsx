@@ -558,9 +558,6 @@ export default function Home() {
             ) : (
               <div>
                 <div className="mb-6 sm:mb-8">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-red-500 block mb-0.5">
-                    Sơ đồ 6 đội
-                  </span>
                   <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                     Danh Sách Đội Tham Gia
                   </h2>
