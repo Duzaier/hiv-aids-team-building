@@ -31,7 +31,6 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   onSubmit
 }) => {
   const [members, setMembers] = useState<MemberFormItem[]>([
-    { name: '', studentId: '', email: '', phone: '' },
     { name: '', studentId: '', email: '', phone: '' }
   ]);
   const [error, setError] = useState<string | null>(null);
@@ -45,15 +44,14 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       setError(null);
       setIsSubmitting(false);
 
-      // Pre-fill member 1 with current user if logged in (minimum 2 members)
+      // Pre-fill member 1 with current user if logged in (minimum 1 member)
       setMembers([
         {
           name: currentUser?.name || '',
           studentId: '',
           email: currentUser?.email || '',
           phone: ''
-        },
-        { name: '', studentId: '', email: '', phone: '' }
+        }
       ]);
     }
   }, [isOpen, currentUser]);
@@ -109,8 +107,8 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       }
     }
 
-    if (members.length < 2) {
-      setError('Đội thi đấu bắt buộc phải có tối thiểu 2 thành viên');
+    if (members.length < 1) {
+      setError('Đội thi đấu bắt buộc phải có tối thiểu 1 thành viên');
       return;
     }
 
@@ -194,7 +192,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                   Thông Tin Thành Viên ({members.length}/5 người)
                 </label>
                 <span className="text-[11px] text-slate-400">
-                  Tối thiểu 2, tối đa 5 người • Cần điền đầy đủ MSSV, Gmail, SĐT (Zalo) để Ban Tổ Chức liên hệ
+                  Mỗi đội từ 1 đến 5 người (cá nhân vẫn có thể đăng ký lập đội). Vui lòng điền đúng MSSV, Gmail và số điện thoại liên hệ.
                 </span>
               </div>
               {members.length < 5 && (
@@ -225,7 +223,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       </span>
                     </div>
 
-                    {members.length > 2 && (
+                    {members.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeMember(index)}

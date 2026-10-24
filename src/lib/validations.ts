@@ -40,7 +40,7 @@ export const teamRegistrationSchema = z.object({
   captainName: z.string().trim().optional(),
   members: z
     .array(memberItemSchema)
-    .min(2, 'Đội thi đấu phải có tối thiểu 2 thành viên')
+    .min(1, 'Đội thi đấu phải có tối thiểu 1 thành viên')
     .max(5, 'Đội thi đấu tối đa 5 thành viên')
     .refine(
       (items) => {
