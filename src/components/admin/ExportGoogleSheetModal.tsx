@@ -10,7 +10,11 @@ import {
   Download,
   AlertCircle,
   PlusCircle,
-  Loader2
+  Loader2,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
+  FileCheck
 } from 'lucide-react';
 
 interface ExportRow {
@@ -47,11 +51,13 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
 }) => {
   const [loading, setLoading] = useState(true);
   const [isCreatingSheet, setIsCreatingSheet] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [rows, setRows] = useState<ExportRow[]>([]);
   const [stats, setStats] = useState<ExportStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [pasteGuide, setPasteGuide] = useState(false);
+  const [showAppsScriptGuide, setShowAppsScriptGuide] = useState(false);
 
   // Fetch export data when modal opens
   useEffect(() => {
@@ -61,6 +67,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
     setLoading(true);
     setError(null);
     setCopied(false);
+    setPasteGuide(false);
 
     fetch('/api/admin/export')
       .then(async (res) => {
@@ -94,7 +101,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Generate Decorated HTML Table for rich clipboard pasting
+  // Generate Decorated HTML Table for rich clipboard pasting into Google Sheets / Excel
   const generateDecoratedHTML = () => {
     const now = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 
@@ -224,7 +231,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
     const htmlData = generateDecoratedHTML();
 
     try {
-      if (navigator.clipboard && window.ClipboardItem) {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && window.ClipboardItem) {
         const htmlBlob = new Blob([htmlData], { type: 'text/html' });
         const textBlob = new Blob([tsvData], { type: 'text/plain' });
         await navigator.clipboard.write([
@@ -234,7 +241,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
           })
         ]);
         return true;
-      } else if (navigator.clipboard) {
+      } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText(tsvData);
         return true;
       }
@@ -250,8 +257,8 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
     return false;
   };
 
-  // Automated Action: Create Brand New Sheet & Auto-populate All Data
-  const handleAutoCreateAndFillSheet = async () => {
+  // Action 1: Open Google Sheet & Pre-copy Data for 1-Key Paste (Ctrl + V)
+  const handleOpenGoogleSheetWithClipboard = async () => {
     if (isCreatingSheet) return;
     setIsCreatingSheet(true);
     setError(null);
@@ -285,55 +292,106 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
         onShowNotice(
           'success',
           data?.method === 'APPS_SCRIPT_DIRECT'
-            ? 'Đã tạo Google Sheet mới thành công!'
-            : 'Đã mở Google Sheet mới & sao chép bảng dữ liệu! Nhấn Ctrl + V để dán.'
+            ? 'Đã tạo file Google Sheet trong Drive thành công!'
+            : 'Đã mở tab Google Sheet! Bấm Ctrl + V vào ô A1 để dán bảng dữ liệu.'
         );
       }
     } catch (err: any) {
-      console.warn('[Create Sheet Notice]:', err);
+      console.warn('[Open Sheet Notice]:', err);
       if (newTab) {
         newTab.location.href = 'https://sheets.new';
       }
       setPasteGuide(true);
       if (onShowNotice) {
-        onShowNotice('success', 'Đã mở Google Sheet mới & sao chép bảng dữ liệu! Nhấn Ctrl + V để dán.');
+        onShowNotice('success', 'Đã mở tab Google Sheet! Bấm Ctrl + V vào ô A1 để dán bảng dữ liệu.');
       }
     } finally {
       setIsCreatingSheet(false);
     }
   };
 
-  // Secondary Action: Only copy to clipboard
-  const handleOnlyCopyData = async () => {
-    const tsvData = generateTSV();
-    const htmlData = generateDecoratedHTML();
-
+  // Action 2: Download Full Excel (.xlsx) file with pre-filled styled data
+  const handleDownloadXLSX = async () => {
+    if (isExportingExcel || rows.length === 0) return;
     try {
-      if (navigator.clipboard && window.ClipboardItem) {
-        const htmlBlob = new Blob([htmlData], { type: 'text/html' });
-        const textBlob = new Blob([tsvData], { type: 'text/plain' });
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            'text/html': htmlBlob,
-            'text/plain': textBlob
-          })
+      setIsExportingExcel(true);
+      const XLSX = await import('xlsx');
+      const now = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+      const data: (string | number)[][] = [
+        ['HỘI THAO & TEAM BUILDING 2026 — CHUNG TAY ĐẨY LÙI HIV/AIDS'],
+        [`DANH SÁCH TỔNG HỢP VẬN ĐỘNG VIÊN & CÁ NHÂN ĐĂNG KÝ (Thời điểm xuất: ${now})`],
+        [],
+        ['STT', 'Họ và tên', 'MSSV', 'Email (Gmail)', 'Số điện thoại (Zalo)', 'Đội tham gia', 'Vai trò', 'Hình thức đăng ký', 'Thời gian ghi danh']
+      ];
+
+      rows.forEach((r) => {
+        data.push([
+          r.stt,
+          r.name,
+          r.studentId || '—',
+          r.email,
+          r.phone || '—',
+          r.teamName,
+          r.role,
+          r.registrationType,
+          r.registeredAt
         ]);
-      } else {
-        await navigator.clipboard.writeText(tsvData);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+
+      // Merge header banner
+      ws['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } }
+      ];
+
+      // Auto column widths
+      ws['!cols'] = [
+        { wch: 6 },  // STT
+        { wch: 25 }, // Họ tên
+        { wch: 14 }, // MSSV
+        { wch: 28 }, // Email
+        { wch: 16 }, // SĐT
+        { wch: 18 }, // Đội
+        { wch: 22 }, // Vai trò
+        { wch: 22 }, // Hình thức
+        { wch: 20 }  // Thời gian
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Danh Sách VĐV');
+
+      const dateStr = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(wb, `danh_sach_team_building_hiv_aids_${dateStr}.xlsx`);
+
+      if (onShowNotice) {
+        onShowNotice('success', 'Đã tải file Excel (.xlsx) có sẵn 100% dữ liệu!');
       }
+    } catch (err: any) {
+      console.error('Error generating Excel file:', err);
+      if (onShowNotice) {
+        onShowNotice('error', 'Có lỗi khi xuất file Excel.');
+      }
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
+  // Action 3: Only Copy rich table to clipboard
+  const handleOnlyCopyData = async () => {
+    const success = await copyTableToClipboard();
+    if (success) {
       setCopied(true);
       if (onShowNotice) {
-        onShowNotice('success', 'Đã sao chép bảng dữ liệu đã decor vào clipboard!');
+        onShowNotice('success', 'Đã sao chép bảng dữ liệu vào Clipboard! Có thể dán vào Excel / Sheets / Word.');
       }
-      setTimeout(() => setCopied(false), 3000);
-    } catch (err) {
-      await navigator.clipboard.writeText(tsvData);
-      setCopied(true);
       setTimeout(() => setCopied(false), 3000);
     }
   };
 
-  // Secondary Action: Download CSV
+  // Action 4: Download CSV
   const handleDownloadCSV = () => {
     const csvData = generateCSV();
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
@@ -353,17 +411,17 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden text-slate-100">
+      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden text-slate-100">
         
         {/* Sleek Minimal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/90 shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-900/90 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h3 className="text-base sm:text-lg font-bold text-white">Xuất Google Sheet</h3>
+                <h3 className="text-base sm:text-lg font-bold text-white">Xuất Bảng Dữ Liệu</h3>
                 {stats && (
                   <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -380,7 +438,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-slate-400">
-                Tự động tạo bảng tính mới và điền sẵn toàn bộ dữ liệu &amp; banner decor
+                Xuất trực tiếp sang Google Sheet, tải file Excel (.xlsx) hoặc sao chép nhanh
               </p>
             </div>
           </div>
@@ -395,37 +453,53 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
         </div>
 
         {/* Action Toolbar */}
-        <div className="px-5 py-3 border-b border-slate-800/80 bg-slate-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-          {/* Minimal 1-line hint */}
-          <div className="text-xs text-slate-400 flex items-center gap-1.5">
-            <span className="text-emerald-400 font-semibold">Tự động:</span>
-            <span>Bấm nút xuất, hệ thống sẽ tự động tạo bảng tính mới và điền sẵn toàn bộ thông tin.</span>
-          </div>
-
-          {/* Buttons */}
-          <div className="flex items-center gap-2 shrink-0">
+        <div className="px-5 py-3 border-b border-slate-800/80 bg-slate-950/40 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Primary Action 1: Open Google Sheet */}
             <button
-              onClick={handleAutoCreateAndFillSheet}
+              onClick={handleOpenGoogleSheetWithClipboard}
               disabled={loading || rows.length === 0 || isCreatingSheet}
-              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold text-xs shadow-md shadow-emerald-950/40 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold text-xs shadow-md shadow-emerald-950/40 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title="Mở Google Sheet mới và tự động chép sẵn bảng dữ liệu để bạn bấm Ctrl + V"
             >
               {isCreatingSheet ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Đang tạo &amp; điền sheet...</span>
+                  <span>Đang mở Google Sheet...</span>
                 </>
               ) : (
                 <>
-                  <PlusCircle className="w-4 h-4" />
-                  <span>Tạo Sheet Mới &amp; Xuất</span>
-                  <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Mở Google Sheet &amp; Dán</span>
                 </>
               )}
             </button>
 
+            {/* Primary Action 2: Download Excel (.xlsx) pre-filled */}
+            <button
+              onClick={handleDownloadXLSX}
+              disabled={loading || rows.length === 0 || isExportingExcel}
+              className="px-3.5 py-2 rounded-xl bg-blue-600/90 hover:bg-blue-500 active:scale-95 text-white font-semibold text-xs shadow-md shadow-blue-950/40 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title="Tải ngay file Excel (.xlsx) đã điền sẵn 100% dữ liệu, mở là dùng ngay"
+            >
+              {isExportingExcel ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang tạo Excel...</span>
+                </>
+              ) : (
+                <>
+                  <FileCheck className="w-4 h-4 text-blue-200" />
+                  <span>Tải File Excel (.xlsx)</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
               onClick={handleOnlyCopyData}
-              disabled={loading || rows.length === 0 || isCreatingSheet}
+              disabled={loading || rows.length === 0}
               className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-medium text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               title="Sao chép bảng dữ liệu đã decor vào bộ nhớ tạm"
             >
@@ -435,7 +509,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
 
             <button
               onClick={handleDownloadCSV}
-              disabled={loading || rows.length === 0 || isCreatingSheet}
+              disabled={loading || rows.length === 0}
               className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 font-medium text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               title="Tải file CSV tiếng Việt"
             >
@@ -445,27 +519,49 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
           </div>
         </div>
 
-                {/* Success Paste Guide Banner */}
+        {/* Visual Paste Guide Banner when Google Sheet is opened */}
         {pasteGuide && (
-          <div className="mx-5 mt-3 p-3.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-200 text-xs flex items-start justify-between gap-3 shrink-0 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="flex items-start gap-2.5">
-              <Check className="w-5 h-5 shrink-0 text-emerald-400 mt-0.5" />
-              <div className="space-y-1">
-                <p className="font-bold text-white text-xs sm:text-sm">
-                  Đã mở Google Sheet mới &amp; sao chép bảng dữ liệu có định dạng!
-                </p>
-                <p className="text-slate-300 text-[11px] sm:text-xs">
-                  Trên trang Google Sheet vừa mở, bạn chỉ cần nhấn <kbd className="px-1.5 py-0.5 rounded-sm bg-slate-800 border border-slate-600 text-white font-mono font-bold text-[11px]">Ctrl + V</kbd> (hoặc <kbd className="px-1.5 py-0.5 rounded-sm bg-slate-800 border border-slate-600 text-white font-mono font-bold text-[11px]">⌘ + V</kbd>) vào ô <strong className="text-emerald-300">A1</strong> để dán toàn bộ bảng thi đấu hoàn chỉnh.
-                </p>
+          <div className="mx-5 mt-3 p-4 rounded-xl bg-emerald-950/60 border border-emerald-500/50 text-emerald-100 text-xs shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 shrink-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/30">
+                  <Check className="w-4 h-4" />
+                </span>
+                <div className="space-y-1.5">
+                  <p className="font-bold text-white text-xs sm:text-sm">
+                    Đã mở tab Google Sheet &amp; sao chép sẵn bảng dữ liệu vào Clipboard!
+                  </p>
+                  <p className="text-slate-300 text-[11px] sm:text-xs leading-relaxed">
+                    Tại trang Google Sheet vừa mở, bạn chỉ cần bấm chuột vào ô <strong className="text-emerald-300 font-bold">A1</strong> và nhấn:
+                  </p>
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <kbd className="px-2.5 py-1 rounded-md bg-slate-800 border-2 border-emerald-400/50 text-white font-mono font-bold text-xs shadow-sm">
+                      Ctrl + V
+                    </kbd>
+                    <span className="text-slate-400 text-xs">(hoặc <kbd className="px-2 py-0.5 rounded bg-slate-800 border border-slate-600 text-white font-mono text-[11px]">⌘ + V</kbd> trên Mac)</span>
+                    <span className="text-emerald-300 font-semibold text-xs">➔ Toàn bộ bảng màu sắc, tiêu đề và danh sách sẽ lập tức hiện ra!</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleOnlyCopyData}
+                  className="px-2.5 py-1.5 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white font-semibold text-[11px] whitespace-nowrap transition-colors cursor-pointer"
+                >
+                  {copied ? '✓ Đã chép lại' : 'Chép lại'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPasteGuide(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                  title="Đóng thông báo"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={handleOnlyCopyData}
-              className="px-2.5 py-1.5 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white font-semibold text-[11px] whitespace-nowrap transition-colors shrink-0 cursor-pointer"
-            >
-              {copied ? '✓ Đã chép' : 'Chép lại'}
-            </button>
           </div>
         )}
 
@@ -489,7 +585,7 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
             </div>
 
             {/* Data Rows */}
-            <div className="overflow-x-auto max-h-[46vh]">
+            <div className="overflow-x-auto max-h-[44vh]">
               {loading ? (
                 <div className="p-12 text-center text-slate-500 text-xs">
                   <span className="inline-block w-4 h-4 border-2 border-slate-600 border-t-slate-200 rounded-full animate-spin mb-2" />
@@ -547,11 +643,52 @@ export const ExportGoogleSheetModal: React.FC<ExportGoogleSheetModalProps> = ({
               )}
             </div>
           </div>
+
+          {/* Optional Google Apps Script Helper Accordion */}
+          <div className="rounded-xl border border-slate-800 bg-slate-950/40 overflow-hidden text-xs">
+            <button
+              type="button"
+              onClick={() => setShowAppsScriptGuide((prev) => !prev)}
+              className="w-full px-4 py-2.5 flex items-center justify-between text-left text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <HelpCircle className="w-3.5 h-3.5 text-purple-400" />
+                <span>Bạn muốn hệ thống tự động tạo file lưu thẳng vào Google Drive (không cần bấm Ctrl + V)?</span>
+              </span>
+              {showAppsScriptGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+
+            {showAppsScriptGuide && (
+              <div className="p-4 border-t border-slate-800/80 bg-slate-950/80 space-y-3 text-slate-300">
+                <p className="text-[11px] leading-relaxed">
+                  Vì lý do bảo mật của Google, trình duyệt ngoài không thể tự ý ghi file vào tài khoản Google của bạn nếu chưa có quyền. Để tạo tự động 100% thẳng vào Google Drive của bạn:
+                </p>
+                <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-300 pl-1">
+                  <li>Truy cập <a href="https://script.google.com" target="_blank" rel="noreferrer" className="text-emerald-400 underline font-semibold">script.google.com</a> và bấm <strong>Dự án mới (New project)</strong>.</li>
+                  <li>Dán mã sau vào và nhấn <strong>Triển khai (Deploy) ➔ Triển khai dưới dạng ứng dụng web (Web app)</strong>:</li>
+                </ol>
+                <pre className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] text-emerald-300 font-mono overflow-x-auto select-all">
+{`function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var ss = SpreadsheetApp.create("HỘI THAO 2026 - CHUNG TAY ĐẨY LÙI HIV/AIDS");
+  var sheet = ss.getActiveSheet();
+  if (data.rows && data.rows.length > 0) {
+    sheet.getRange(1, 1, data.rows.length, data.rows[0].length).setValues(data.rows);
+  }
+  return ContentService.createTextOutput(JSON.stringify({ url: ss.getUrl() })).setMimeType(ContentService.MimeType.JSON);
+}`}
+                </pre>
+                <p className="text-[11px] text-slate-400">
+                  3. Chọn quyền truy cập: <strong>Ai cũng có quyền (Anyone)</strong>, sau đó sao chép URL triển khai và thêm vào file <code className="text-purple-300 font-mono">.env</code> biến: <code className="text-amber-300 font-mono">GOOGLE_APPS_SCRIPT_URL=https://script.google.com/.../exec</code>.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Minimal Footer */}
         <div className="px-5 py-3 border-t border-slate-800 bg-slate-900/90 flex items-center justify-between text-xs text-slate-400 shrink-0">
-          <span>Tự động tạo file và điền thông tin vào Google Drive của bạn.</span>
+          <span>Khuyên dùng: Bấm <strong>Tải File Excel (.xlsx)</strong> để có ngay file đầy đủ thông tin hoặc <strong>Mở Google Sheet &amp; Dán</strong>.</span>
           <button
             type="button"
             onClick={onClose}
