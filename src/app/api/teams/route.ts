@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/auth';
+import { getServerSession, isAdminEmail } from '@/lib/auth';
 import { teamRegistrationSchema } from '@/lib/validations';
 
-// GET /api/teams - Public read access
-export async function GET() {
+// GET /api/teams - Controlled read access respecting privacy
+export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(req);
+    const currentUser = session?.user;
+    const headerEmail = req.headers.get('x-user-email');
+    const userEmail = (currentUser?.email || headerEmail || '').toLowerCase().trim();
+    const isAdmin = currentUser?.role === 'ADMIN' || isAdminEmail(userEmail);
+
     const teams = await prisma.team.findMany({
       include: {
         members: {
@@ -27,27 +33,40 @@ export async function GET() {
       occupiedCount: teams.length,
       availableCount: availableSlots.length,
       availableSlots,
-      teams: teams.map((t) => ({
-        id: t.id,
-        slotNumber: t.slotNumber,
-        name: t.name || `Đội ${t.slotNumber}`,
-        captainName: '',
-        ownerId: t.ownerId,
-        ownerName: t.owner.name || 'Người dùng',
-        ownerEmail: t.owner.email || '',
-        registeredAt: t.registeredAt.toISOString().replace('T', ' ').substring(0, 16),
-        members: t.members.map((m) => ({
-          id: m.id,
-          name: m.name,
-          studentId: m.studentId || '',
-          email: m.email || '',
-          phone: m.phone || '',
-          orderIndex: m.orderIndex,
-          isCaptain: false,
-          isFromIndividual: m.isFromIndividual || false,
-          individualId: m.individualId || null
-        }))
-      }))
+      teams: teams.map((t) => {
+        const isOwner = !!(
+          (currentUser?.id && t.ownerId === currentUser.id) ||
+          (userEmail && t.owner.email && t.owner.email.toLowerCase() === userEmail)
+        );
+        const isMember = !!(
+          userEmail && t.members.some((m) => m.email && m.email.toLowerCase() === userEmail)
+        );
+        const canViewFull = isAdmin || isOwner || isMember;
+
+        return {
+          id: t.id,
+          slotNumber: t.slotNumber,
+          name: canViewFull ? (t.name || `Đội ${t.slotNumber}`) : `Đội ${t.slotNumber}`,
+          captainName: '',
+          ownerId: canViewFull ? t.ownerId : '',
+          ownerName: canViewFull ? (t.owner.name || 'Người dùng') : '',
+          ownerEmail: canViewFull ? (t.owner.email || '') : '',
+          registeredAt: canViewFull
+            ? t.registeredAt.toISOString().replace('T', ' ').substring(0, 16)
+            : '',
+          members: t.members.map((m, idx) => ({
+            id: m.id,
+            name: canViewFull ? m.name : `Thành viên #${idx + 1}`,
+            studentId: canViewFull ? (m.studentId || '') : '',
+            email: canViewFull ? (m.email || '') : '',
+            phone: canViewFull ? (m.phone || '') : '',
+            orderIndex: m.orderIndex,
+            isCaptain: canViewFull ? m.isCaptain : false,
+            isFromIndividual: canViewFull ? (m.isFromIndividual || false) : false,
+            individualId: canViewFull ? (m.individualId || null) : null
+          }))
+        };
+      })
     });
   } catch (error) {
     console.error('Error fetching teams:', error);

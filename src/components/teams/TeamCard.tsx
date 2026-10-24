@@ -320,32 +320,49 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                 )}
               </div>
             ) : (
-              <div>
-                {/* Đội của người khác: Ẩn thông tin cá nhân & thành viên */}
-                <div className="flex items-center justify-between gap-2 mb-2.5">
-                  <span className="text-[11px] text-slate-400">
-                    Sĩ số: <strong className="text-slate-200 font-semibold">{team.members.length}/5 thành viên</strong>
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-400 font-medium">
-                    {remainingSlots === 0 ? 'Đã đủ 5 người' : `Còn trống ${remainingSlots} slot`}
-                  </span>
-                </div>
-
-                <div className="bg-slate-950/70 rounded-xl p-4 border border-slate-800/80 mb-3 flex flex-col items-center justify-center text-center py-6 space-y-1.5">
-                  <div className="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mb-0.5">
-                    <Lock className="w-4 h-4 text-slate-400" />
+              /* Đội của người khác / Khách: Chỉ thấy thanh UI slot kiểm tra có đầy chưa */
+              <div className="space-y-3">
+                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-medium">Trạng thái slot thành viên</span>
+                    <span className={team.members.length >= 5 ? "text-rose-400 font-bold" : "text-emerald-400 font-bold"}>
+                      {team.members.length >= 5 ? "Đã đủ 5/5 thành viên" : `Còn trống ${5 - team.members.length} slot`}
+                    </span>
                   </div>
-                  <span className="text-xs font-bold text-slate-300">Thông tin đội được bảo mật</span>
-                  <span className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
-                    Bạn chỉ có thể xem danh sách thành viên của đội mình tham gia.
-                  </span>
+
+                  {/* 5-slot visual progress indicator bar */}
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {[1, 2, 3, 4, 5].map((slotIdx) => {
+                      const isFilled = slotIdx <= team.members.length;
+                      return (
+                        <div
+                          key={slotIdx}
+                          className={`h-2.5 rounded-full transition-all ${
+                            isFilled
+                              ? 'bg-rose-500 shadow-xs shadow-rose-500/30 border border-rose-400/50'
+                              : 'bg-slate-800 border border-slate-700/60'
+                          }`}
+                          title={isFilled ? `Slot #${slotIdx}: Đã có người ghi danh` : `Slot #${slotIdx}: Còn trống`}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                    <span>Đã ghi danh: <strong className="text-slate-300 font-semibold">{team.members.length}/5</strong></span>
+                    <span>Tối đa: <strong className="text-slate-300 font-semibold">5 thành viên</strong></span>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Bottom Meta & Actions */}
             <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
-              <span className="text-[11px] truncate">Đăng ký: {team.registeredAt}</span>
+              {isMyTeam || currentRole === 'ADMIN' ? (
+                <span className="text-[11px] truncate">Đăng ký: {team.registeredAt}</span>
+              ) : (
+                <span className="text-[11px] text-slate-500 italic">Vị trí Slot #{slotNumber}</span>
+              )}
 
               <div className="flex items-center gap-1.5 flex-wrap">
                 {/* Quick Match into this team if my team fits */}
