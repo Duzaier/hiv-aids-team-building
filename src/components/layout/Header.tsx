@@ -24,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   const initialLetter = currentUser?.name?.trim() ? currentUser.name.trim().charAt(0).toUpperCase() : 'U';
 
   return (
-    <header className="relative py-4 px-3 sm:px-6 lg:px-8 border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
+    <header className="sticky top-0 z-40 py-3.5 sm:py-4 px-3 sm:px-6 lg:px-8 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md shadow-sm">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         {/* Logo / Brand */}
         <div className="flex items-center gap-3 min-w-0">
@@ -40,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
               Đăng Ký Team Building 2026
             </span>
             <span className="text-[11px] font-medium text-slate-400 block tracking-wide truncate">
-              Chiến dịch Nâng cao Nhận thức Phòng Chống HIV/AIDS
+              Hội thao truyền thông phòng chống HIV/AIDS
             </span>
           </div>
         </div>
@@ -48,9 +48,9 @@ export const Header: React.FC<HeaderProps> = ({
         {/* User Profile / Real Auth Status */}
         <div className="flex items-center gap-2 shrink-0">
           {currentUser ? (
-            <div className="flex items-center gap-2 sm:gap-3 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
+            <div className="flex items-center gap-2 sm:gap-3 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl shadow-xs">
               {imageError || !currentUser.avatar ? (
-                <div className="w-6 h-6 rounded-full bg-linear-to-tr from-red-600 to-amber-500 flex items-center justify-center text-[11px] font-bold text-white uppercase shrink-0 shadow-xs">
+                <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[11px] font-bold text-white uppercase shrink-0 shadow-xs">
                   {initialLetter}
                 </div>
               ) : (
@@ -74,17 +74,17 @@ export const Header: React.FC<HeaderProps> = ({
               )}
               <button
                 onClick={onLogoutClick}
-                className="p-1 rounded text-slate-400 hover:text-slate-200 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-all duration-200 cursor-pointer"
                 title="Đăng xuất"
                 aria-label="Đăng xuất"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-3.5 h-3.5 transition-transform duration-200 hover:-translate-x-0.5" />
               </button>
             </div>
           ) : (
             <button
               onClick={onLoginClick}
-              className="px-3.5 sm:px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs shadow-sm transition-all"
+              className="px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs shadow-sm transition-all duration-150 active:scale-95 cursor-pointer"
             >
               Đăng nhập Google
             </button>

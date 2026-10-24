@@ -23,26 +23,41 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      // 3. Audit Log
+      // 3. Clean up any team that now has 0 members (e.g. auto-created teams with no remaining members)
+      const emptyTeams = await tx.team.findMany({
+        where: {
+          members: { none: {} }
+        }
+      });
+      if (emptyTeams.length > 0) {
+        await tx.team.deleteMany({
+          where: {
+            id: { in: emptyTeams.map((t) => t.id) }
+          }
+        });
+      }
+
+      // 4. Audit Log
       await tx.auditLog.create({
         data: {
           adminId: adminUser.id,
           action: 'RESET_RANDOM_ALLOCATION',
           targetSlot: 0,
           targetTeamName: 'Hệ thống Random',
-          details: `Đã hoàn tác phân bổ của ${updatedIndividuals.count} cá nhân`
+          details: `Đã hoàn tác phân bổ của ${updatedIndividuals.count} cá nhân và dọn dẹp ${emptyTeams.length} slot trống`
         }
       });
 
       return {
         deletedMembersCount: deletedMembers.count,
-        resetIndividualsCount: updatedIndividuals.count
+        resetIndividualsCount: updatedIndividuals.count,
+        cleanedEmptyTeamsCount: emptyTeams.length
       };
     });
 
     return NextResponse.json({
       success: true,
-      message: `Đã hoàn tác thành công và đưa ${resetResult.resetIndividualsCount} cá nhân trở lại danh sách chờ ghép đội!`,
+      message: `Đã hoàn tác và chuyển ${resetResult.resetIndividualsCount} cá nhân về danh sách chờ.`,
       result: resetResult
     });
   } catch (error: any) {

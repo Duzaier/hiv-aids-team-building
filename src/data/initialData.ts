@@ -4,44 +4,50 @@ export const SLOT_METADATA = [
   {
     slotNumber: 1,
     nameEn: 'Team 1',
-    accentColor: 'from-red-600 to-rose-700',
+    accentColor: 'bg-red-600',
+    borderColor: 'border-red-500/50',
     badgeTitle: 'Đội 1',
-    motto: 'Tiên phong thấu hiểu, dẫn lối yêu thương'
+    motto: 'Hiểu đúng để sẻ chia'
   },
   {
     slotNumber: 2,
     nameEn: 'Team 2',
-    accentColor: 'from-rose-600 to-pink-700',
+    accentColor: 'bg-rose-600',
+    borderColor: 'border-rose-500/50',
     badgeTitle: 'Đội 2',
-    motto: 'Dải băng đỏ gắn kết triệu tấm lòng'
+    motto: 'Chủ động bảo vệ sức khỏe cộng đồng'
   },
   {
     slotNumber: 3,
     nameEn: 'Team 3',
-    accentColor: 'from-orange-600 to-red-600',
+    accentColor: 'bg-orange-600',
+    borderColor: 'border-orange-500/50',
     badgeTitle: 'Đội 3',
-    motto: 'Trái tim quả cảm, vượt mọi rào cản'
+    motto: 'Không kỳ thị, cùng đồng hành'
   },
   {
     slotNumber: 4,
     nameEn: 'Team 4',
-    accentColor: 'from-amber-600 to-rose-600',
+    accentColor: 'bg-amber-600',
+    borderColor: 'border-amber-500/50',
     badgeTitle: 'Đội 4',
-    motto: 'Khát vọng vươn lên, sức sống bền bỉ'
+    motto: 'Đồng đội gắn kết, thi đấu hết mình'
   },
   {
     slotNumber: 5,
     nameEn: 'Team 5',
-    accentColor: 'from-pink-600 to-purple-700',
+    accentColor: 'bg-purple-600',
+    borderColor: 'border-purple-500/50',
     badgeTitle: 'Đội 5',
-    motto: 'Bước tiếp cùng nhau, vững tin ngày mai'
+    motto: 'Đoàn kết là sức mạnh'
   },
   {
     slotNumber: 6,
     nameEn: 'Team 6',
-    accentColor: 'from-red-700 to-slate-900',
+    accentColor: 'bg-sky-600',
+    borderColor: 'border-sky-500/50',
     badgeTitle: 'Đội 6',
-    motto: 'Gắn kết bền chặt, vươn tầm chiến thắng'
+    motto: 'Hết mình vì tập thể'
   }
 ];
 
@@ -55,7 +61,7 @@ export const INITIAL_TEAMS: Team[] = [
     ownerName: 'Nguyễn Văn An',
     ownerEmail: 'nguyenvanan.test@gmail.com',
     registeredAt: '2026-10-23 03:11',
-    accentColor: 'from-red-600 to-rose-700',
+    accentColor: 'bg-red-600',
     badgeTitle: 'Đội 1',
     members: [
       { id: 'm1-1', name: 'Nguyễn Văn An', isCaptain: true },
@@ -73,7 +79,7 @@ export const INITIAL_TEAMS: Team[] = [
     ownerName: 'Phạm Hồng Đức',
     ownerEmail: 'hongduc.test@gmail.com',
     registeredAt: '2026-10-23 03:11',
-    accentColor: 'from-rose-600 to-pink-700',
+    accentColor: 'bg-rose-600',
     badgeTitle: 'Đội 2',
     members: [
       { id: 'm2-1', name: 'Phạm Hồng Đức', isCaptain: false },
@@ -90,7 +96,7 @@ export const INITIAL_TEAMS: Team[] = [
     ownerName: 'Hoàng Hải Yến',
     ownerEmail: 'haiyen.test@gmail.com',
     registeredAt: '2026-10-23 03:11',
-    accentColor: 'from-orange-600 to-red-600',
+    accentColor: 'bg-orange-600',
     badgeTitle: 'Đội 3',
     members: [
       { id: 'm3-1', name: 'Hoàng Hải Yến', isCaptain: true },
@@ -109,7 +115,7 @@ export const INITIAL_TEAMS: Team[] = [
     ownerName: 'Võ Minh Quân',
     ownerEmail: 'minhquan.test@gmail.com',
     registeredAt: '2026-10-23 03:11',
-    accentColor: 'from-amber-600 to-rose-600',
+    accentColor: 'bg-amber-600',
     badgeTitle: 'Đội 4',
     members: [
       { id: 'm4-1', name: 'Võ Minh Quân', isCaptain: false },

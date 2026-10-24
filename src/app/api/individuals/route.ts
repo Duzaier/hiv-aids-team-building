@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from '@/lib/auth';
+import { getServerSession, isAdminEmail } from '@/lib/auth';
 import { individualRegistrationSchema } from '@/lib/validations';
 
 // GET /api/individuals - List all individual registrants
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: `Đăng ký cá nhân thành công cho ${newInd.name}! Bạn đang trong danh sách chờ ghép đội ngẫu nhiên.`,
+        message: `Đăng ký cá nhân thành công cho ${newInd.name}.`,
         individual: {
           id: newInd.id,
           name: newInd.name,
@@ -171,7 +171,9 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Permission check
-    const isAdmin = session?.user?.role === "ADMIN";
+    const headerEmail = req.headers.get('x-user-email');
+    const userEmail = (session?.user?.email || headerEmail || '').toLowerCase();
+    const isAdmin = session?.user?.role === "ADMIN" || isAdminEmail(userEmail);
     const isOwner =
       (session?.user?.id && existingInd.userId === session.user.id) ||
       (session?.user?.email && existingInd.email.toLowerCase() === session.user.email.toLowerCase());
@@ -236,7 +238,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Đã cập nhật thông tin đăng ký cá nhân thành công cho ${updated.name}!`,
+      message: `Đã cập nhật thông tin cho ${updated.name}.`,
       individual: {
         id: updated.id,
         name: updated.name,
@@ -257,3 +259,123 @@ export async function PATCH(req: NextRequest) {
     );
   }
 }
+
+// DELETE /api/individuals - Delete an individual registrant (Admin or Owner)
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(req);
+    const { searchParams } = new URL(req.url);
+    let id = searchParams.get('id');
+
+    if (!id) {
+      try {
+        const body = await req.json();
+        id = body?.id;
+      } catch (e) {
+        // body might be empty if query param is used
+      }
+    }
+
+    if (!id || typeof id !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'Thiếu mã đăng ký cá nhân cần xóa' },
+        { status: 400 }
+      );
+    }
+
+    const existingInd = await prisma.individualRegistration.findUnique({
+      where: { id }
+    });
+
+    if (!existingInd) {
+      return NextResponse.json(
+        { success: false, error: 'Không tìm thấy thông tin đăng ký cá nhân' },
+        { status: 404 }
+      );
+    }
+
+    // Permission check: ADMIN or Owner
+    const headerEmail = req.headers.get('x-user-email');
+    const userEmail = (session?.user?.email || headerEmail || '').toLowerCase();
+    const isAdmin = session?.user?.role === 'ADMIN' || isAdminEmail(userEmail);
+    const isOwner =
+      (session?.user?.id && existingInd.userId === session.user.id) ||
+      (userEmail && existingInd.email.toLowerCase() === userEmail);
+
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Bạn không có quyền xóa thông tin đăng ký này. Chỉ Quản trị viên mới có quyền thực hiện.'
+        },
+        { status: 403 }
+      );
+    }
+
+    // If individual was already assigned to a team, delete their TeamMember record
+    const assignedTeamId = existingInd.assignedTeamId;
+    await prisma.teamMember.deleteMany({
+      where: {
+        OR: [
+          { individualId: id },
+          { email: existingInd.email, isFromIndividual: true }
+        ]
+      }
+    });
+
+    // If the team was an auto-created team (admin.slot) and has no remaining members, delete it
+    if (assignedTeamId) {
+      const remainingCount = await prisma.teamMember.count({
+        where: { teamId: assignedTeamId }
+      });
+      if (remainingCount === 0) {
+        const team = await prisma.team.findUnique({
+          where: { id: assignedTeamId },
+          include: { owner: true }
+        });
+        if (team?.owner?.email?.startsWith('admin.slot') || team?.owner?.email?.includes('@central.org')) {
+          await prisma.team.delete({
+            where: { id: assignedTeamId }
+          });
+        }
+      }
+    }
+
+    // Delete the individual registration record
+    await prisma.individualRegistration.delete({
+      where: { id }
+    });
+
+    // Log admin audit action if admin deleted
+    if (isAdmin && session?.user?.id) {
+      try {
+        const userExists = await prisma.user.findUnique({ where: { id: session.user.id } });
+        if (userExists) {
+          await prisma.auditLog.create({
+            data: {
+              adminId: session.user.id,
+              action: 'DELETE_INDIVIDUAL',
+              targetSlot: existingInd.assignedSlot || 0,
+              targetTeamName: existingInd.assignedSlot ? `Đội ${existingInd.assignedSlot}` : 'Hàng chờ cá nhân',
+              details: `Admin đã xóa cá nhân ${existingInd.name} (${existingInd.email}) khỏi danh sách đăng ký.`
+            }
+          });
+        }
+      } catch (logErr) {
+        console.warn('Could not create audit log:', logErr);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Đã xóa "${existingInd.name}" khỏi danh sách đăng ký.`
+    });
+  } catch (error) {
+    console.error('Error deleting individual registration:', error);
+    return NextResponse.json(
+      { success: false, error: 'Lỗi máy chủ khi xóa đăng ký cá nhân' },
+      { status: 500 }
+    );
+  }
+}
+

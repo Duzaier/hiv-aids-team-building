@@ -37,7 +37,7 @@ export async function getServerSession(req?: Request): Promise<AuthSession> {
     // NextAuth session lookup fallback
   }
 
-  // 2. Check for request header override (useful for API testing)
+  // 2. Check for request header override (useful for API testing and local client)
   if (req) {
     let overrideUserId = req.headers.get('x-user-id');
     const overrideEmail = req.headers.get('x-user-email');
@@ -51,11 +51,13 @@ export async function getServerSession(req?: Request): Promise<AuthSession> {
         ? await prisma.user.findUnique({ where: { id: overrideUserId } })
         : null;
 
+      const isEmailAdmin = isAdminEmail(overrideEmail);
+
       if (!user && overrideEmail) {
         user = await prisma.user.upsert({
           where: { email: overrideEmail },
           update: {
-            role: 'USER'
+            role: isEmailAdmin ? 'ADMIN' : 'USER'
           },
           create: {
             id: overrideUserId!,
@@ -63,19 +65,20 @@ export async function getServerSession(req?: Request): Promise<AuthSession> {
             name: req.headers.get('x-user-name')
               ? decodeURIComponent(req.headers.get('x-user-name')!)
               : overrideEmail.split('@')[0],
-            role: 'USER'
+            role: isEmailAdmin ? 'ADMIN' : 'USER'
           }
         });
       }
 
       if (user) {
+        const isAdmin = isAdminEmail(user.email) || isEmailAdmin;
         return {
           user: {
             id: user.id,
             email: user.email,
             name: user.name,
             image: user.image,
-            role: 'USER' // header override không bao giờ được cấp quyền Admin
+            role: isAdmin ? 'ADMIN' : 'USER'
           }
         };
       }

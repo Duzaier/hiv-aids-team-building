@@ -57,11 +57,11 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
     const cleanPhone = phone.trim();
 
     if (!cleanName) {
-      setError('Vui lòng nhập Họ và tên của bạn');
+      setError('Vui lòng nhập họ và tên');
       return;
     }
     if (!cleanStudentId) {
-      setError('Vui lòng nhập MSSV (Mã số sinh viên)');
+      setError('Vui lòng nhập MSSV');
       return;
     }
     if (!cleanEmail || !cleanEmail.includes('@')) {
@@ -69,7 +69,7 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
       return;
     }
     if (!cleanPhone || cleanPhone.length < 8) {
-      setError('Vui lòng nhập Số điện thoại (Zalo) hợp lệ để Ban Tổ Chức liên hệ');
+      setError('Vui lòng nhập số điện thoại hoặc Zalo liên hệ');
       return;
     }
 
@@ -96,7 +96,7 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
           } catch (e) {}
         }
         onClose();
-        onSuccess(result.message || (isEdit ? 'Cập nhật thông tin thành công!' : 'Đăng ký diện cá nhân thành công!'));
+        onSuccess(result.message || (isEdit ? 'Cập nhật thông tin thành công!' : 'Đăng ký cá nhân thành công!'));
       } else {
         setError(result.error || (isEdit ? 'Cập nhật thất bại. Vui lòng thử lại.' : 'Đăng ký thất bại. Vui lòng thử lại.'));
       }
@@ -113,9 +113,9 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400 block">
-              {isEdit ? 'Chỉnh Sửa Thông Tin' : 'Dành Cho Người Chưa Có Nhóm'}
+              {isEdit ? 'Chỉnh Sửa' : 'Chưa có đội thi đấu'}
             </span>
-            <h3 className="text-lg font-black text-white">{isEdit ? 'Sửa Đăng Ký Cá Nhân' : 'Đăng Ký Diện Cá Nhân'}</h3>
+            <h3 className="text-lg font-black text-white">{isEdit ? 'Sửa thông tin đăng ký' : 'Đăng ký cá nhân'}</h3>
           </div>
           <button
             onClick={onClose}
@@ -127,7 +127,7 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
         </div>
 
         <div className="mb-4 p-3 rounded-xl bg-purple-950/40 border border-purple-500/30 text-xs text-purple-200 leading-relaxed">
-          {isEdit ? 'Bạn có thể chỉnh sửa lại Họ tên, MSSV, Gmail hoặc SĐT (Zalo) nếu lỡ điền sai. Hệ thống sẽ tự động đồng bộ sang đội thi đấu nếu bạn đã được xếp vào đội.' : 'Bạn sẽ được đưa vào danh sách chờ ghép đội tự do. Ban Tổ Chức sẽ ghép ngẫu nhiên bạn vào các đội còn trống slot (dưới 5 thành viên).'}
+          {isEdit ? 'Thông tin cập nhật sẽ tự động đồng bộ vào đội của bạn (nếu đã được xếp đội).' : 'Ban tổ chức sẽ sắp xếp bạn vào đội còn thiếu thành viên trước giờ thi đấu.'}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">

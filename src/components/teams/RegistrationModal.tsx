@@ -227,7 +227,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                       <button
                         type="button"
                         onClick={() => removeMember(index)}
-                        className="text-slate-400 hover:text-rose-400 p-1 transition-colors text-xs flex items-center gap-1"
+                        className="text-slate-400 hover:text-rose-400 p-1 transition-colors text-xs flex items-center gap-1 cursor-pointer active:scale-95"
                         title="Xóa thành viên này"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

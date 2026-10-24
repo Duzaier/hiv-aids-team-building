@@ -39,9 +39,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-red-400 block">
-              Xác Thực Tài Khoản
+              Tài khoản
             </span>
-            <h3 className="text-lg font-black text-white">Đăng Nhập Hệ Thống</h3>
+            <h3 className="text-lg font-black text-white">Đăng Nhập</h3>
           </div>
           <button
             onClick={onClose}
@@ -82,7 +82,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               <span>Đang kết nối Google...</span>
             </span>
           ) : (
-            'Đăng nhập trực tiếp bằng Google'
+            'Đăng nhập bằng Google'
           )}
         </button>
 

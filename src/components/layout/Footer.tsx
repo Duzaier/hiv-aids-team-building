@@ -8,15 +8,15 @@ export const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto space-y-4">
         {/* Medical & Privacy Disclaimer */}
         <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 text-xs leading-relaxed">
-          <strong>Thông báo sự kiện & Quyền riêng tư:</strong> Đây là hoạt động Team Building và hội thao truyền thông nâng cao nhận thức cộng đồng về phòng chống HIV/AIDS. Nền tảng chỉ ghi nhận thông tin phân bổ trò chơi đội nhóm, tuyệt đối không thu thập hoặc liên quan tới bất kỳ thông tin bệnh án hay tình trạng y tế cá nhân nào.
+          <strong>Lưu ý:</strong> Hệ thống chỉ ghi nhận danh sách đăng ký để sắp xếp đội thi đấu cho hoạt động team building. Ban tổ chức không thu thập bất kỳ thông tin bệnh án hay dữ liệu y tế cá nhân nào.
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 text-[11px] text-slate-400 text-center sm:text-left">
           <span className="font-medium text-slate-300">
-            Chung tay đẩy lùi HIV/AIDS — Lan tỏa yêu thương & xóa nhòa định kiến.
+            Hội Thao & Team Building Truyền Thông HIV/AIDS 2026
           </span>
           <span className="text-slate-500">
-            Sự kiện Team Building Vì Cộng Đồng © 2026.
+            © 2026 Ban Tổ Chức.
           </span>
         </div>
       </div>

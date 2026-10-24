@@ -14,6 +14,8 @@ import {
   Clock,
   Search,
   Trash2,
+  AlertTriangle,
+  X,
   Eye
 } from 'lucide-react';
 
@@ -43,6 +45,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
   const [isRandomizing, setIsRandomizing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [personToDelete, setPersonToDelete] = useState<IndividualRegistration | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const isAdmin = currentRole === 'ADMIN';
@@ -80,20 +83,16 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
     );
   });
 
-  const handleDeleteIndividual = async (person: IndividualRegistration) => {
+  const handleDeleteClick = (person: IndividualRegistration) => {
+    setPersonToDelete(person);
+  };
+
+  const confirmDeleteIndividual = async () => {
+    if (!personToDelete) return;
+    const person = personToDelete;
     const isSelf =
       (myRegistration && myRegistration.id === person.id) ||
       (currentUser?.email && person.email.toLowerCase() === currentUser.email.toLowerCase());
-
-    const warningDetail = person.assignedTeamId
-      ? `\n\nLưu ý: Bạn này hiện đang thuộc Đội ${person.assignedSlot}. Khi xóa sẽ đồng thời rút bạn khỏi đội.`
-      : '';
-
-    const confirmMsg = isAdmin
-      ? `Bạn có chắc muốn xóa "${person.name}" khỏi danh sách đăng ký không?${warningDetail}`
-      : `Bạn có chắc muốn hủy đăng ký tham gia không?${warningDetail}`;
-
-    if (!window.confirm(confirmMsg)) return;
 
     try {
       setDeletingId(person.id);
@@ -115,6 +114,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
             localStorage.removeItem('my_individual_reg_id');
           } catch (e) {}
         }
+        setPersonToDelete(null);
         onRefresh();
       } else {
         onShowNotice('error', result.error || 'Xóa cá nhân thất bại.');
@@ -446,7 +446,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
 
                     {isAdmin && (
                       <button
-                        onClick={() => handleDeleteIndividual(person)}
+                        onClick={() => handleDeleteClick(person)}
                         disabled={deletingId === person.id}
                         className="group px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-400 hover:text-white border border-slate-700 hover:border-rose-500 text-[11px] font-medium transition-all duration-150 flex items-center gap-1 cursor-pointer active:scale-95"
                         title={isAdmin ? "Xóa cá nhân khỏi danh sách đăng ký ghép đội (Quyền Admin)" : "Hủy đăng ký cá nhân của bạn"}
@@ -478,6 +478,88 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
             })}
           </div>
         )}
+  
+      {/* Modal Xác Nhận Xóa Cá Nhân (Không phụ thuộc vào popup trình duyệt) */}
+      {personToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-5 sm:p-6 text-slate-100">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+                  <Trash2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-rose-400 block">
+                    Xác nhận thao tác
+                  </span>
+                  <h3 className="text-base font-bold text-white">Xóa Đăng Ký Cá Nhân</h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => !deletingId && setPersonToDelete(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                aria-label="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-6 text-xs text-slate-300">
+              <p>
+                Bạn có chắc chắn muốn xóa cá nhân{' '}
+                <strong className="text-white font-semibold underline decoration-rose-500/50">
+                  {personToDelete.name}
+                </strong>{' '}
+                (<span className="text-slate-400">{personToDelete.email}</span>) khỏi danh sách đăng ký không?
+              </p>
+
+              {personToDelete.assignedTeamId && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+                  <p>
+                    <strong>Lưu ý quan trọng:</strong> Bạn này hiện đang thuộc{' '}
+                    <strong className="text-amber-300">Đội {personToDelete.assignedSlot}</strong>. Khi xóa sẽ đồng thời rút bạn khỏi đội này.
+                  </p>
+                </div>
+              )}
+
+              <p className="text-[11px] text-slate-400 italic">
+                Hành động này sẽ xóa dữ liệu đăng ký và không thể hoàn tác.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                disabled={!!deletingId}
+                onClick={() => setPersonToDelete(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                disabled={!!deletingId}
+                onClick={confirmDeleteIndividual}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center gap-2 shadow-lg shadow-rose-900/20 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {deletingId ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Đang xóa...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Xác nhận xóa</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

@@ -44,7 +44,8 @@ export async function GET() {
           phone: m.phone || '',
           orderIndex: m.orderIndex,
           isCaptain: false,
-          isFromIndividual: m.isFromIndividual || false
+          isFromIndividual: m.isFromIndividual || false,
+          individualId: m.individualId || null
         }))
       }))
     });
