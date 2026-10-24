@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { User } from '@/types';
-import { X, UserPlus, Trash2 } from 'lucide-react';
+import {
+  User } from '@/types';
+import { X, UserPlus, Trash2, Lock } from 'lucide-react';
 
 export interface MemberFormItem {
   name: string;
@@ -12,6 +13,7 @@ export interface MemberFormItem {
 }
 
 interface RegistrationModalProps {
+  isCapacityFull?: boolean;
   isOpen: boolean;
   targetSlot: number;
   currentUser: User | null;
@@ -25,6 +27,7 @@ interface RegistrationModalProps {
 
 export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   isOpen,
+  isCapacityFull = false,
   targetSlot,
   currentUser,
   onClose,
@@ -170,6 +173,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
           </div>
         )}
 
+        {isCapacityFull && (
+          <div className="p-3.5 mb-3 rounded-xl bg-rose-950/60 border border-rose-500/50 text-rose-300 text-xs flex items-center gap-2.5">
+            <Lock className="w-4 h-4 shrink-0 text-rose-400" />
+            <span>Hệ thống đã đạt giới hạn tối đa 30 thí sinh tham gia. Cổng đăng ký theo đội hiện đã khóa.</span>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Representative info notice */}
           {currentUser && (
@@ -307,7 +316,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCapacityFull}
               className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
               Hủy

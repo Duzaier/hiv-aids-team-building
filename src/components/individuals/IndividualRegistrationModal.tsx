@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { User, IndividualRegistration } from '@/types';
-import { X, Edit3, UserPlus } from 'lucide-react';
+import {
+  User, IndividualRegistration } from '@/types';
+import { X, Edit3, UserPlus, Lock } from 'lucide-react';
 
 interface IndividualRegistrationModalProps {
+  isCapacityFull?: boolean;
   isOpen: boolean;
   currentUser: User | null;
   initialData?: IndividualRegistration | null;
@@ -14,6 +16,7 @@ interface IndividualRegistrationModalProps {
 
 export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalProps> = ({
   isOpen,
+  isCapacityFull = false,
   currentUser,
   initialData,
   onClose,
@@ -130,6 +133,12 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
           {isEdit ? 'Thông tin cập nhật sẽ tự động đồng bộ vào đội của bạn (nếu đã được xếp đội).' : 'Ban tổ chức sẽ sắp xếp bạn vào đội còn thiếu thành viên trước giờ thi đấu.'}
         </div>
 
+        {isCapacityFull && !isEdit && (
+          <div className="p-3 mb-3 rounded-xl bg-rose-950/60 border border-rose-500/50 text-rose-300 text-xs flex items-center gap-2.5">
+            <Lock className="w-4 h-4 shrink-0 text-rose-400" />
+            <span>Hệ thống đã đạt giới hạn tối đa 30 thí sinh tham gia. Cổng đăng ký cá nhân hiện đã khóa.</span>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
           {error && (
             <div className="p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 flex items-start gap-2">
@@ -213,7 +222,7 @@ export const IndividualRegistrationModal: React.FC<IndividualRegistrationModalPr
             <button
               type="button"
               onClick={onClose}
-              disabled={isSubmitting}
+              disabled={isSubmitting || (isCapacityFull && !isEdit)}
               className="px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors font-semibold"
             >
               Hủy

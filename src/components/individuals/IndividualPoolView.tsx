@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { IndividualRegistration, Role, User } from '@/types';
 import {
+  IndividualRegistration, Role, User } from '@/types';
+import {
+  Lock,
   Users,
   UserPlus,
   HeartHandshake,
@@ -20,6 +22,7 @@ import {
 } from 'lucide-react';
 
 interface IndividualPoolViewProps {
+  isCapacityFull?: boolean;
   individuals: IndividualRegistration[];
   currentUser: User | null;
   currentRole: Role;
@@ -33,6 +36,7 @@ interface IndividualPoolViewProps {
 
 export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
   individuals,
+  isCapacityFull = false,
   currentUser,
   currentRole,
   isLoading,

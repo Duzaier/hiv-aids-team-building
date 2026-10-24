@@ -29,6 +29,7 @@ interface TeamCardProps {
   joinedTeamId?: string;
   myOwnedTeam?: Team | null;
   matches?: TeamMatchRequest[];
+  isCapacityFull?: boolean;
   onRegisterClick: (slotNumber: number) => void;
   onEditClick: (team: Team) => void;
   onViewDetails?: (team: Team) => void;
@@ -51,6 +52,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   joinedTeamId,
   myOwnedTeam,
   matches = [],
+  isCapacityFull = false,
   onRegisterClick,
   onEditClick,
   onViewDetails,
@@ -182,6 +184,8 @@ export const TeamCard: React.FC<TeamCardProps> = ({
               ) : (
                 <Badge variant="registered">Đã ghi danh</Badge>
               )
+            ) : isCapacityFull ? (
+              <Badge variant="warning">Đã khóa</Badge>
             ) : (
               <Badge variant="available">Còn trống</Badge>
             )}
@@ -494,7 +498,12 @@ export const TeamCard: React.FC<TeamCardProps> = ({
 
             {/* CTA Button */}
             <div>
-              {userAlreadyOwnsTeam ? (
+              {isCapacityFull ? (
+                <div className="w-full py-2.5 px-3 rounded-xl text-center bg-slate-900/90 border border-slate-800 text-xs text-rose-400 font-semibold flex items-center justify-center gap-1.5 shadow-xs">
+                  <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span>Đã đủ 30 người (Khóa đăng ký)</span>
+                </div>
+              ) : userAlreadyOwnsTeam ? (
                 <div className="w-full py-2.5 px-3 rounded-xl text-center bg-slate-900 border border-slate-800 text-xs text-slate-400 font-medium">
                   Bạn đã đăng ký 1 đội thi đấu
                 </div>

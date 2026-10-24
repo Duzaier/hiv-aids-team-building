@@ -12,6 +12,7 @@ interface TeamGridProps {
   joinedTeamId?: string;
   myOwnedTeam?: Team | null;
   matches?: TeamMatchRequest[];
+  isCapacityFull?: boolean;
   onRegisterClick: (slotNumber: number) => void;
   onEditClick: (team: Team) => void;
   onViewDetails?: (team: Team) => void;
@@ -33,6 +34,7 @@ export const TeamGrid: React.FC<TeamGridProps> = ({
   joinedTeamId,
   myOwnedTeam,
   matches = [],
+  isCapacityFull = false,
   onRegisterClick,
   onEditClick,
   onViewDetails,
@@ -74,6 +76,7 @@ export const TeamGrid: React.FC<TeamGridProps> = ({
             onAcceptMatch={onAcceptMatch}
             onRejectMatch={onRejectMatch}
             onCancelMatch={onCancelMatch}
+            isCapacityFull={isCapacityFull}
           />
         );
       })}

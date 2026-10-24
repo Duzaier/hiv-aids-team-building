@@ -145,6 +145,21 @@ export async function POST(req: NextRequest) {
         throw new Error('CAPACITY_FULL');
       }
 
+      // Check total participant limit across all teams and waiting individual registrations (max 30)
+      const [teamMemberCount, waitingIndividualCount] = await Promise.all([
+        tx.teamMember.count(),
+        tx.individualRegistration.count({ where: { assignedTeamId: null } })
+      ]);
+      const currentTotalPeople = teamMemberCount + waitingIndividualCount;
+
+      if (currentTotalPeople >= 30) {
+        throw new Error('TOTAL_CAPACITY_FULL_30');
+      }
+
+      if (currentTotalPeople + members.length > 30) {
+        throw new Error(`EXCEEDS_REMAINING_CAPACITY_${30 - currentTotalPeople}`);
+      }
+
       // Find lowest available slot (1 to 6)
       const existingTeams = await tx.team.findMany({
         select: { slotNumber: true }
@@ -231,6 +246,25 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
+    if (error?.message === 'TOTAL_CAPACITY_FULL_30') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Hệ thống đã đạt giới hạn tối đa 30 người đăng ký tham gia (theo đội và cá nhân). Cổng đăng ký đã đóng!'
+        },
+        { status: 409 }
+      );
+    }
+    if (typeof error?.message === 'string' && error.message.startsWith('EXCEEDS_REMAINING_CAPACITY_')) {
+      const remaining = error.message.replace('EXCEEDS_REMAINING_CAPACITY_', '');
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Hệ thống chỉ còn trống ${remaining} chỗ, không đủ cho số lượng thành viên đăng ký (tối đa 30 người cho toàn bộ giải đấu).`
+        },
+        { status: 400 }
+      );
+    }
     if (error?.message === 'CAPACITY_FULL') {
       return NextResponse.json(
         {

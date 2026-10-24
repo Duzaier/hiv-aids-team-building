@@ -142,6 +142,17 @@ export async function PATCH(
 
     const updatedTeam = await prisma.$transaction(async (tx) => {
       if (members && members.length > 0) {
+        const addedCount = members.length - existingTeam.members.length;
+        if (addedCount > 0) {
+          const [teamMemberCount, waitingIndividualCount] = await Promise.all([
+            tx.teamMember.count(),
+            tx.individualRegistration.count({ where: { assignedTeamId: null } })
+          ]);
+          const currentTotalPeople = teamMemberCount + waitingIndividualCount;
+          if (currentTotalPeople + addedCount > 30) {
+            throw new Error(`EXCEEDS_REMAINING_CAPACITY_${Math.max(0, 30 - currentTotalPeople)}`);
+          }
+        }
         await tx.teamMember.deleteMany({
           where: { teamId: existingTeam.id }
         });
@@ -212,8 +223,18 @@ export async function PATCH(
         }))
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating team:', error);
+    if (typeof error?.message === 'string' && error.message.startsWith('EXCEEDS_REMAINING_CAPACITY_')) {
+      const remaining = error.message.replace('EXCEEDS_REMAINING_CAPACITY_', '');
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Hệ thống chỉ còn trống ${remaining} chỗ, không thể thêm thành viên vượt quá 30 người.`
+        },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { success: false, error: 'Lỗi máy chủ khi cập nhật thông tin đội' },
       { status: 500 }

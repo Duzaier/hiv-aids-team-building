@@ -9,7 +9,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { TeamGrid } from '@/components/teams/TeamGrid';
 import { TeamGridSkeleton } from '@/components/ui/TeamGridSkeleton';
-import { X, Users, UserCheck, HeartHandshake, Eye, EyeOff } from 'lucide-react';
+import { X, Users, UserCheck, HeartHandshake, Eye, EyeOff, Lock } from 'lucide-react';
 import { isAdminEmail } from '@/lib/roles';
 
 // Lazy loading overlays & tabs for optimal initial bundle & performance
@@ -105,6 +105,12 @@ export default function Home() {
 
   // Admin toggle for 6-team diagram (hidden by default for admin)
   const [showAdminTeamGrid, setShowAdminTeamGrid] = useState<boolean>(false);
+
+  // 30-participant maximum capacity calculation (across teams and waiting individuals)
+  const totalTeamMembersCount = teams.reduce((acc, t) => acc + (t.members?.length || 0), 0);
+  const waitingIndividualsCount = individuals.filter((ind) => !ind.assignedTeamId).length;
+  const totalParticipants = totalTeamMembersCount + waitingIndividualsCount;
+  const isCapacityFull = totalParticipants >= 30;
 
   // Convert NextAuth session to app User object
   const currentUser: User | null = session?.user

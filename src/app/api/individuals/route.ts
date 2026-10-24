@@ -99,6 +99,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Create record
+    // Check total participant limit across all teams and waiting individual registrations (max 30)
+    const [teamMemberCount, waitingIndividualCount] = await Promise.all([
+      prisma.teamMember.count(),
+      prisma.individualRegistration.count({ where: { assignedTeamId: null } })
+    ]);
+    const currentTotalPeople = teamMemberCount + waitingIndividualCount;
+
+    if (currentTotalPeople >= 30) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Hệ thống đã đạt giới hạn tối đa 30 người đăng ký tham gia (theo đội và cá nhân). Cổng đăng ký cá nhân đã đóng!'
+        },
+        { status: 409 }
+      );
+    }
+
     const newInd = await prisma.individualRegistration.create({
       data: {
         userId: session?.user?.id || null,
