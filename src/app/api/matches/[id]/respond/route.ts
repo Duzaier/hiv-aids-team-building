@@ -165,41 +165,55 @@ export async function POST(
               isFromIndividual: true // Mark as merged
             }
           });
+
+          if (m.individualId) {
+            await tx.individualRegistration.updateMany({
+              where: { id: m.individualId },
+              data: {
+                assignedTeamId: currentTo.id,
+                assignedSlot: currentTo.slotNumber
+              }
+            });
+          }
         }
 
+        // Re-assign any remaining individual registrations pointing to currentFrom
+        await tx.individualRegistration.updateMany({
+          where: { assignedTeamId: currentFrom.id },
+          data: {
+            assignedTeamId: currentTo.id,
+            assignedSlot: currentTo.slotNumber
+          }
+        });
+
+        // Increment version of target team
+        await tx.team.update({
+          where: { id: currentTo.id },
+          data: { version: { increment: 1 } }
+        });
+
         // Delete fromTeam to completely release the slot
+        // (PostgreSQL cascade onDelete will automatically clean up associated TeamMatchRequests)
         await tx.team.delete({
           where: { id: currentFrom.id }
         });
 
-        // Mark this match request as ACCEPTED
-        await tx.teamMatchRequest.update({
-          where: { id },
-          data: { status: 'ACCEPTED' }
-        });
-
-        // Cancel other pending requests related to fromTeam
-        await tx.teamMatchRequest.updateMany({
-          where: {
-            OR: [
-              { fromTeamId: currentFrom.id },
-              { toTeamId: currentFrom.id }
-            ],
-            status: 'PENDING'
-          },
-          data: { status: 'CANCELLED' }
-        });
-
         // Audit Log
-        await tx.auditLog.create({
-          data: {
-            adminId: dbUser.id,
-            action: 'TEAM_MERGED',
-            targetSlot: fromSlotNumber,
-            targetTeamName: fromName,
-            details: `Gộp ${fromName} (${currentFrom.members.length} người) vào ${toName} (đạt tổng ${totalMembers}/5 người). Slot #${fromSlotNumber} đã được giải phóng thành 5 slot trống.`
+        if (dbUser?.id) {
+          try {
+            await tx.auditLog.create({
+              data: {
+                adminId: dbUser.id,
+                action: 'TEAM_MERGED',
+                targetSlot: fromSlotNumber,
+                targetTeamName: fromName,
+                details: `Ghép ${fromName} (${currentFrom.members.length} người) vào ${toName} (đạt tổng ${totalMembers}/5 người). Slot #${fromSlotNumber} đã được giải phóng thành 5 slot trống.`
+              }
+            });
+          } catch (auditErr) {
+            console.warn('Could not create audit log:', auditErr);
           }
-        });
+        }
 
         return {
           fromSlotNumber,
