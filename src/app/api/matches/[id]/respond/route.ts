@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from '@/lib/auth';
+import { sendMatchRequestAcceptedEmails, sendMatchRequestRejectedEmails } from '@/lib/mail';
 
 export async function POST(
   req: NextRequest,
@@ -96,6 +97,17 @@ export async function POST(
         data: { status: 'REJECTED' }
       });
 
+      // Send rejection email notification to team A (đội xin vào) and Admin
+      try {
+        await sendMatchRequestRejectedEmails({
+          fromTeam: match.fromTeam,
+          toTeam: match.toTeam,
+          responderName: dbUser.name || session.user.name || (isAdmin ? 'Ban Quản Trị' : match.toTeam.name)
+        });
+      } catch (mailErr) {
+        console.error('[Mail Error] Failed to send rejection email:', mailErr);
+      }
+
       return NextResponse.json({
         success: true,
         message: `Đã từ chối yêu cầu xin tham gia từ ${match.fromTeam.name}`
@@ -117,12 +129,12 @@ export async function POST(
         // Re-verify both teams exist in current transaction
         const currentFrom = await tx.team.findUnique({
           where: { id: match.fromTeamId },
-          include: { members: true }
+          include: { members: true, owner: true }
         });
 
         const currentTo = await tx.team.findUnique({
           where: { id: match.toTeamId },
-          include: { members: true }
+          include: { members: true, owner: true }
         });
 
         if (!currentFrom || !currentTo) {
@@ -196,6 +208,18 @@ export async function POST(
           totalMembers
         };
       });
+
+      // Send acceptance email notification to team A (đội xin vào), team B, and Admin
+      try {
+        await sendMatchRequestAcceptedEmails({
+          fromTeam: match.fromTeam,
+          toTeam: match.toTeam,
+          totalMembers: result.totalMembers,
+          responderName: dbUser.name || session.user.name || (isAdmin ? 'Ban Quản Trị' : match.toTeam.name)
+        });
+      } catch (mailErr) {
+        console.error('[Mail Error] Failed to send acceptance email:', mailErr);
+      }
 
       return NextResponse.json({
         success: true,
