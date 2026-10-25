@@ -1,6 +1,5 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from './prisma';
 import { isAdminEmail } from './roles';
 
@@ -13,45 +12,7 @@ export const authOptions: NextAuthOptions = {
             clientSecret: process.env.GOOGLE_CLIENT_SECRET
           })
         ]
-      : []),
-    CredentialsProvider({
-      id: 'google-mock',
-      name: 'Google Quick Login',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        name: { label: 'Họ tên', type: 'text' }
-      },
-      async authorize(credentials) {
-        if (!credentials?.email) return null;
-        const email = credentials.email.trim().toLowerCase();
-        // Tài khoản Admin bắt buộc đăng nhập bằng Google thật, không cho đăng nhập nhanh bằng email
-        if (isAdminEmail(email)) return null;
-        const name = credentials.name?.trim() || email.split('@')[0];
-        const role = isAdminEmail(email) ? 'ADMIN' : 'USER';
-
-        const user = await prisma.user.upsert({
-          where: { email },
-          update: { 
-            name,
-            role
-          },
-          create: {
-            email,
-            name,
-            role,
-            image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`
-          }
-        });
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          image: user.image,
-          role: user.role
-        };
-      }
-    })
+      : [])
   ],
   callbacks: {
     async jwt({ token, user }) {
