@@ -93,7 +93,7 @@ export async function sendTeamMatchRequestEmails({
     .join('');
 
   // Email content for target captain
-  const captainSubject = `[HIV/AIDS Team Building] Yêu cầu gộp đội: ${fromTeam.name} muốn gộp vào ${toTeam.name}`;
+  const captainSubject = `[HIV/AIDS Team Building] Yêu cầu xin tham gia: ${fromTeam.name} muốn gia nhập ${toTeam.name}`;
   const captainHtml = `
     <!DOCTYPE html>
     <html>
@@ -112,12 +112,12 @@ export async function sendTeamMatchRequestEmails({
     <body>
       <div class="container">
         <div class="header">
-          <h2 style="margin: 0; font-size: 20px;">Yêu Cầu Gộp Đội Mới</h2>
+          <h2 style="margin: 0; font-size: 20px;">Yêu Cầu Xin Tham Gia Mới</h2>
           <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Cuộc Thi Tìm Hiểu HIV/AIDS &amp; Hòa Nhập Cộng Đồng</p>
         </div>
         <div class="content">
           <p>Xin chào <strong>${targetRecipientName}</strong> (Đại diện <strong>${toTeam.name}</strong>),</p>
-          <p>Đội <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber}) do <strong>${requesterName}</strong> đại diện vừa gửi yêu cầu gộp đội vào <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của bạn.</p>
+          <p>Đội <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber}) do <strong>${requesterName}</strong> đại diện vừa gửi yêu cầu xin tham gia vào <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của bạn.</p>
           
           <div class="card">
             <h4 style="margin: 0 0 10px; color: #4338ca;">Thông tin tóm tắt:</h4>
@@ -148,7 +148,7 @@ export async function sendTeamMatchRequestEmails({
   `;
 
   // Email content for Admin
-  const adminSubject = `[Admin Thông Báo] Yêu cầu gộp đội mới: ${fromTeam.name} ➔ ${toTeam.name}`;
+  const adminSubject = `[Admin Thông Báo] Yêu cầu xin tham gia mới: ${fromTeam.name} ➔ ${toTeam.name}`;
   const adminHtml = `
     <!DOCTYPE html>
     <html>
@@ -168,11 +168,11 @@ export async function sendTeamMatchRequestEmails({
       <div class="container">
         <div class="header">
           <h2 style="margin: 0; font-size: 20px;">Thông Báo Quản Trị Viên</h2>
-          <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Có một yêu cầu gộp đội mới vừa được gửi</p>
+          <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Có một yêu cầu xin tham gia mới vừa được gửi</p>
         </div>
         <div class="content">
           <p>Kính gửi <strong>Ban Quản Trị</strong>,</p>
-          <p>Người dùng <strong>${requesterName}</strong> (<em>${requesterEmail}</em>) đã gửi yêu cầu gộp đội thi đấu:</p>
+          <p>Người dùng <strong>${requesterName}</strong> (<em>${requesterEmail}</em>) đã gửi yêu cầu xin tham gia đội thi đấu:</p>
 
           <div class="card">
             <h4 style="margin: 0 0 10px; color: #334155;">Chi tiết yêu cầu:</h4>

@@ -438,7 +438,7 @@ export default function Home() {
         showNotice('error', result.error || 'Gửi yêu cầu ghép đội thất bại');
       }
     } catch (err: any) {
-      showNotice('error', err?.message || 'Có lỗi kết nối khi gửi yêu cầu gộp đội.');
+      showNotice('error', err?.message || 'Có lỗi kết nối khi gửi yêu cầu xin tham gia.');
     }
   };
 
@@ -463,7 +463,7 @@ export default function Home() {
 
       const result = await res.json();
       if (result.success) {
-        showNotice('success', result.message || 'Xử lý yêu cầu gộp đội thành công!');
+        showNotice('success', result.message || 'Xử lý yêu cầu xin tham gia thành công!');
         await refreshAll();
       } else {
         showNotice('error', result.error || 'Xử lý yêu cầu thất bại');

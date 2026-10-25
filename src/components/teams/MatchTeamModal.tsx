@@ -74,7 +74,7 @@ export const MatchTeamModal: React.FC<MatchTeamModalProps> = ({
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
           <div>
             <h3 className="text-lg sm:text-xl font-black text-white">
-              Gộp {myTeam.name} Vào Đội Khác
+              Xin Tham Gia Đội Khác
             </h3>
           </div>
           <button
@@ -198,7 +198,7 @@ export const MatchTeamModal: React.FC<MatchTeamModalProps> = ({
                           disabled={submittingToId === target.id}
                           className="w-full sm:w-auto px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-sm border border-purple-500 transition-all text-center flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                         >
-                          Gửi yêu cầu gộp
+                          Xin tham gia
                         </button>
                       )}
                     </div>
@@ -213,10 +213,10 @@ export const MatchTeamModal: React.FC<MatchTeamModalProps> = ({
         {confirmTargetTeam && (
           <div className="absolute inset-0 z-10 p-5 bg-slate-900/95 backdrop-blur-sm rounded-2xl flex flex-col justify-center animate-fade-in">
             <h4 className="text-base font-bold text-white mb-2">
-              Xác nhận gửi yêu cầu gộp đội?
+              Xác nhận gửi yêu cầu xin tham gia?
             </h4>
             <p className="text-xs text-slate-300 leading-relaxed mb-4">
-              Bạn có chắc muốn gửi yêu cầu gộp <strong>{myTeam.name}</strong> ({myCount} người) vào <strong>{confirmTargetTeam.name}</strong> ({confirmTargetTeam.members.length}/5 người)?
+              Bạn có chắc muốn gửi yêu cầu xin tham gia từ <strong>{myTeam.name}</strong> ({myCount} người) vào <strong>{confirmTargetTeam.name}</strong> ({confirmTargetTeam.members.length}/5 người)?
               <br /><br />
               Khi đại diện {confirmTargetTeam.name} hoặc Admin đồng ý, toàn bộ thành viên sẽ chuyển sang {confirmTargetTeam.name} và vị trí #{myTeam.slotNumber} sẽ mở lại cho đội khác.
             </p>

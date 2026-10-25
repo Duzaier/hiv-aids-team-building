@@ -135,7 +135,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
         <div className="p-3.5 rounded-xl bg-purple-950/30 border border-purple-500/40 space-y-2">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
-              <span>Yêu cầu gộp đội chờ duyệt</span>
+              <span>Yêu cầu xin tham gia chờ duyệt</span>
               <span className="px-1.5 py-0.2 rounded bg-purple-500/30 text-purple-200 text-[10px]">
                 {pendingMatches.length}
               </span>
@@ -150,7 +150,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
               >
                 <div>
                   <div className="font-bold text-white">
-                    {m.fromTeamName} ({m.fromMembersCount} người) ➔ gộp vào {m.toTeamName} ({m.toMembersCount}/5 người)
+                    {m.fromTeamName} ({m.fromMembersCount} người) ➔ xin vào {m.toTeamName} ({m.toMembersCount}/5 người)
                   </div>
                   <div className="text-[11px] text-slate-400 mt-0.5">
                     Tổng sau gộp: <strong className="text-emerald-400">{m.fromMembersCount + m.toMembersCount}/5 thành viên</strong>

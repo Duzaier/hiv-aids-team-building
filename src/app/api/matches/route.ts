@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(req);
     if (!session.user || !session.user.email) {
       return NextResponse.json(
-        { success: false, error: 'Vui lòng đăng nhập để gửi yêu cầu gộp đội' },
+        { success: false, error: 'Vui lòng đăng nhập để gửi yêu cầu xin tham gia' },
         { status: 401 }
       );
     }
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json(
-        { success: false, error: 'Bạn không có quyền gửi yêu cầu gộp cho đội này' },
+        { success: false, error: 'Bạn không có quyền gửi yêu cầu xin tham gia cho đội này' },
         { status: 403 }
       );
     }
@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
 
     if (existingRequest) {
       return NextResponse.json(
-        { success: false, error: `Yêu cầu gộp từ ${fromTeam.name} vào ${toTeam.name} đã được gửi trước đó và đang chờ duyệt.` },
+        { success: false, error: `Yêu cầu xin tham gia từ ${fromTeam.name} vào ${toTeam.name} đã được gửi trước đó và đang chờ duyệt.` },
         { status: 400 }
       );
     }
@@ -200,13 +200,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Đã gửi yêu cầu gộp ${fromTeam.name} (${fromCount} người) vào ${toTeam.name} (${toCount}/5 người)! Đang chờ người đại diện ${toTeam.name} hoặc Admin xác nhận.`,
+      message: `Đã gửi yêu cầu xin tham gia từ ${fromTeam.name} (${fromCount} người) vào ${toTeam.name} (${toCount}/5 người)! Đang chờ người đại diện ${toTeam.name} hoặc Admin xác nhận.`,
       matchId: newMatch.id
     });
   } catch (error) {
     console.error('Error creating match request:', error);
     return NextResponse.json(
-      { success: false, error: 'Lỗi máy chủ khi tạo yêu cầu gộp đội' },
+      { success: false, error: 'Lỗi máy chủ khi tạo yêu cầu xin tham gia' },
       { status: 500 }
     );
   }

@@ -55,7 +55,7 @@ export async function POST(
 
     if (!match || match.status !== 'PENDING') {
       return NextResponse.json(
-        { success: false, error: 'Yêu cầu gộp đội này không tồn tại hoặc đã được xử lý trước đó' },
+        { success: false, error: 'Yêu cầu xin tham gia này không tồn tại hoặc đã được xử lý trước đó' },
         { status: 404 }
       );
     }
@@ -77,7 +77,7 @@ export async function POST(
 
       return NextResponse.json({
         success: true,
-        message: `Đã hủy yêu cầu gộp ${match.fromTeam.name} vào ${match.toTeam.name}`
+        message: `Đã hủy yêu cầu xin tham gia của ${match.fromTeam.name} vào ${match.toTeam.name}`
       });
     }
 
@@ -98,7 +98,7 @@ export async function POST(
 
       return NextResponse.json({
         success: true,
-        message: `Đã từ chối yêu cầu gộp từ ${match.fromTeam.name}`
+        message: `Đã từ chối yêu cầu xin tham gia từ ${match.fromTeam.name}`
       });
     }
 
@@ -210,7 +210,7 @@ export async function POST(
   } catch (error: any) {
     console.error('Error handling match response:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Lỗi máy chủ khi xử lý yêu cầu gộp đội' },
+      { success: false, error: error.message || 'Lỗi máy chủ khi xử lý yêu cầu xin tham gia' },
       { status: 500 }
     );
   }

@@ -239,7 +239,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                   <div className="mb-3 p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <span className="font-semibold text-amber-200 block truncate">
-                        Đang gửi yêu cầu gộp sang {outgoingMatch.toTeamName}
+                        Đang gửi yêu cầu xin tham gia sang {outgoingMatch.toTeamName}
                       </span>
                       <span className="text-[10px] text-amber-400/80 block">
                         Đang chờ đại diện {outgoingMatch.toTeamName} hoặc Admin xác nhận
@@ -275,7 +275,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="font-bold text-purple-300 flex items-center gap-1.5 truncate">
                             <HeartHandshake className="w-4 h-4 text-purple-400 shrink-0" />
-                            <span>Yêu cầu gộp từ {m.fromTeamName}</span>
+                            <span>Yêu cầu xin tham gia từ {m.fromTeamName}</span>
                           </span>
                           <span className="text-[10px] text-purple-200 bg-purple-900/80 px-2 py-0.5 rounded font-bold shrink-0">
                             +{m.fromMembersCount} người
@@ -298,7 +298,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                             ) : (
                               <>
                                 <Check className="w-3.5 h-3.5" />
-                                <span>Chấp nhận gộp</span>
+                                <span>Chấp nhận</span>
                               </>
                             )}
                           </button>
@@ -377,7 +377,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                     className="px-2.5 py-1.5 rounded-lg bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-500/50 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <HeartHandshake className="w-3.5 h-3.5 text-purple-300" />
-                    <span>Yêu Cầu Gộp</span>
+                    <span>Xin Tham Gia</span>
                   </button>
                 )}
 
@@ -399,10 +399,10 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                       <button
                         onClick={() => onOpenMatchModal(team)}
                         className="px-2.5 py-1.5 rounded-lg bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
-                        title="Gửi yêu cầu gộp đội sang đội khác"
+                        title="Gửi yêu cầu xin tham gia đội khác"
                       >
                         <HeartHandshake className="w-3.5 h-3.5 text-purple-300" />
-                        <span>Gộp</span>
+                        <span>Xin tham gia</span>
                       </button>
                     )}
                     {onViewDetails && (
