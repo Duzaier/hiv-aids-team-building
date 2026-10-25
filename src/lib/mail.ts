@@ -151,6 +151,10 @@ function renderDarkEmail(opts: DarkShellOptions): string {
   <div style="background-color: #0c0d12; padding: 24px 12px;">
     <div style="max-width: 520px; margin: 0 auto; background-color: #16171d; border-radius: 16px; padding: 28px 24px; border: 1px solid #262730;">
       
+      <div style="margin-bottom: 16px;">
+        <img src="https://hiv-aids-team-building.vercel.app/logo.png" width="44" height="44" style="border-radius: 10px; display: block;" alt="HIV/AIDS Team Building Logo" />
+      </div>
+
       <h2 style="margin: 0 0 18px; font-size: 22px; font-weight: 700; color: ${tColor}; letter-spacing: -0.3px;">
         ${opts.title}
       </h2>
