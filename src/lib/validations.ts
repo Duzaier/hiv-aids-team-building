@@ -20,7 +20,8 @@ export const memberItemSchema = z.union([
       .string()
       .trim()
       .min(8, 'Số điện thoại/Zalo phải có ít nhất 8 số')
-      .max(20, 'Số điện thoại không hợp lệ')
+      .max(20, 'Số điện thoại không hợp lệ'),
+    isCaptain: z.boolean().optional()
   }),
   z
     .string()
@@ -30,7 +31,8 @@ export const memberItemSchema = z.union([
       name,
       studentId: '',
       email: '',
-      phone: ''
+      phone: '',
+      isCaptain: false
     }))
 ]);
 

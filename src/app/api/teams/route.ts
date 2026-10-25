@@ -184,11 +184,14 @@ export async function POST(req: NextRequest) {
 
       const teamName = `Đội ${assignedSlot}`;
 
-      const repMember = members.find((mem: any) => {
-        const memEmail = typeof mem === 'object' ? mem.email || '' : '';
-        return memEmail && dbUser.email && memEmail.trim().toLowerCase() === dbUser.email.trim().toLowerCase();
-      }) || members[0];
-      const repName = (typeof repMember === 'string' ? repMember : repMember?.name || '').trim();
+      const hasExplicitCaptain = members.some((m: any) => m.isCaptain === true);
+      const captainMember = (hasExplicitCaptain ? members.find((m: any) => m.isCaptain === true) : null)
+        || members.find((mem: any) => {
+          const memEmail = typeof mem === 'object' ? mem.email || '' : '';
+          return memEmail && dbUser.email && memEmail.trim().toLowerCase() === dbUser.email.trim().toLowerCase();
+        })
+        || members[0];
+      const repName = (typeof captainMember === 'string' ? captainMember : captainMember?.name || '').trim();
 
       if (repName && repName !== dbUser.name) {
         await tx.user.update({
@@ -210,14 +213,16 @@ export async function POST(req: NextRequest) {
               const studentId = typeof mem === 'object' ? mem.studentId || '' : '';
               const memEmail = typeof mem === 'object' ? mem.email || '' : '';
               const phone = typeof mem === 'object' ? mem.phone || '' : '';
-              const isRep = (memEmail && dbUser.email && memEmail.trim().toLowerCase() === dbUser.email.trim().toLowerCase()) || idx === 0;
+              const isCaptain = hasExplicitCaptain
+                ? Boolean(mem.isCaptain)
+                : ((memEmail && dbUser.email && memEmail.trim().toLowerCase() === dbUser.email.trim().toLowerCase()) || idx === 0);
               return {
                 name: name.trim(),
                 studentId: studentId.trim(),
                 email: memEmail.trim(),
                 phone: phone.trim(),
                 orderIndex: idx + 1,
-                isCaptain: isRep,
+                isCaptain,
                 isFromIndividual: false
               };
             })

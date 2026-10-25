@@ -145,10 +145,13 @@ export async function PATCH(
       }
     });
 
-    const repMember = members?.find((mem: any) => {
-      const memEmail = typeof mem === 'object' ? mem.email || '' : '';
-      return memEmail && existingTeam.owner.email && memEmail.trim().toLowerCase() === existingTeam.owner.email.trim().toLowerCase();
-    }) || members?.[0];
+    const hasExplicitCaptain = members?.some((m: any) => m.isCaptain === true);
+    const repMember = (hasExplicitCaptain ? members?.find((m: any) => m.isCaptain === true) : null)
+      || members?.find((mem: any) => {
+        const memEmail = typeof mem === 'object' ? mem.email || '' : '';
+        return memEmail && existingTeam.owner.email && memEmail.trim().toLowerCase() === existingTeam.owner.email.trim().toLowerCase();
+      })
+      || members?.[0];
     const repName = (typeof repMember === 'string' ? repMember : repMember?.name || '').trim();
 
     const updatedTeam = await prisma.$transaction(async (tx) => {
@@ -184,6 +187,10 @@ export async function PATCH(
 
             const oldInfo = cleanEmail ? oldMemberMap.get(cleanEmail) : undefined;
 
+            const isCaptain = hasExplicitCaptain
+              ? Boolean(mem.isCaptain)
+              : (idx === 0);
+
             return {
               teamId: existingTeam.id,
               name: name.trim(),
@@ -191,7 +198,7 @@ export async function PATCH(
               email: email.trim(),
               phone: phone.trim(),
               orderIndex: idx + 1,
-              isCaptain: false,
+              isCaptain,
               individualId: oldInfo?.individualId || null,
               isFromIndividual: oldInfo?.isFromIndividual || false
             };

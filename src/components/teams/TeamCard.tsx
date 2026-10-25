@@ -118,10 +118,10 @@ export const TeamCard: React.FC<TeamCardProps> = ({
 
   // Người đại diện: ưu tiên tên thành viên nhập trong khung họ tên (thành viên trùng email hoặc thành viên #1 / đội trưởng)
   const representativeName = isRegistered
-    ? (team.ownerEmail ? team.members.find((m) => m.email && m.email.toLowerCase() === team.ownerEmail.toLowerCase())?.name : null) ||
-      team.members.find((m) => m.isCaptain)?.name ||
-      team.members[0]?.name ||
+    ? team.members.find((m) => m.isCaptain)?.name ||
       team.captainName?.trim() ||
+      (team.ownerEmail ? team.members.find((m) => m.email && m.email.toLowerCase() === team.ownerEmail.toLowerCase())?.name : null) ||
+      team.members[0]?.name ||
       team.ownerName
     : '';
   const userAlreadyOwnsTeam = !!ownedTeamId || (currentRole === 'OWNER') || isTeamMember;
@@ -233,6 +233,11 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                         }`}
                       >
                         <span>{member.name}</span>
+                        {member.isCaptain && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 flex items-center gap-0.5">
+                            👑 Đội trưởng
+                          </span>
+                        )}
                         {member.isFromIndividual && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-purple-900/50 text-purple-300 font-medium tracking-wide border border-purple-500/30">
                             Ghép

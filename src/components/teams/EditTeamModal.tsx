@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Team, TeamMember } from '@/types';
-import { X, UserPlus, Trash2 } from 'lucide-react';
+import { Team } from '@/types';
+import { X, UserPlus, Trash2, Crown } from 'lucide-react';
 import { MemberFormItem } from './RegistrationModal';
 
 interface EditTeamModalProps {
@@ -30,12 +30,14 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
 
   useEffect(() => {
     if (team) {
+      const hasCaptain = team.members.some((m) => m.isCaptain);
       setMembers(
-        team.members.map((m) => ({
+        team.members.map((m, idx) => ({
           name: m.name || '',
           studentId: m.studentId || '',
           email: m.email || '',
-          phone: m.phone || ''
+          phone: m.phone || '',
+          isCaptain: hasCaptain ? Boolean(m.isCaptain) : idx === 0
         }))
       );
       setError(null);
@@ -55,15 +57,30 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
     if (error) setError(null);
   };
 
+  const handleSetCaptain = (index: number) => {
+    const updated = members.map((m, i) => ({
+      ...m,
+      isCaptain: i === index
+    }));
+    setMembers(updated);
+  };
+
   const addMember = () => {
     if (members.length < 5) {
-      setMembers([...members, { name: '', studentId: '', email: '', phone: '' }]);
+      setMembers([
+        ...members,
+        { name: '', studentId: '', email: '', phone: '', isCaptain: false }
+      ]);
     }
   };
 
   const removeMember = (index: number) => {
     if (members.length > 1) {
+      const isRemovingCaptain = members[index].isCaptain;
       const updated = members.filter((_, i) => i !== index);
+      if (isRemovingCaptain || !updated.some((m) => m.isCaptain)) {
+        updated[0] = { ...updated[0], isCaptain: true };
+      }
       setMembers(updated);
     }
   };
@@ -92,18 +109,22 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
       }
     }
 
-    const cleanMembers: MemberFormItem[] = members.map((m) => ({
+    const hasCaptain = members.some((m) => m.isCaptain);
+    const cleanMembers: MemberFormItem[] = members.map((m, idx) => ({
       name: m.name.trim(),
       studentId: m.studentId.trim(),
       email: m.email.trim().toLowerCase(),
-      phone: m.phone.trim()
+      phone: m.phone.trim(),
+      isCaptain: hasCaptain ? Boolean(m.isCaptain) : idx === 0
     }));
+
+    const captainMember = cleanMembers.find((m) => m.isCaptain) || cleanMembers[0];
 
     try {
       setIsSubmitting(true);
       await onSubmit({
         teamName: team.name,
-        captainName: '',
+        captainName: captainMember.name,
         members: cleanMembers
       });
     } catch (err: any) {
@@ -127,7 +148,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
             aria-label="Đóng"
           >
             <X className="w-5 h-5" />
@@ -143,14 +164,21 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Danh Sách Thành Viên ({members.length}/5 người)
-            </label>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">
+                Danh Sách Thành Viên ({members.length}/5 người)
+              </label>
+              <span className="text-[11px] text-slate-400">
+                {members.length === 1
+                  ? 'Đội 1 người thì người này là Đội trưởng.'
+                  : 'Bấm "Chỉ định Đội trưởng" để chuyển quyền Đội trưởng cho thành viên khác.'}
+              </span>
+            </div>
             {members.length < 5 && (
               <button
                 type="button"
                 onClick={addMember}
-                className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 <span>+ Thêm người</span>
@@ -162,17 +190,44 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
             {members.map((member, index) => (
               <div
                 key={index}
-                className="p-3.5 sm:p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2.5"
+                className={`p-3.5 sm:p-4 rounded-xl bg-slate-950/70 border space-y-2.5 transition-colors ${
+                  member.isCaptain
+                    ? 'border-amber-500/50 bg-amber-950/10'
+                    : 'border-slate-800 hover:border-slate-700'
+                }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-amber-400">
-                    Thành viên #{index + 1}
-                  </span>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-amber-400">
+                      Thành viên #{index + 1}
+                    </span>
+
+                    {/* Captain Badge or Designation Button */}
+                    {member.isCaptain ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">
+                        <Crown className="w-3 h-3 text-amber-400" />
+                        <span>Đội trưởng</span>
+                      </span>
+                    ) : (
+                      members.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleSetCaptain(index)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-800 hover:bg-amber-950/60 text-slate-400 hover:text-amber-300 border border-slate-700 hover:border-amber-500/40 text-[10px] font-medium transition-colors cursor-pointer"
+                          title="Chỉ định thành viên này làm Đội trưởng"
+                        >
+                          <Crown className="w-2.5 h-2.5" />
+                          <span>Chỉ định Đội trưởng</span>
+                        </button>
+                      )
+                    )}
+                  </div>
+
                   {members.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeMember(index)}
-                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1 transition-colors"
+                      className="text-slate-400 hover:text-rose-400 text-xs flex items-center gap-1 transition-colors cursor-pointer p-1"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Xóa</span>
@@ -189,7 +244,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
                       type="text"
                       value={member.name}
                       onChange={(e) => handleMemberChange(index, 'name', e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500"
                       required
                     />
                   </div>
@@ -202,7 +257,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
                       type="text"
                       value={member.studentId}
                       onChange={(e) => handleMemberChange(index, 'studentId', e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500"
                       required
                     />
                   </div>
@@ -215,7 +270,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
                       type="email"
                       value={member.email}
                       onChange={(e) => handleMemberChange(index, 'email', e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500"
                       required
                     />
                   </div>
@@ -228,7 +283,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
                       type="tel"
                       value={member.phone}
                       onChange={(e) => handleMemberChange(index, 'phone', e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                      className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-amber-500"
                       required
                     />
                   </div>
@@ -242,14 +297,14 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+              className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-amber-950/50 cursor-pointer"
             >
               {isSubmitting ? (
                 <>
@@ -257,7 +312,7 @@ export const EditTeamModal: React.FC<EditTeamModalProps> = ({
                   <span>Đang lưu...</span>
                 </>
               ) : (
-                <span>Lưu thay đổi</span>
+                <span>Lưu Thay Đổi</span>
               )}
             </button>
           </div>
