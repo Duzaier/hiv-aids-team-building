@@ -504,7 +504,7 @@ export default function Home() {
       <Header
         currentUser={currentUser}
         onLoginClick={() => setIsLoginModalOpen(true)}
-        onLogoutClick={() => signOut()}
+        onLogoutClick={() => signOut({ callbackUrl: '/' })}
       />
 
       {/* Main Content Area */}

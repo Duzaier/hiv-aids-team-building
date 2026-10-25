@@ -16,7 +16,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
   const handleGoogleOAuth = () => {
     setIsLoading(true);
-    signIn('google', { callbackUrl: window.location.href });
+    signIn('google', {
+      callbackUrl: window.location.href,
+      prompt: 'select_account'
+    });
   };
 
   return (
@@ -39,7 +42,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         <p className="text-xs text-slate-400 mb-5 leading-relaxed">
-          Đăng nhập an toàn bằng tài khoản <strong>Google (Gmail)</strong> để đăng ký đội thi, xin tham gia hoặc quản lý thông tin.
+          Đăng nhập bằng tài khoản <strong>Google (Gmail)</strong> để đăng ký đội thi, xin tham gia hoặc quản lý thông tin.
         </p>
 
         {/* Real Google OAuth Button */}
