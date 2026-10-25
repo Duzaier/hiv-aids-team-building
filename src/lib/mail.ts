@@ -84,18 +84,12 @@ function getSender(): { name: string; address: string } {
 }
 
 function getAdminEmails(): string[] {
-  const emailSet = new Set<string>();
   const adminEmailsRaw = process.env.ADMIN_EMAILS || DEFAULT_ADMIN_EMAIL;
-  adminEmailsRaw
+  const emails = adminEmailsRaw
     .split(',')
     .map((e) => e.trim().toLowerCase())
-    .filter(Boolean)
-    .forEach((e) => emailSet.add(e));
-
-  emailSet.add(DEFAULT_ADMIN_EMAIL.toLowerCase());
-  emailSet.add('phudt.dev@gmail.com');
-
-  return Array.from(emailSet);
+    .filter(Boolean);
+  return Array.from(new Set(emails));
 }
 
 function getTeamCaptainRecipient(team: TeamInfo): { name: string; emails: string[] } {
@@ -276,6 +270,7 @@ export async function sendTeamMatchRequestEmails({
         transporter.sendMail({
           from: fromSender,
           to: adminEmails.join(', '),
+          replyTo: requesterEmail,
           subject: adminSubject,
           html: adminHtml
         })
