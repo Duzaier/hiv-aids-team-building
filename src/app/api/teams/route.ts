@@ -42,14 +42,18 @@ export async function GET(req: NextRequest) {
           userEmail && t.members.some((m) => m.email && m.email.toLowerCase() === userEmail)
         );
         const canViewFull = isAdmin || isOwner || isMember;
+        const repMember = (t.owner?.email ? t.members.find((m) => m.email && m.email.toLowerCase() === t.owner.email.toLowerCase()) : null)
+          || t.members.find((m) => m.isCaptain)
+          || t.members[0];
+        const repName = repMember?.name?.trim() || t.captainName?.trim() || t.owner?.name || 'Người dùng';
 
         return {
           id: t.id,
           slotNumber: t.slotNumber,
           name: canViewFull ? (t.name || `Đội ${t.slotNumber}`) : `Đội ${t.slotNumber}`,
-          captainName: '',
+          captainName: canViewFull ? repName : '',
           ownerId: canViewFull ? t.ownerId : '',
-          ownerName: canViewFull ? (t.owner.name || 'Người dùng') : '',
+          ownerName: canViewFull ? repName : '',
           ownerEmail: canViewFull ? (t.owner.email || '') : '',
           registeredAt: canViewFull
             ? t.registeredAt.toISOString().replace('T', ' ').substring(0, 16)
@@ -180,12 +184,25 @@ export async function POST(req: NextRequest) {
 
       const teamName = `Đội ${assignedSlot}`;
 
+      const repMember = members.find((mem: any) => {
+        const memEmail = typeof mem === 'object' ? mem.email || '' : '';
+        return memEmail && dbUser.email && memEmail.trim().toLowerCase() === dbUser.email.trim().toLowerCase();
+      }) || members[0];
+      const repName = (typeof repMember === 'string' ? repMember : repMember?.name || '').trim();
+
+      if (repName && repName !== dbUser.name) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { name: repName }
+        });
+      }
+
       // Create team and members atomically
       const createdTeam = await tx.team.create({
         data: {
           slotNumber: assignedSlot,
           name: teamName,
-          captainName: '',
+          captainName: repName,
           ownerId: userId,
           members: {
             create: members.map((mem: any, idx: number) => {
@@ -193,13 +210,14 @@ export async function POST(req: NextRequest) {
               const studentId = typeof mem === 'object' ? mem.studentId || '' : '';
               const memEmail = typeof mem === 'object' ? mem.email || '' : '';
               const phone = typeof mem === 'object' ? mem.phone || '' : '';
+              const isRep = (memEmail && dbUser.email && memEmail.trim().toLowerCase() === dbUser.email.trim().toLowerCase()) || idx === 0;
               return {
                 name: name.trim(),
                 studentId: studentId.trim(),
                 email: memEmail.trim(),
                 phone: phone.trim(),
                 orderIndex: idx + 1,
-                isCaptain: false,
+                isCaptain: isRep,
                 isFromIndividual: false
               };
             })
@@ -226,9 +244,9 @@ export async function POST(req: NextRequest) {
           id: newTeam.id,
           slotNumber: newTeam.slotNumber,
           name: newTeam.name,
-          captainName: '',
+          captainName: newTeam.captainName || newTeam.owner.name,
           ownerId: newTeam.ownerId,
-          ownerName: newTeam.owner.name,
+          ownerName: newTeam.captainName || newTeam.owner.name,
           ownerEmail: newTeam.owner.email,
           registeredAt: newTeam.registeredAt.toISOString().replace('T', ' ').substring(0, 16),
           members: newTeam.members.map((m) => ({

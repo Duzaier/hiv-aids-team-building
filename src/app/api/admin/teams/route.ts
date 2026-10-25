@@ -38,16 +38,23 @@ export async function GET(req: NextRequest) {
       totalSlots: 6,
       occupiedCount: teams.length,
       availableCount: 6 - teams.length,
-      teams: teams.map((t) => ({
-        id: t.id,
-        slotNumber: t.slotNumber,
-        name: t.name,
-        ownerId: t.ownerId,
-        ownerName: t.owner.name,
+      teams: teams.map((t) => {
+        const repMember = (t.owner?.email ? t.members.find((m) => m.email && m.email.toLowerCase() === t.owner.email.toLowerCase()) : null)
+          || t.members.find((m) => m.isCaptain)
+          || t.members[0];
+        const repName = repMember?.name?.trim() || t.captainName?.trim() || t.owner.name || 'Người dùng';
+        return {
+          id: t.id,
+          slotNumber: t.slotNumber,
+          name: t.name,
+          ownerId: t.ownerId,
+          ownerName: repName,
+          captainName: repName,
         ownerEmail: t.owner.email,
         registeredAt: t.registeredAt.toISOString().replace('T', ' ').substring(0, 16),
         members: t.members
-      })),
+        };
+      }),
       recentAuditLogs: auditLogs
     });
   } catch (error) {

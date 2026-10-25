@@ -30,15 +30,20 @@ export async function GET(
       );
     }
 
+    const repMember = (team.owner?.email ? team.members.find((m) => m.email && m.email.toLowerCase() === team.owner.email.toLowerCase()) : null)
+      || team.members.find((m) => m.isCaptain)
+      || team.members[0];
+    const repName = repMember?.name?.trim() || team.captainName?.trim() || team.owner?.name || 'Người dùng';
+
     return NextResponse.json({
       success: true,
       team: {
         id: team.id,
         slotNumber: team.slotNumber,
         name: team.name,
-        captainName: '',
+        captainName: repName,
         ownerId: team.ownerId,
-        ownerName: team.owner.name,
+        ownerName: repName,
         ownerEmail: team.owner.email,
         version: team.version,
         registeredAt: team.registeredAt.toISOString().replace('T', ' ').substring(0, 16),
@@ -140,7 +145,19 @@ export async function PATCH(
       }
     });
 
+    const repMember = members?.find((mem: any) => {
+      const memEmail = typeof mem === 'object' ? mem.email || '' : '';
+      return memEmail && existingTeam.owner.email && memEmail.trim().toLowerCase() === existingTeam.owner.email.trim().toLowerCase();
+    }) || members?.[0];
+    const repName = (typeof repMember === 'string' ? repMember : repMember?.name || '').trim();
+
     const updatedTeam = await prisma.$transaction(async (tx) => {
+      if (repName && existingTeam.ownerId) {
+        await tx.user.update({
+          where: { id: existingTeam.ownerId },
+          data: { name: repName }
+        });
+      }
       if (members && members.length > 0) {
         const addedCount = members.length - existingTeam.members.length;
         if (addedCount > 0) {
@@ -186,7 +203,7 @@ export async function PATCH(
         where: { id: existingTeam.id },
         data: {
           name: teamName || existingTeam.name,
-          captainName: '',
+          captainName: repName,
           version: { increment: 1 }
         },
         include: {
@@ -207,9 +224,9 @@ export async function PATCH(
         id: updatedTeam.id,
         slotNumber: updatedTeam.slotNumber,
         name: updatedTeam.name,
-        captainName: '',
+        captainName: repName,
         ownerId: updatedTeam.ownerId,
-        ownerName: updatedTeam.owner.name,
+        ownerName: repName || updatedTeam.owner.name,
         version: updatedTeam.version,
         members: updatedTeam.members.map((m) => ({
           id: m.id,

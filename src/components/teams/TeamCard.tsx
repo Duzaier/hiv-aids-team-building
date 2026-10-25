@@ -115,6 +115,15 @@ export const TeamCard: React.FC<TeamCardProps> = ({
           currentUser.email && m.email && m.email.toLowerCase() === currentUser.email.toLowerCase()
       ));
   const isMyTeam = isTeamCaptain || isTeamMember;
+
+  // Người đại diện: ưu tiên tên thành viên nhập trong khung họ tên (thành viên trùng email hoặc thành viên #1 / đội trưởng)
+  const representativeName = isRegistered
+    ? (team.ownerEmail ? team.members.find((m) => m.email && m.email.toLowerCase() === team.ownerEmail.toLowerCase())?.name : null) ||
+      team.members.find((m) => m.isCaptain)?.name ||
+      team.members[0]?.name ||
+      team.captainName?.trim() ||
+      team.ownerName
+    : '';
   const userAlreadyOwnsTeam = !!ownedTeamId || (currentRole === 'OWNER') || isTeamMember;
 
   const remainingSlots = isRegistered ? 5 - team.members.length : 5;
@@ -201,7 +210,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                 <div className="flex items-center justify-between gap-2 mb-2.5">
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
                     <UserIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>Người đại diện: <strong className="text-slate-200 font-semibold">{team.ownerName}</strong></span>
+                    <span>Người đại diện: <strong className="text-slate-200 font-semibold">{representativeName}</strong></span>
                   </div>
                 </div>
 

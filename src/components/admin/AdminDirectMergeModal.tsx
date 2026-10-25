@@ -220,7 +220,7 @@ export const AdminDirectMergeModal: React.FC<AdminDirectMergeModalProps> = ({
                 <div className="pt-1.5 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-0.5">
                   <div className="flex justify-between">
                     <span>Đại diện:</span>
-                    <strong className="text-slate-200">{fromTeam.ownerName}</strong>
+                    <strong className="text-slate-200">{(fromTeam.ownerEmail ? fromTeam.members.find((m) => m.email && m.email.toLowerCase() === fromTeam.ownerEmail.toLowerCase())?.name : null) || fromTeam.members[0]?.name || fromTeam.captainName || fromTeam.ownerName}</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Tổng quân số hiện tại:</span>
@@ -259,7 +259,7 @@ export const AdminDirectMergeModal: React.FC<AdminDirectMergeModalProps> = ({
                 <div className="pt-1.5 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-0.5">
                   <div className="flex justify-between">
                     <span>Đại diện:</span>
-                    <strong className="text-slate-200">{toTeam.ownerName}</strong>
+                    <strong className="text-slate-200">{(toTeam.ownerEmail ? toTeam.members.find((m) => m.email && m.email.toLowerCase() === toTeam.ownerEmail.toLowerCase())?.name : null) || toTeam.members[0]?.name || toTeam.captainName || toTeam.ownerName}</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Hiện có:</span>

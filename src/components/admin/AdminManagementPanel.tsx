@@ -217,7 +217,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                           <span className="text-[10px] text-slate-500">Slot #{team.slotNumber}</span>
                         </td>
                         <td className="py-3 px-3.5 text-slate-300">
-                          <span className="font-medium text-slate-200">{team.ownerName}</span>
+                          <span className="font-medium text-slate-200">{(team.ownerEmail ? team.members.find((m) => m.email && m.email.toLowerCase() === team.ownerEmail.toLowerCase())?.name : null) || team.members[0]?.name || team.captainName || team.ownerName}</span>
                           <span className="text-[10px] text-slate-500 block truncate max-w-[180px]">{team.ownerEmail}</span>
                         </td>
                         <td className="py-3 px-3.5">

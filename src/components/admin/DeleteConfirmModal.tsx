@@ -68,7 +68,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           </div>
           <div className="flex justify-between">
             <span className="text-slate-400">Đội trưởng:</span>
-            <span className="text-slate-200 truncate ml-2">{team.ownerName}</span>
+            <span className="text-slate-200 truncate ml-2">{(team.ownerEmail ? team.members.find((m) => m.email && m.email.toLowerCase() === team.ownerEmail.toLowerCase())?.name : null) || team.members[0]?.name || team.captainName || team.ownerName}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-400">Số lượng:</span>

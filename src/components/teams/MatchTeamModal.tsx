@@ -183,7 +183,7 @@ export const MatchTeamModal: React.FC<MatchTeamModalProps> = ({
                         Sau khi gộp: <span className="text-emerald-400 font-bold">{newTotal}/5 người</span>
                       </div>
                       <div className="text-[11px] text-slate-500 truncate mt-0.5">
-                        Người đại diện: {target.ownerName}
+                        Người đại diện: {(target.ownerEmail ? target.members.find((m) => m.email && m.email.toLowerCase() === target.ownerEmail.toLowerCase())?.name : null) || target.members[0]?.name || target.captainName || target.ownerName}
                       </div>
                     </div>
 

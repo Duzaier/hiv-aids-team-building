@@ -68,10 +68,11 @@ export const authOptions: NextAuthOptions = {
         const email = token.email.toLowerCase();
         const role = isAdminEmail(email) ? 'ADMIN' : 'USER';
 
+        const existing = await prisma.user.findUnique({ where: { email } });
         const dbUser = await prisma.user.upsert({
           where: { email },
           update: {
-            name: session.user.name || undefined,
+            name: (existing?.name && existing.name !== email.split('@')[0]) ? existing.name : (session.user.name || undefined),
             image: session.user.image || undefined,
             role
           },
