@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+﻿import nodemailer from 'nodemailer';
 
 export interface TeamMemberInfo {
   id: string;
@@ -41,7 +41,6 @@ export interface MatchRequestRejectedEmailParams {
   responderName: string;
 }
 
-// Create reusable transporter
 function getTransporter() {
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '465', 10);
@@ -57,15 +56,11 @@ function getTransporter() {
     host,
     port,
     secure,
-    auth: {
-      user,
-      pass
-    }
+    auth: { user, pass }
   });
 }
 
 const DEFAULT_ADMIN_EMAIL = 'phudt.ce192043@gmail.com';
-
 
 function getSender(): { name: string; address: string } {
   const defaultAddress = process.env.SMTP_USER || process.env.GMAIL_USER || DEFAULT_ADMIN_EMAIL;
@@ -89,14 +84,20 @@ function getSender(): { name: string; address: string } {
 }
 
 function getAdminEmails(): string[] {
+  const emailSet = new Set<string>();
   const adminEmailsRaw = process.env.ADMIN_EMAILS || DEFAULT_ADMIN_EMAIL;
-  return adminEmailsRaw
+  adminEmailsRaw
     .split(',')
     .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+    .filter(Boolean)
+    .forEach((e) => emailSet.add(e));
+
+  emailSet.add(DEFAULT_ADMIN_EMAIL.toLowerCase());
+  emailSet.add('phudt.dev@gmail.com');
+
+  return Array.from(emailSet);
 }
 
-// Helper to resolve Captain info and recipient emails (captain's entered email and owner's Google login email)
 function getTeamCaptainRecipient(team: TeamInfo): { name: string; emails: string[] } {
   const captainMember = team.members.find((m) => m.isCaptain) || team.members[0];
   const name = captainMember?.name?.trim() || team.owner?.name?.trim() || `Đội trưởng ${team.name}`;
@@ -109,15 +110,138 @@ function getTeamCaptainRecipient(team: TeamInfo): { name: string; emails: string
     emails.add(team.owner.email.trim().toLowerCase());
   }
 
-  return {
-    name,
-    emails: Array.from(emails)
-  };
+  return { name, emails: Array.from(emails) };
 }
 
-// 1. Khi bên A xin tham gia vào đội B:
-// -> Đội trưởng đội B nhận được mail thông báo
-// -> Admin nhận được mail thông báo
+function getVietnamTimestamp(): string {
+  try {
+    return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).format(new Date());
+  } catch {
+    return new Date().toLocaleString('vi-VN');
+  }
+}
+
+function renderMemberRoster(members: TeamMemberInfo[]): string {
+  return members
+    .map((m, idx) => {
+      const isCaptain = m.isCaptain || idx === 0;
+      const roleBadge = isCaptain
+        ? `<span style="background-color: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase;">⭐ Đội trưởng</span>`
+        : `<span style="background-color: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">Thành viên</span>`;
+
+      return `
+        <tr style="border-bottom: 1px solid #e2e8f0; ${idx % 2 === 1 ? 'background-color: #fafbfc;' : ''}">
+          <td style="padding: 12px 14px; font-size: 13px; font-weight: 700; color: #64748b; text-align: center;">#${idx + 1}</td>
+          <td style="padding: 12px 14px; font-size: 14px; font-weight: 600; color: #1e293b;">
+            ${m.name}
+            ${m.email ? `<div style="font-size: 12px; font-weight: 400; color: #64748b; margin-top: 2px;">✉️ ${m.email}</div>` : ''}
+          </td>
+          <td style="padding: 12px 14px; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #0284c7; font-weight: 600;">
+            ${m.studentId ? `<span style="background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">${m.studentId}</span>` : '<span style="color:#94a3b8;">--</span>'}
+          </td>
+          <td style="padding: 12px 14px; font-size: 13px; color: #334155;">
+            ${m.phone ? `📞 ${m.phone}` : '<span style="color:#94a3b8;">--</span>'}
+          </td>
+          <td style="padding: 12px 14px; text-align: right;">
+            ${roleBadge}
+          </td>
+        </tr>
+      `;
+    })
+    .join('');
+}
+
+interface MasterEmailOptions {
+  badgeText: string;
+  badgeBg: string;
+  badgeColor: string;
+  headerGradient: string;
+  headerIcon: string;
+  title: string;
+  subtitle: string;
+  mainHtml: string;
+  ctaText?: string;
+  ctaUrl?: string;
+  ctaBg?: string;
+}
+
+function renderMasterEmail(opts: MasterEmailOptions): string {
+  const timeStr = getVietnamTimestamp();
+
+  return `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${opts.title}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.6; color: #1e293b;">
+  <div style="background-color: #f1f5f9; padding: 32px 16px;">
+    <div style="max-width: 640px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0;">
+      
+      <div style="background: #0f172a; color: #94a3b8; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 10px 24px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.08);">
+        🎗️ CUỘC THI TÌM HIỂU KIẾN THỨC PHÒNG CHỐNG HIV/AIDS &amp; HÒA NHẬP CỘNG ĐỒNG 🎗️
+      </div>
+
+      <div style="background: ${opts.headerGradient}; padding: 36px 32px 32px; color: #ffffff; text-align: center;">
+        <div style="display: inline-block; background-color: ${opts.badgeBg}; color: ${opts.badgeColor}; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 14px; border-radius: 9999px; margin-bottom: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          ${opts.headerIcon} ${opts.badgeText}
+        </div>
+        <h1 style="margin: 0; font-size: 24px; font-weight: 800; line-height: 1.3; color: #ffffff; letter-spacing: -0.5px;">
+          ${opts.title}
+        </h1>
+        <p style="margin: 10px 0 0; font-size: 14px; color: rgba(255, 255, 255, 0.9); font-weight: 400; max-width: 480px; margin-left: auto; margin-right: auto;">
+          ${opts.subtitle}
+        </p>
+      </div>
+
+      <div style="padding: 32px 28px;">
+        ${opts.mainHtml}
+
+        ${opts.ctaText && opts.ctaUrl ? `
+          <div style="margin: 32px 0 16px; text-align: center;">
+            <a href="${opts.ctaUrl}" target="_blank" style="display: inline-block; background: ${opts.ctaBg || '#4f46e5'}; color: #ffffff !important; font-size: 15px; font-weight: 700; text-decoration: none; padding: 15px 36px; border-radius: 12px; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35); text-align: center;">
+              ${opts.ctaText}
+            </a>
+            <div style="margin-top: 10px; font-size: 12px; color: #94a3b8;">
+              (Liên kết mở trực tiếp trang web quản trị và danh sách đội thi)
+            </div>
+          </div>
+        ` : ''}
+      </div>
+
+      <div style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 24px 28px; text-align: center;">
+        <p style="margin: 0; font-size: 13px; font-weight: 700; color: #334155;">
+          BAN TỔ CHỨC CUỘC THI TÌM HIỂU KIẾN THỨC HIV/AIDS
+        </p>
+        <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">
+          Cổng thông tin ghép đội và thi đấu trực tuyến chính thức
+        </p>
+        <div style="margin: 16px 0; height: 1px; background: #e2e8f0;"></div>
+        <p style="margin: 0; font-size: 11px; color: #94a3b8; line-height: 1.5;">
+          ⏰ Thời gian ghi nhận: <strong>${timeStr} (Giờ Việt Nam)</strong><br>
+          📧 Email này được gửi tự động từ hệ thống thông báo ghép đội thi đấu. Vui lòng không phản hồi trực tiếp qua địa chỉ này.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+// 1. KHI ĐỘI A XIN THAM GIA VÀO ĐỘI B
 export async function sendTeamMatchRequestEmails({
   fromTeam,
   toTeam,
@@ -125,153 +249,195 @@ export async function sendTeamMatchRequestEmails({
   requesterEmail
 }: MatchRequestEmailParams) {
   const transporter = getTransporter();
-  const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const appUrl = process.env.NEXTAUTH_URL || 'https://hiv-aids-team-building.vercel.app';
   const fromSender = getSender();
 
   const toCaptain = getTeamCaptainRecipient(toTeam);
   const adminEmails = getAdminEmails();
 
-  const totalMembersAfter = fromTeam.members.length + toTeam.members.length;
+  const fromCount = fromTeam.members.length;
+  const toCount = toTeam.members.length;
+  const totalCount = fromCount + toCount;
+  const remainingSlots = 5 - totalCount;
 
-  const fromMembersHtml = fromTeam.members
-    .map(
-      (m, idx) => `
-        <li style="margin-bottom: 6px; color: #334155;">
-          <strong>#${idx + 1} ${m.name}</strong> 
-          ${m.isCaptain ? '<span style="background: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold;">Đội trưởng</span>' : ''}
-          ${m.studentId ? ` — MSSV: <code style="background: #f1f5f9; padding: 2px 4px; border-radius: 4px;">${m.studentId}</code>` : ''}
-          ${m.phone ? ` — SĐT: ${m.phone}` : ''}
-        </li>
-      `
-    )
-    .join('');
+  const rosterHtml = renderMemberRoster(fromTeam.members);
 
-  // Email content for Captain of Team B
-  const captainSubject = `[Yêu Cầu Mới] Đội ${fromTeam.name} xin tham gia gộp vào đội ${toTeam.name} của bạn`;
-  const captainHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
-        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-        .header { background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #ffffff; padding: 28px 24px; text-align: center; }
-        .content { padding: 24px; }
-        .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 16px 0; }
-        .button { display: inline-block; background: #7c3aed; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-weight: bold; font-size: 14px; margin-top: 16px; text-align: center; }
-        .footer { padding: 16px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; background: #f8fafc; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h2 style="margin: 0; font-size: 20px;">Yêu Cầu Xin Tham Gia Mới</h2>
-          <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Cuộc Thi Tìm Hiểu HIV/AIDS &amp; Hòa Nhập Cộng Đồng</p>
-        </div>
-        <div class="content">
-          <p>Xin chào <strong>${toCaptain.name}</strong> (Đại diện <strong>${toTeam.name}</strong>),</p>
-          <p>Đội <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber}) do <strong>${requesterName}</strong> đại diện vừa gửi yêu cầu xin tham gia gộp vào đội <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của bạn.</p>
-          
-          <div class="card">
-            <h4 style="margin: 0 0 10px; color: #4338ca;">Thông tin tóm tắt:</h4>
-            <ul style="margin: 0; padding-left: 20px;">
-              <li>Đội xin gia nhập: <strong>${fromTeam.name}</strong> (${fromTeam.members.length} thành viên)</li>
-              <li>Đội của bạn: <strong>${toTeam.name}</strong> (Hiện có ${toTeam.members.length}/5 thành viên)</li>
-              <li>Sĩ số sau khi gộp: <strong style="color: #16a34a;">${totalMembersAfter}/5 người</strong> (Hợp lệ &le; 5 người)</li>
-            </ul>
-          </div>
+  // Email cho Đội trưởng Đội B
+  const captainSubject = `🔔 [Yêu Cầu Mới] Đội ${fromTeam.name} xin gia nhập vào Đội ${toTeam.name} của bạn`;
+  const captainBody = `
+    <p style="font-size: 15px; margin-top: 0;">
+      Kính gửi Đội trưởng <strong>${toCaptain.name}</strong> (Đại diện <strong>${toTeam.name}</strong>),
+    </p>
+    <p style="font-size: 14px; color: #475569; margin-bottom: 24px;">
+      Đội <strong>${fromTeam.name}</strong> (Hiện tại đang giữ <strong>Slot #${fromTeam.slotNumber}</strong>) do <strong>${requesterName}</strong> đại diện vừa chính thức gửi yêu cầu xin ghép toàn bộ thành viên vào <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của bạn.
+    </p>
 
-          <h4 style="margin: 16px 0 8px; color: #334155;">Danh sách thành viên từ ${fromTeam.name} sẽ tham gia:</h4>
-          <ul style="margin: 0 0 16px; padding-left: 20px;">
-            ${fromMembersHtml}
-          </ul>
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; margin-bottom: 24px;">
+      <h3 style="margin: 0 0 14px; font-size: 14px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">
+        📊 Bảng Tóm Tắt Tình Trạng Ghép Đội
+      </h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; width: 45%;">Đội xin gia nhập:</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #0284c7;">
+            ${fromTeam.name} (Slot #${fromTeam.slotNumber} • ${fromCount} thành viên)
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;">Đội của bạn hiện tại:</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #4f46e5;">
+            ${toTeam.name} (Slot #${toTeam.slotNumber} • ${toCount}/5 thành viên)
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;">Dự kiến sau khi ghép:</td>
+          <td style="padding: 8px 0; font-weight: 800; color: #16a34a; font-size: 15px;">
+            ${totalCount}/5 thành viên ${remainingSlots === 0 ? '(Đủ đội hoàn hảo - 100%)' : `(Còn trống ${remainingSlots} slot)`}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;">Quy định giải phóng slot:</td>
+          <td style="padding: 8px 0; color: #059669; font-weight: 600;">
+            Khi chấp thuận, Slot #${fromTeam.slotNumber} sẽ được tự động mở lại cho các đội khác.
+          </td>
+        </tr>
+      </table>
+    </div>
 
-          <p>Nếu bạn đồng ý, toàn bộ thành viên của ${fromTeam.name} sẽ được chuyển vào đội ${toTeam.name} của bạn, và vị trí Slot #${fromTeam.slotNumber} sẽ được mở lại cho các đội khác.</p>
+    <h3 style="margin: 24px 0 12px; font-size: 15px; font-weight: 700; color: #1e293b;">
+      👥 Danh Sách ${fromCount} Thành Viên Từ ${fromTeam.name} Xin Gia Nhập:
+    </h3>
+    <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 24px;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+          <tr style="background: #f1f5f9; color: #475569; font-size: 12px; text-transform: uppercase;">
+            <th style="padding: 10px 14px; text-align: center;">STT</th>
+            <th style="padding: 10px 14px;">Họ Và Tên</th>
+            <th style="padding: 10px 14px;">MSSV</th>
+            <th style="padding: 10px 14px;">Số Điện Thoại</th>
+            <th style="padding: 10px 14px; text-align: right;">Vai Trò</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rosterHtml}
+        </tbody>
+      </table>
+    </div>
 
-          <div style="text-align: center;">
-            <a href="${appUrl}" class="button" target="_blank">Đăng Nhập Để Xem &amp; Phê Duyệt</a>
-          </div>
-        </div>
-        <div class="footer">
-          Email này được gửi tự động tới Đội trưởng đội ${toTeam.name}.
-        </div>
-      </div>
-    </body>
-    </html>
+    <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 18px; border-radius: 0 10px 10px 0; margin-bottom: 20px;">
+      <p style="margin: 0; font-size: 13px; color: #1e40af; line-height: 1.5;">
+        💡 <strong>Hướng dẫn:</strong> Vui lòng đăng nhập vào hệ thống để bấm <strong>"Chấp Thuận"</strong> hoặc <strong>"Từ Chối"</strong>. Kết quả sẽ được tự động gửi về email của Đội trưởng ${fromTeam.name} và Ban Quản Trị.
+      </p>
+    </div>
   `;
 
-  // Email content for Admin
-  const adminSubject = `[Admin Thông Báo] Yêu cầu xin tham gia mới: ${fromTeam.name} ➔ ${toTeam.name}`;
-  const adminHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
-        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-        .header { background: linear-gradient(135deg, #0f172a, #334155); color: #ffffff; padding: 24px; text-align: center; }
-        .content { padding: 24px; }
-        .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 16px 0; }
-        .button { display: inline-block; background: #4f46e5; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-weight: bold; font-size: 14px; margin-top: 16px; text-align: center; }
-        .footer { padding: 16px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; background: #f8fafc; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h2 style="margin: 0; font-size: 20px;">Thông Báo Quản Trị Viên</h2>
-          <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Có một yêu cầu xin tham gia mới vừa được gửi</p>
-        </div>
-        <div class="content">
-          <p>Kính gửi <strong>Ban Quản Trị</strong>,</p>
-          <p>Người dùng <strong>${requesterName}</strong> (<em>${requesterEmail}</em>) đã gửi yêu cầu xin tham gia gộp đội:</p>
+  const captainHtml = renderMasterEmail({
+    badgeText: 'Yêu Cầu Ghép Đội Mới',
+    badgeBg: '#fef3c7',
+    badgeColor: '#b45309',
+    headerGradient: 'linear-gradient(135deg, #4338ca 0%, #6366f1 50%, #8b5cf6 100%)',
+    headerIcon: '📩',
+    title: `Đội ${fromTeam.name} Xin Ghép Vào Đội Bạn`,
+    subtitle: `Vui lòng xem thông tin thành viên và quyết định phê duyệt yêu cầu tham gia`,
+    mainHtml: captainBody,
+    ctaText: '👉 Đăng Nhập & Phê Duyệt Yêu Cầu',
+    ctaUrl: appUrl,
+    ctaBg: '#4f46e5'
+  });
 
-          <div class="card">
-            <h4 style="margin: 0 0 10px; color: #334155;">Chi tiết yêu cầu:</h4>
-            <ul style="margin: 0; padding-left: 20px;">
-              <li>Đội xin gia nhập: <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber} — ${fromTeam.members.length} người)</li>
-              <li>Đội nhận: <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber} — ${toTeam.members.length} người)</li>
-              <li>Đội trưởng đội nhận: <strong>${toCaptain.name}</strong> (<em>${toCaptain.emails.join(', ')}</em>)</li>
-              <li>Tổng quân số dự kiến: <strong style="color: #16a34a;">${totalMembersAfter}/5 người</strong></li>
-              <li>Giải phóng slot: <strong>Slot #${fromTeam.slotNumber}</strong> sẽ được mở lại nếu được duyệt.</li>
-            </ul>
-          </div>
+  // Email cho Admin
+  const adminSubject = `🛡️ [Admin Alert] Yêu cầu xin ghép đội mới: ${fromTeam.name} ➔ ${toTeam.name}`;
+  const adminBody = `
+    <p style="font-size: 15px; margin-top: 0;">
+      Kính gửi <strong>Ban Quản Trị Cuộc Thi</strong>,
+    </p>
+    <p style="font-size: 14px; color: #475569; margin-bottom: 20px;">
+      Hệ thống vừa ghi nhận một yêu cầu xin ghép đội mới giữa hai đội thi với thông tin chi tiết như sau:
+    </p>
 
-          <h4 style="margin: 16px 0 8px; color: #334155;">Danh sách thành viên ${fromTeam.name}:</h4>
-          <ul style="margin: 0 0 16px; padding-left: 20px;">
-            ${fromMembersHtml}
-          </ul>
+    <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px; padding: 20px; margin-bottom: 24px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; width: 38%;">Người gửi yêu cầu:</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #0f172a;">
+            ${requesterName} (<em>${requesterEmail}</em>)
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;">Đội xin ghép (Bên A):</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #0284c7;">
+            ${fromTeam.name} • Slot #${fromTeam.slotNumber} (${fromCount} thành viên)
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;">Đội nhận ghép (Bên B):</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #4f46e5;">
+            ${toTeam.name} • Slot #${toTeam.slotNumber} (${toCount}/5 thành viên)
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;">Đội trưởng Đội B (Người nhận):</td>
+          <td style="padding: 8px 0; font-weight: 600; color: #334155;">
+            ${toCaptain.name} (${toCaptain.emails.join(', ')})
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;">Tổng quân số sau ghép:</td>
+          <td style="padding: 8px 0; font-weight: 800; color: #16a34a; font-size: 15px;">
+            ${totalCount}/5 người ${totalCount <= 5 ? '✅ (Hợp lệ)' : '❌ (Quá tải)'}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b;">Trạng thái giải phóng:</td>
+          <td style="padding: 8px 0; color: #d97706; font-weight: 600;">
+            Slot #${fromTeam.slotNumber} sẽ được thu hồi và mở lại thành 5 chỗ trống khi duyệt.
+          </td>
+        </tr>
+      </table>
+    </div>
 
-          <p>Admin có thể duyệt yêu cầu này trực tiếp trong Bảng Quản Lý hoặc người đại diện của ${toTeam.name} có thể tự duyệt.</p>
-
-          <div style="text-align: center;">
-            <a href="${appUrl}" class="button" target="_blank">Mở Bảng Điều Khiển Admin</a>
-          </div>
-        </div>
-        <div class="footer">
-          Hệ thống Quản lý Đội thi — HIV/AIDS Team Building Platform
-        </div>
-      </div>
-    </body>
-    </html>
+    <h3 style="margin: 20px 0 10px; font-size: 14px; font-weight: 700; color: #1e293b;">
+      👥 Danh Sách Thành Viên Đội Xin Ghép (${fromTeam.name}):
+    </h3>
+    <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 24px;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+          <tr style="background: #f1f5f9; color: #475569; font-size: 12px; text-transform: uppercase;">
+            <th style="padding: 10px 14px; text-align: center;">STT</th>
+            <th style="padding: 10px 14px;">Họ Và Tên</th>
+            <th style="padding: 10px 14px;">MSSV</th>
+            <th style="padding: 10px 14px;">Số Điện Thoại</th>
+            <th style="padding: 10px 14px; text-align: right;">Vai Trò</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rosterHtml}
+        </tbody>
+      </table>
+    </div>
   `;
+
+  const adminHtml = renderMasterEmail({
+    badgeText: 'Admin Notification • Match Request',
+    badgeBg: '#e0e7ff',
+    badgeColor: '#3730a3',
+    headerGradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+    headerIcon: '🛡️',
+    title: `Thông Báo Ghép Đội: ${fromTeam.name} ➔ ${toTeam.name}`,
+    subtitle: `Ghi nhận yêu cầu xin ghép đội mới trên hệ thống HIV/AIDS Team Building`,
+    mainHtml: adminBody,
+    ctaText: '🛡️ Mở Bảng Điều Khiển Quản Trị (Admin)',
+    ctaUrl: appUrl,
+    ctaBg: '#0f172a'
+  });
 
   if (!transporter) {
-    console.log(
-      `[Mail Service: Simulated] SMTP credentials not set in .env. Email would be sent to:\n- Captain Team B: ${toCaptain.emails.join(', ')}\n- Admin: ${adminEmails.join(', ')}`
-    );
-    return {
-      success: true,
-      simulated: true,
-      toCaptainEmails: toCaptain.emails,
-      adminEmails
-    };
+    return { success: true, simulated: true, toCaptainEmails: toCaptain.emails, adminEmails };
   }
 
   try {
     const promises: Promise<any>[] = [];
+
     if (toCaptain.emails.length > 0) {
       promises.push(
         transporter.sendMail({
@@ -282,6 +448,7 @@ export async function sendTeamMatchRequestEmails({
         })
       );
     }
+
     if (adminEmails.length > 0) {
       promises.push(
         transporter.sendMail({
@@ -294,28 +461,14 @@ export async function sendTeamMatchRequestEmails({
     }
 
     await Promise.all(promises);
-    console.log(`[Mail Service] Sent match request notifications to Captain Team B (${toCaptain.emails.join(', ')}) and Admin (${adminEmails.join(', ')})`);
-
-    return {
-      success: true,
-      simulated: false,
-      toCaptainEmails: toCaptain.emails,
-      adminEmails
-    };
+    return { success: true, simulated: false, toCaptainEmails: toCaptain.emails, adminEmails };
   } catch (err) {
     console.error('[Mail Service Error] Failed to send email via SMTP:', err);
-    return {
-      success: false,
-      error: err,
-      toCaptainEmails: toCaptain.emails,
-      adminEmails
-    };
+    return { success: false, error: err, toCaptainEmails: toCaptain.emails, adminEmails };
   }
 }
 
-// 2. Khi yêu cầu được CHẤP THUẬN (ACCEPTED):
-// -> Đội trưởng đội A nhận được mail thông báo kết quả
-// -> Admin nhận được mail thông báo xác nhận
+// 2. KHI YÊU CẦU ĐƯỢC CHẤP THUẬN (ACCEPTED)
 export async function sendMatchRequestAcceptedEmails({
   fromTeam,
   toTeam,
@@ -323,115 +476,114 @@ export async function sendMatchRequestAcceptedEmails({
   responderName
 }: MatchRequestAcceptedEmailParams) {
   const transporter = getTransporter();
-  const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const appUrl = process.env.NEXTAUTH_URL || 'https://hiv-aids-team-building.vercel.app';
   const fromSender = getSender();
 
   const fromCaptain = getTeamCaptainRecipient(fromTeam);
+  const toCaptain = getTeamCaptainRecipient(toTeam);
   const adminEmails = getAdminEmails();
 
-  // Email content for Captain of Team A
-  const captainASubject = `🎉 [Chúc Mừng] Yêu cầu xin tham gia vào đội ${toTeam.name} đã được CHẤP THUẬN!`;
-  const captainAHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
-        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-        .header { background: linear-gradient(135deg, #16a34a, #059669); color: #ffffff; padding: 28px 24px; text-align: center; }
-        .content { padding: 24px; }
-        .card { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px; margin: 16px 0; }
-        .button { display: inline-block; background: #16a34a; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-weight: bold; font-size: 14px; margin-top: 16px; text-align: center; }
-        .footer { padding: 16px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; background: #f8fafc; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h2 style="margin: 0; font-size: 20px;">Yêu Cầu Đã Được Chấp Nhận!</h2>
-          <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Chúc mừng bạn và các thành viên đã gia nhập đội mới</p>
-        </div>
-        <div class="content">
-          <p>Xin chào <strong>${fromCaptain.name}</strong> (Đại diện <strong>${fromTeam.name}</strong>),</p>
-          <p>Chúng tôi xin vui mừng thông báo: Yêu cầu xin tham gia gộp vào đội <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của bạn đã được <strong>CHẤP NHẬN</strong> bởi <strong>${responderName}</strong>!</p>
-          
-          <div class="card">
-            <h4 style="margin: 0 0 10px; color: #15803d;">Chi tiết cập nhật:</h4>
-            <ul style="margin: 0; padding-left: 20px; color: #166534;">
-              <li>Đội mới của các bạn: <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber})</li>
-              <li>Tổng sĩ số hiện tại của đội: <strong>${totalMembers}/5 thành viên</strong></li>
-              <li>Trạng thái: Toàn bộ thành viên của ${fromTeam.name} đã được chuyển sang danh sách đội ${toTeam.name}.</li>
-              <li>Vị trí Slot #${fromTeam.slotNumber} cũ đã được giải phóng trên hệ thống.</li>
-            </ul>
-          </div>
+  const captainASubject = `🎉 [Chúc Mừng] Yêu cầu xin gia nhập Đội ${toTeam.name} đã được CHẤP THUẬN!`;
+  const captainABody = `
+    <p style="font-size: 15px; margin-top: 0;">
+      Xin chúc mừng <strong>${fromCaptain.name}</strong> và toàn thể thành viên <strong>${fromTeam.name}</strong>,
+    </p>
+    <p style="font-size: 14px; color: #475569; margin-bottom: 24px;">
+      Yêu cầu xin ghép đội vào <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của các bạn đã chính thức được <strong>${responderName}</strong> <strong>PHÊ DUYỆT THÀNH CÔNG</strong>!
+    </p>
 
-          <p>Hãy liên hệ với đội trưởng và các thành viên đội ${toTeam.name} để chuẩn bị thật tốt cho các hoạt động sắp tới nhé!</p>
+    <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 20px; margin-bottom: 24px;">
+      <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 700; color: #166534; text-transform: uppercase;">
+        🏆 Thông Tin Đội Thi Mới Chính Thức
+      </h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 6px 0; color: #4b5563; width: 40%;">Tên đội chính thức:</td>
+          <td style="padding: 6px 0; font-weight: 800; color: #15803d; font-size: 15px;">${toTeam.name}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #4b5563;">Vị trí thi đấu:</td>
+          <td style="padding: 6px 0; font-weight: 700; color: #0f172a;">Slot #${toTeam.slotNumber}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #4b5563;">Tổng quân số hiện tại:</td>
+          <td style="padding: 6px 0; font-weight: 700; color: #16a34a;">${totalMembers}/5 thành viên</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #4b5563;">Trạng thái Slot cũ:</td>
+          <td style="padding: 6px 0; color: #0284c7; font-weight: 600;">Slot #${fromTeam.slotNumber} đã được giải phóng trên hệ thống.</td>
+        </tr>
+      </table>
+    </div>
 
-          <div style="text-align: center;">
-            <a href="${appUrl}" class="button" target="_blank">Xem Danh Sách Đội Mới</a>
-          </div>
-        </div>
-        <div class="footer">
-          Hệ thống Quản lý Đội thi — Cuộc Thi Tìm Hiểu HIV/AIDS &amp; Hòa Nhập Cộng Đồng
-        </div>
-      </div>
-    </body>
-    </html>
+    <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 18px; border-radius: 0 10px 10px 0; margin-bottom: 24px;">
+      <p style="margin: 0; font-size: 13px; color: #1e40af; line-height: 1.5;">
+        🤝 <strong>Bước tiếp theo:</strong> Hãy liên hệ với Đội trưởng ${toTeam.name} (<strong>${toCaptain.name}</strong> - <em>${toCaptain.emails.join(', ')}</em>) để cùng chuẩn bị thật tốt cho các phần thi sắp tới nhé!
+      </p>
+    </div>
   `;
 
-  // Email content for Admin
-  const adminSubject = `[Admin Xác Nhận] Gộp đội thành công: ${fromTeam.name} ➔ ${toTeam.name}`;
-  const adminHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
-        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-        .header { background: linear-gradient(135deg, #0f172a, #334155); color: #ffffff; padding: 24px; text-align: center; }
-        .content { padding: 24px; }
-        .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 16px 0; }
-        .footer { padding: 16px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; background: #f8fafc; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h2 style="margin: 0; font-size: 20px;">Gộp Đội Thành Công (Admin Log)</h2>
-          <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Yêu cầu xin tham gia đã được phê duyệt</p>
-        </div>
-        <div class="content">
-          <p>Kính gửi <strong>Ban Quản Trị</strong>,</p>
-          <p>Yêu cầu gộp từ <strong>${fromTeam.name}</strong> vào <strong>${toTeam.name}</strong> đã được thực thi thành công bởi <strong>${responderName}</strong>.</p>
-          <div class="card">
-            <ul style="margin: 0; padding-left: 20px;">
-              <li>Đội nguồn đã giải phóng: <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber})</li>
-              <li>Đội đích nhận thành viên: <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber})</li>
-              <li>Đã gửi email thông báo kết quả tới Đội trưởng đội A: <em>${fromCaptain.emails.join(', ')}</em></li>
-              <li>Sĩ số mới: <strong>${totalMembers}/5 người</strong></li>
-            </ul>
-          </div>
-        </div>
-        <div class="footer">
-          Hệ thống Quản lý Đội thi — HIV/AIDS Team Building Platform
-        </div>
-      </div>
-    </body>
-    </html>
+  const captainAHtml = renderMasterEmail({
+    badgeText: 'Ghép Đội Thành Công',
+    badgeBg: '#dcfce7',
+    badgeColor: '#15803d',
+    headerGradient: 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)',
+    headerIcon: '✅',
+    title: `Chào Mừng Bạn Đến Với ${toTeam.name}!`,
+    subtitle: `Yêu cầu xin gia nhập đội đã được chấp thuận hoàn tất`,
+    mainHtml: captainABody,
+    ctaText: '🎉 Xem Danh Sách Đội Thi Mới',
+    ctaUrl: appUrl,
+    ctaBg: '#059669'
+  });
+
+  const adminSubject = `✅ [Admin Confirm] Ghép đội thành công: ${fromTeam.name} ➔ ${toTeam.name}`;
+  const adminBody = `
+    <p style="font-size: 15px; margin-top: 0;">
+      Kính gửi <strong>Ban Quản Trị Cuộc Thi</strong>,
+    </p>
+    <p style="font-size: 14px; color: #475569; margin-bottom: 20px;">
+      Hệ thống xác nhận giao dịch ghép đội đã được thực thi thành công bởi <strong>${responderName}</strong>:
+    </p>
+
+    <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px; padding: 20px; margin-bottom: 24px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 6px 0; color: #64748b; width: 40%;">Đội nguồn (Đã giải phóng):</td>
+          <td style="padding: 6px 0; font-weight: 700; color: #0284c7;">${fromTeam.name} (Slot #${fromTeam.slotNumber})</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #64748b;">Đội đích tiếp nhận:</td>
+          <td style="padding: 6px 0; font-weight: 700; color: #15803d;">${toTeam.name} (Slot #${toTeam.slotNumber})</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #64748b;">Tổng quân số sau ghép:</td>
+          <td style="padding: 6px 0; font-weight: 800; color: #16a34a; font-size: 14px;">${totalMembers}/5 người</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #64748b;">Người phê duyệt:</td>
+          <td style="padding: 6px 0; font-weight: 600; color: #0f172a;">${responderName}</td>
+        </tr>
+      </table>
+    </div>
   `;
+
+  const adminHtml = renderMasterEmail({
+    badgeText: 'Admin Log • Team Merged',
+    badgeBg: '#dcfce7',
+    badgeColor: '#166534',
+    headerGradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+    headerIcon: '🛡️',
+    title: `Giao Dịch Ghép Đội Hoàn Tất`,
+    subtitle: `${fromTeam.name} đã nhập vào ${toTeam.name} (Tổng ${totalMembers}/5 người)`,
+    mainHtml: adminBody,
+    ctaText: '🛡️ Kiểm Tra Bảng Quản Trị',
+    ctaUrl: appUrl,
+    ctaBg: '#0f172a'
+  });
 
   if (!transporter) {
-    console.log(
-      `[Mail Service: Simulated] SMTP credentials not set in .env. Acceptance emails would be sent to:\n- Captain Team A: ${fromCaptain.emails.join(', ')}\n- Admin: ${adminEmails.join(', ')}`
-    );
-    return {
-      success: true,
-      simulated: true,
-      fromCaptainEmails: fromCaptain.emails,
-      adminEmails
-    };
+    return { success: true, simulated: true, fromCaptainEmails: fromCaptain.emails, adminEmails };
   }
 
   try {
@@ -458,142 +610,109 @@ export async function sendMatchRequestAcceptedEmails({
     }
 
     await Promise.all(promises);
-    console.log(`[Mail Service] Sent acceptance emails to Captain Team A (${fromCaptain.emails.join(', ')}) and Admin (${adminEmails.join(', ')})`);
-
-    return {
-      success: true,
-      simulated: false,
-      fromCaptainEmails: fromCaptain.emails,
-      adminEmails
-    };
+    return { success: true, simulated: false, fromCaptainEmails: fromCaptain.emails, adminEmails };
   } catch (err) {
     console.error('[Mail Service Error] Failed to send acceptance emails:', err);
-    return {
-      success: false,
-      error: err,
-      fromCaptainEmails: fromCaptain.emails,
-      adminEmails
-    };
+    return { success: false, error: err, fromCaptainEmails: fromCaptain.emails, adminEmails };
   }
 }
 
-// 3. Khi yêu cầu bị TỪ CHỐI (REJECTED):
-// -> Đội trưởng đội A nhận được mail thông báo kết quả
-// -> Admin nhận được mail thông báo
+// 3. KHI YÊU CẦU BỊ TỪ CHỐI (REJECTED)
 export async function sendMatchRequestRejectedEmails({
   fromTeam,
   toTeam,
   responderName
 }: MatchRequestRejectedEmailParams) {
   const transporter = getTransporter();
-  const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const appUrl = process.env.NEXTAUTH_URL || 'https://hiv-aids-team-building.vercel.app';
   const fromSender = getSender();
 
   const fromCaptain = getTeamCaptainRecipient(fromTeam);
   const adminEmails = getAdminEmails();
 
-  // Email content for Captain of Team A
-  const captainASubject = `[Thông Báo Kết Quả] Yêu cầu xin tham gia vào đội ${toTeam.name} đã bị TỪ CHỐI`;
-  const captainAHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
-        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-        .header { background: linear-gradient(135deg, #dc2626, #b91c1c); color: #ffffff; padding: 28px 24px; text-align: center; }
-        .content { padding: 24px; }
-        .card { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; margin: 16px 0; }
-        .button { display: inline-block; background: #4f46e5; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-weight: bold; font-size: 14px; margin-top: 16px; text-align: center; }
-        .footer { padding: 16px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; background: #f8fafc; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h2 style="margin: 0; font-size: 20px;">Thông Báo Kết Quả Yêu Cầu</h2>
-          <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Yêu cầu xin tham gia gộp đội</p>
-        </div>
-        <div class="content">
-          <p>Kính gửi <strong>${fromCaptain.name}</strong> (Đại diện <strong>${fromTeam.name}</strong>),</p>
-          <p>Yêu cầu xin tham gia gộp vào đội <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của bạn đã bị <strong>TỪ CHỐI</strong> bởi <strong>${responderName}</strong>.</p>
-          
-          <div class="card">
-            <h4 style="margin: 0 0 10px; color: #991b1b;">Tình trạng đội hiện tại:</h4>
-            <ul style="margin: 0; padding-left: 20px; color: #7f1d1d;">
-              <li>Đội của bạn: <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber})</li>
-              <li>Sĩ số: Vẫn giữ nguyên <strong>${fromTeam.members.length} thành viên</strong> hiện tại.</li>
-              <li>Vị trí thi đấu: Vẫn được bảo lưu tại <strong>Slot #${fromTeam.slotNumber}</strong>.</li>
-            </ul>
-          </div>
+  const captainASubject = `📋 [Thông Báo] Kết quả yêu cầu xin ghép vào Đội ${toTeam.name}`;
+  const captainABody = `
+    <p style="font-size: 15px; margin-top: 0;">
+      Kính gửi Đội trưởng <strong>${fromCaptain.name}</strong> (Đại diện <strong>${fromTeam.name}</strong>),
+    </p>
+    <p style="font-size: 14px; color: #475569; margin-bottom: 24px;">
+      Yêu cầu xin ghép vào <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của các bạn tạm thời <strong>CHƯA ĐƯỢC CHẤP THUẬN</strong> bởi <strong>${responderName}</strong>.
+    </p>
 
-          <p>Bạn và các thành viên hoàn toàn có thể tiếp tục tuyển thêm các thành viên cá nhân đang chờ ghép trên hệ thống hoặc gửi yêu cầu xin tham gia tới các đội thi khác còn slot trống.</p>
+    <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 14px; padding: 20px; margin-bottom: 24px;">
+      <h3 style="margin: 0 0 10px; font-size: 14px; font-weight: 700; color: #991b1b; text-transform: uppercase;">
+        🛡️ Trạng Thái Đội Của Bạn Vẫn Được Bảo Toàn
+      </h3>
+      <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #7f1d1d; line-height: 1.6;">
+        <li>Đội thi: <strong>${fromTeam.name}</strong></li>
+        <li>Vị trí thi đấu: Vẫn được bảo lưu trọn vẹn tại <strong>Slot #${fromTeam.slotNumber}</strong></li>
+        <li>Quân số hiện tại: Giữ nguyên <strong>${fromTeam.members.length} thành viên</strong></li>
+      </ul>
+    </div>
 
-          <div style="text-align: center;">
-            <a href="${appUrl}" class="button" target="_blank">Xem Bảng Danh Sách Đội Thi</a>
-          </div>
-        </div>
-        <div class="footer">
-          Hệ thống Quản lý Đội thi — Cuộc Thi Tìm Hiểu HIV/AIDS &amp; Hòa Nhập Cộng Đồng
-        </div>
-      </div>
-    </body>
-    </html>
+    <p style="font-size: 14px; color: #334155; line-height: 1.6;">
+      Đừng nản lòng nhé! Bạn và các thành viên hoàn toàn có thể:
+      <br>1. <strong>Gửi yêu cầu ghép tới các đội thi khác</strong> đang còn chỗ trống trên bảng danh sách.
+      <br>2. <strong>Tuyển thêm các cá nhân</strong> đang đăng ký tự do để hoàn thiện đội hình 5 người.
+    </p>
   `;
 
-  // Email content for Admin
-  const adminSubject = `[Admin Thông Báo] Yêu cầu xin tham gia bị từ chối: ${fromTeam.name} ➔ ${toTeam.name}`;
-  const adminHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
-        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-        .header { background: linear-gradient(135deg, #0f172a, #334155); color: #ffffff; padding: 24px; text-align: center; }
-        .content { padding: 24px; }
-        .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 16px 0; }
-        .footer { padding: 16px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; background: #f8fafc; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h2 style="margin: 0; font-size: 20px;">Yêu Cầu Bị Từ Chối (Admin Log)</h2>
-          <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Thông báo từ chối gộp đội</p>
-        </div>
-        <div class="content">
-          <p>Kính gửi <strong>Ban Quản Trị</strong>,</p>
-          <p>Yêu cầu gộp từ <strong>${fromTeam.name}</strong> vào <strong>${toTeam.name}</strong> đã bị <strong>${responderName}</strong> từ chối.</p>
-          <div class="card">
-            <ul style="margin: 0; padding-left: 20px;">
-              <li>Đội xin gia nhập: <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber} — giữ nguyên)</li>
-              <li>Đội nhận: <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber} — giữ nguyên)</li>
-              <li>Đã gửi email thông báo kết quả tới Đội trưởng đội A: <em>${fromCaptain.emails.join(', ')}</em></li>
-              <li>Người xử lý: <strong>${responderName}</strong></li>
-            </ul>
-          </div>
-        </div>
-        <div class="footer">
-          Hệ thống Quản lý Đội thi — HIV/AIDS Team Building Platform
-        </div>
-      </div>
-    </body>
-    </html>
+  const captainAHtml = renderMasterEmail({
+    badgeText: 'Kết Quả Yêu Cầu Ghép Đội',
+    badgeBg: '#fee2e2',
+    badgeColor: '#b91c1c',
+    headerGradient: 'linear-gradient(135deg, #e11d48 0%, #f43f5e 50%, #fb7185 100%)',
+    headerIcon: '📋',
+    title: `Thông Báo Kết Quả Ghép Đội`,
+    subtitle: `Yêu cầu tham gia vào ${toTeam.name} chưa được chấp thuận`,
+    mainHtml: captainABody,
+    ctaText: '🔍 Tìm Kiếm Các Đội Khác Đang Trống Slot',
+    ctaUrl: appUrl,
+    ctaBg: '#4f46e5'
+  });
+
+  const adminSubject = `📋 [Admin Log] Yêu cầu xin ghép bị từ chối: ${fromTeam.name} ➔ ${toTeam.name}`;
+  const adminBody = `
+    <p style="font-size: 15px; margin-top: 0;">
+      Kính gửi <strong>Ban Quản Trị Cuộc Thi</strong>,
+    </p>
+    <p style="font-size: 14px; color: #475569; margin-bottom: 20px;">
+      Yêu cầu ghép đội từ <strong>${fromTeam.name}</strong> vào <strong>${toTeam.name}</strong> đã bị <strong>${responderName}</strong> từ chối.
+    </p>
+    <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 14px; padding: 20px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 6px 0; color: #64748b; width: 40%;">Đội xin vào:</td>
+          <td style="padding: 6px 0; font-weight: 700; color: #0284c7;">${fromTeam.name} (Vẫn giữ Slot #${fromTeam.slotNumber})</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #64748b;">Đội nhận:</td>
+          <td style="padding: 6px 0; font-weight: 700; color: #4f46e5;">${toTeam.name} (Slot #${toTeam.slotNumber})</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #64748b;">Người xử lý từ chối:</td>
+          <td style="padding: 6px 0; font-weight: 600; color: #0f172a;">${responderName}</td>
+        </tr>
+      </table>
+    </div>
   `;
+
+  const adminHtml = renderMasterEmail({
+    badgeText: 'Admin Log • Request Rejected',
+    badgeBg: '#fee2e2',
+    badgeColor: '#991b1b',
+    headerGradient: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+    headerIcon: '🛡️',
+    title: `Yêu Cầu Ghép Bị Từ Chối`,
+    subtitle: `${fromTeam.name} không gia nhập ${toTeam.name}`,
+    mainHtml: adminBody,
+    ctaText: '🛡️ Xem Bảng Điều Khiển Admin',
+    ctaUrl: appUrl,
+    ctaBg: '#0f172a'
+  });
 
   if (!transporter) {
-    console.log(
-      `[Mail Service: Simulated] SMTP credentials not set in .env. Rejection emails would be sent to:\n- Captain Team A: ${fromCaptain.emails.join(', ')}\n- Admin: ${adminEmails.join(', ')}`
-    );
-    return {
-      success: true,
-      simulated: true,
-      fromCaptainEmails: fromCaptain.emails,
-      adminEmails
-    };
+    return { success: true, simulated: true, fromCaptainEmails: fromCaptain.emails, adminEmails };
   }
 
   try {
@@ -620,21 +739,9 @@ export async function sendMatchRequestRejectedEmails({
     }
 
     await Promise.all(promises);
-    console.log(`[Mail Service] Sent rejection emails to Captain Team A (${fromCaptain.emails.join(', ')}) and Admin (${adminEmails.join(', ')})`);
-
-    return {
-      success: true,
-      simulated: false,
-      fromCaptainEmails: fromCaptain.emails,
-      adminEmails
-    };
+    return { success: true, simulated: false, fromCaptainEmails: fromCaptain.emails, adminEmails };
   } catch (err) {
     console.error('[Mail Service Error] Failed to send rejection emails:', err);
-    return {
-      success: false,
-      error: err,
-      fromCaptainEmails: fromCaptain.emails,
-      adminEmails
-    };
+    return { success: false, error: err, fromCaptainEmails: fromCaptain.emails, adminEmails };
   }
 }
