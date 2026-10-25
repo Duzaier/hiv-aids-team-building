@@ -66,6 +66,28 @@ function getTransporter() {
 
 const DEFAULT_ADMIN_EMAIL = 'phudt.ce192043@gmail.com';
 
+
+function getSender(): { name: string; address: string } {
+  const defaultAddress = process.env.SMTP_USER || process.env.GMAIL_USER || DEFAULT_ADMIN_EMAIL;
+  const rawFrom = process.env.SMTP_FROM;
+
+  if (rawFrom) {
+    const cleaned = rawFrom.replace(/\"/g, '').replace(/\'/g, '').replace(/"/g, '').trim();
+    const match = cleaned.match(/^(?:([^<>]+)\s+)?<?([^<\s]+@[^<\s>]+)>?$/);
+    if (match) {
+      return {
+        name: (match[1] || 'HIV/AIDS Team Building').trim(),
+        address: match[2].trim()
+      };
+    }
+  }
+
+  return {
+    name: 'HIV/AIDS Team Building',
+    address: defaultAddress
+  };
+}
+
 function getAdminEmails(): string[] {
   const adminEmailsRaw = process.env.ADMIN_EMAILS || DEFAULT_ADMIN_EMAIL;
   return adminEmailsRaw
@@ -104,7 +126,7 @@ export async function sendTeamMatchRequestEmails({
 }: MatchRequestEmailParams) {
   const transporter = getTransporter();
   const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  const fromSender = process.env.SMTP_FROM || `"HIV/AIDS Team Building" <${process.env.SMTP_USER || DEFAULT_ADMIN_EMAIL}>`;
+  const fromSender = getSender();
 
   const toCaptain = getTeamCaptainRecipient(toTeam);
   const adminEmails = getAdminEmails();
@@ -302,7 +324,7 @@ export async function sendMatchRequestAcceptedEmails({
 }: MatchRequestAcceptedEmailParams) {
   const transporter = getTransporter();
   const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  const fromSender = process.env.SMTP_FROM || `"HIV/AIDS Team Building" <${process.env.SMTP_USER || DEFAULT_ADMIN_EMAIL}>`;
+  const fromSender = getSender();
 
   const fromCaptain = getTeamCaptainRecipient(fromTeam);
   const adminEmails = getAdminEmails();
@@ -465,7 +487,7 @@ export async function sendMatchRequestRejectedEmails({
 }: MatchRequestRejectedEmailParams) {
   const transporter = getTransporter();
   const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  const fromSender = process.env.SMTP_FROM || `"HIV/AIDS Team Building" <${process.env.SMTP_USER || DEFAULT_ADMIN_EMAIL}>`;
+  const fromSender = getSender();
 
   const fromCaptain = getTeamCaptainRecipient(fromTeam);
   const adminEmails = getAdminEmails();
