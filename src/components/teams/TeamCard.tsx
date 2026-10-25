@@ -362,13 +362,12 @@ export const TeamCard: React.FC<TeamCardProps> = ({
               </div>
             )}
 
-            {/* Bottom Meta & Actions */}
+            {/* Bottom Meta & Actions (only rendered if there is content/actions) */}
+            {(isMyTeam || currentRole === 'ADMIN' || (canMyTeamFitHere && onOpenMatchModal && myOwnedTeam) || (isTeamMember && !isTeamCaptain)) && (
             <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
-              {isMyTeam || currentRole === 'ADMIN' ? (
-                <span className="text-[11px] truncate">Đăng ký: {team.registeredAt}</span>
-              ) : (
-                <span className="text-[11px] text-slate-500 italic">Vị trí Slot #{slotNumber}</span>
-              )}
+              {(isMyTeam || currentRole === 'ADMIN') ? (
+                <span className="text-[11px] text-slate-400 truncate">Đăng ký: {team.registeredAt}</span>
+              ) : null}
 
               <div className="flex items-center gap-1.5 flex-wrap">
                 {/* Quick Match into this team if my team fits */}
@@ -472,6 +471,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
 
               </div>
             </div>
+            )}
           </div>
         ) : (
           /* Available Empty State with balanced height and helpful UI */
