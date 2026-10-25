@@ -74,21 +74,28 @@ function getAdminEmails(): string[] {
     .filter(Boolean);
 }
 
-function collectTeamEmails(team: TeamInfo): string[] {
+// Helper to resolve Captain info and recipient emails (captain's entered email and owner's Google login email)
+function getTeamCaptainRecipient(team: TeamInfo): { name: string; emails: string[] } {
+  const captainMember = team.members.find((m) => m.isCaptain) || team.members[0];
+  const name = captainMember?.name?.trim() || team.owner?.name?.trim() || `Đội trưởng ${team.name}`;
+
   const emails = new Set<string>();
-  if (team.owner?.email) {
+  if (captainMember?.email?.trim()) {
+    emails.add(captainMember.email.trim().toLowerCase());
+  }
+  if (team.owner?.email?.trim()) {
     emails.add(team.owner.email.trim().toLowerCase());
   }
-  for (const m of team.members) {
-    if (m.email && m.email.trim()) {
-      emails.add(m.email.trim().toLowerCase());
-    }
-  }
-  return Array.from(emails);
+
+  return {
+    name,
+    emails: Array.from(emails)
+  };
 }
 
-// 1. Khi có đội A xin tham gia gộp vào đội B:
-// Gửi tới: Đội trưởng + tất cả thành viên đội B + Admin
+// 1. Khi bên A xin tham gia vào đội B:
+// -> Đội trưởng đội B nhận được mail thông báo
+// -> Admin nhận được mail thông báo
 export async function sendTeamMatchRequestEmails({
   fromTeam,
   toTeam,
@@ -99,8 +106,7 @@ export async function sendTeamMatchRequestEmails({
   const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const fromSender = process.env.SMTP_FROM || `"HIV/AIDS Team Building" <${process.env.SMTP_USER || DEFAULT_ADMIN_EMAIL}>`;
 
-  // Collect emails of ALL members of Team B (captain + members + owner)
-  const toTeamEmails = collectTeamEmails(toTeam);
+  const toCaptain = getTeamCaptainRecipient(toTeam);
   const adminEmails = getAdminEmails();
 
   const totalMembersAfter = fromTeam.members.length + toTeam.members.length;
@@ -118,9 +124,9 @@ export async function sendTeamMatchRequestEmails({
     )
     .join('');
 
-  // Email content for Team B (Captain & All Members)
-  const teamBSubject = `[Yêu Cầu Mới] Đội ${fromTeam.name} xin tham gia gộp vào đội ${toTeam.name} của bạn`;
-  const teamBHtml = `
+  // Email content for Captain of Team B
+  const captainSubject = `[Yêu Cầu Mới] Đội ${fromTeam.name} xin tham gia gộp vào đội ${toTeam.name} của bạn`;
+  const captainHtml = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -142,8 +148,8 @@ export async function sendTeamMatchRequestEmails({
           <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Cuộc Thi Tìm Hiểu HIV/AIDS &amp; Hòa Nhập Cộng Đồng</p>
         </div>
         <div class="content">
-          <p>Xin chào <strong>Đội trưởng &amp; toàn thể thành viên đội ${toTeam.name}</strong>,</p>
-          <p>Đội <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber}) do <strong>${requesterName}</strong> đại diện vừa gửi yêu cầu xin tham gia gộp vào đội <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của các bạn.</p>
+          <p>Xin chào <strong>${toCaptain.name}</strong> (Đại diện <strong>${toTeam.name}</strong>),</p>
+          <p>Đội <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber}) do <strong>${requesterName}</strong> đại diện vừa gửi yêu cầu xin tham gia gộp vào đội <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của bạn.</p>
           
           <div class="card">
             <h4 style="margin: 0 0 10px; color: #4338ca;">Thông tin tóm tắt:</h4>
@@ -159,14 +165,14 @@ export async function sendTeamMatchRequestEmails({
             ${fromMembersHtml}
           </ul>
 
-          <p>Nếu đồng ý, toàn bộ thành viên của ${fromTeam.name} sẽ được chuyển vào đội ${toTeam.name} của bạn, và vị trí Slot #${fromTeam.slotNumber} sẽ được mở lại cho các đội khác.</p>
+          <p>Nếu bạn đồng ý, toàn bộ thành viên của ${fromTeam.name} sẽ được chuyển vào đội ${toTeam.name} của bạn, và vị trí Slot #${fromTeam.slotNumber} sẽ được mở lại cho các đội khác.</p>
 
           <div style="text-align: center;">
             <a href="${appUrl}" class="button" target="_blank">Đăng Nhập Để Xem &amp; Phê Duyệt</a>
           </div>
         </div>
         <div class="footer">
-          Email này được gửi tự động tới Đội trưởng và các thành viên đội ${toTeam.name}.
+          Email này được gửi tự động tới Đội trưởng đội ${toTeam.name}.
         </div>
       </div>
     </body>
@@ -205,7 +211,7 @@ export async function sendTeamMatchRequestEmails({
             <ul style="margin: 0; padding-left: 20px;">
               <li>Đội xin gia nhập: <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber} — ${fromTeam.members.length} người)</li>
               <li>Đội nhận: <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber} — ${toTeam.members.length} người)</li>
-              <li>Email nhận thông báo đội B: <em>${toTeamEmails.join(', ')}</em></li>
+              <li>Đội trưởng đội nhận: <strong>${toCaptain.name}</strong> (<em>${toCaptain.emails.join(', ')}</em>)</li>
               <li>Tổng quân số dự kiến: <strong style="color: #16a34a;">${totalMembersAfter}/5 người</strong></li>
               <li>Giải phóng slot: <strong>Slot #${fromTeam.slotNumber}</strong> sẽ được mở lại nếu được duyệt.</li>
             </ul>
@@ -232,25 +238,25 @@ export async function sendTeamMatchRequestEmails({
 
   if (!transporter) {
     console.log(
-      `[Mail Service: Simulated] SMTP credentials not set in .env. Email would be sent to:\n- Team B (Captain & Members): ${toTeamEmails.join(', ')}\n- Admin: ${adminEmails.join(', ')}`
+      `[Mail Service: Simulated] SMTP credentials not set in .env. Email would be sent to:\n- Captain Team B: ${toCaptain.emails.join(', ')}\n- Admin: ${adminEmails.join(', ')}`
     );
     return {
       success: true,
       simulated: true,
-      toTeamEmails,
+      toCaptainEmails: toCaptain.emails,
       adminEmails
     };
   }
 
   try {
     const promises: Promise<any>[] = [];
-    if (toTeamEmails.length > 0) {
+    if (toCaptain.emails.length > 0) {
       promises.push(
         transporter.sendMail({
           from: fromSender,
-          to: toTeamEmails.join(', '),
-          subject: teamBSubject,
-          html: teamBHtml
+          to: toCaptain.emails.join(', '),
+          subject: captainSubject,
+          html: captainHtml
         })
       );
     }
@@ -266,12 +272,12 @@ export async function sendTeamMatchRequestEmails({
     }
 
     await Promise.all(promises);
-    console.log(`[Mail Service] Sent match request notifications to Team B (${toTeamEmails.join(', ')}) and admin (${adminEmails.join(', ')})`);
+    console.log(`[Mail Service] Sent match request notifications to Captain Team B (${toCaptain.emails.join(', ')}) and Admin (${adminEmails.join(', ')})`);
 
     return {
       success: true,
       simulated: false,
-      toTeamEmails,
+      toCaptainEmails: toCaptain.emails,
       adminEmails
     };
   } catch (err) {
@@ -279,14 +285,15 @@ export async function sendTeamMatchRequestEmails({
     return {
       success: false,
       error: err,
-      toTeamEmails,
+      toCaptainEmails: toCaptain.emails,
       adminEmails
     };
   }
 }
 
-// 2. Khi yêu cầu được CHẤP NHẬN (ACCEPTED):
-// Gửi tới: Đội A (đội xin được vào) + Đội B + Admin
+// 2. Khi yêu cầu được CHẤP THUẬN (ACCEPTED):
+// -> Đội trưởng đội A nhận được mail thông báo kết quả
+// -> Admin nhận được mail thông báo xác nhận
 export async function sendMatchRequestAcceptedEmails({
   fromTeam,
   toTeam,
@@ -297,13 +304,12 @@ export async function sendMatchRequestAcceptedEmails({
   const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const fromSender = process.env.SMTP_FROM || `"HIV/AIDS Team Building" <${process.env.SMTP_USER || DEFAULT_ADMIN_EMAIL}>`;
 
-  const fromTeamEmails = collectTeamEmails(fromTeam);
-  const toTeamEmails = collectTeamEmails(toTeam);
+  const fromCaptain = getTeamCaptainRecipient(fromTeam);
   const adminEmails = getAdminEmails();
 
-  // Email content for Team A (đội xin được vào)
-  const teamASubject = `🎉 [Chúc Mừng] Yêu cầu xin tham gia vào đội ${toTeam.name} đã được CHẤP NHẬN!`;
-  const teamAHtml = `
+  // Email content for Captain of Team A
+  const captainASubject = `🎉 [Chúc Mừng] Yêu cầu xin tham gia vào đội ${toTeam.name} đã được CHẤP THUẬN!`;
+  const captainAHtml = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -322,23 +328,23 @@ export async function sendMatchRequestAcceptedEmails({
       <div class="container">
         <div class="header">
           <h2 style="margin: 0; font-size: 20px;">Yêu Cầu Đã Được Chấp Nhận!</h2>
-          <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Chúc mừng bạn đã gia nhập đội mới</p>
+          <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Chúc mừng bạn và các thành viên đã gia nhập đội mới</p>
         </div>
         <div class="content">
-          <p>Xin chào <strong>toàn thể thành viên đội ${fromTeam.name}</strong>,</p>
-          <p>Chúng tôi xin vui mừng thông báo: Yêu cầu xin tham gia gộp vào đội <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của các bạn đã được <strong>CHẤP NHẬN</strong> bởi <strong>${responderName}</strong>!</p>
+          <p>Xin chào <strong>${fromCaptain.name}</strong> (Đại diện <strong>${fromTeam.name}</strong>),</p>
+          <p>Chúng tôi xin vui mừng thông báo: Yêu cầu xin tham gia gộp vào đội <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của bạn đã được <strong>CHẤP NHẬN</strong> bởi <strong>${responderName}</strong>!</p>
           
           <div class="card">
             <h4 style="margin: 0 0 10px; color: #15803d;">Chi tiết cập nhật:</h4>
             <ul style="margin: 0; padding-left: 20px; color: #166534;">
-              <li>Đội mới của bạn: <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber})</li>
+              <li>Đội mới của các bạn: <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber})</li>
               <li>Tổng sĩ số hiện tại của đội: <strong>${totalMembers}/5 thành viên</strong></li>
               <li>Trạng thái: Toàn bộ thành viên của ${fromTeam.name} đã được chuyển sang danh sách đội ${toTeam.name}.</li>
               <li>Vị trí Slot #${fromTeam.slotNumber} cũ đã được giải phóng trên hệ thống.</li>
             </ul>
           </div>
 
-          <p>Hãy liên hệ với các thành viên trong đội mới để chuẩn bị thật tốt cho các phần thi sắp tới nhé!</p>
+          <p>Hãy liên hệ với đội trưởng và các thành viên đội ${toTeam.name} để chuẩn bị thật tốt cho các hoạt động sắp tới nhé!</p>
 
           <div style="text-align: center;">
             <a href="${appUrl}" class="button" target="_blank">Xem Danh Sách Đội Mới</a>
@@ -346,54 +352,6 @@ export async function sendMatchRequestAcceptedEmails({
         </div>
         <div class="footer">
           Hệ thống Quản lý Đội thi — Cuộc Thi Tìm Hiểu HIV/AIDS &amp; Hòa Nhập Cộng Đồng
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-
-  // Email content for Team B (thông báo đã gộp thành công)
-  const teamBSubject = `[Xác Nhận] Đội ${toTeam.name} đã tiếp nhận thành công các thành viên từ ${fromTeam.name}`;
-  const teamBHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; margin: 0; padding: 24px; }
-        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-        .header { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; padding: 28px 24px; text-align: center; }
-        .content { padding: 24px; }
-        .card { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; margin: 16px 0; }
-        .button { display: inline-block; background: #2563eb; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-weight: bold; font-size: 14px; margin-top: 16px; text-align: center; }
-        .footer { padding: 16px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; background: #f8fafc; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h2 style="margin: 0; font-size: 20px;">Tiếp Nhận Thành Viên Mới Thành Công</h2>
-          <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Đội ${toTeam.name} (Slot #${toTeam.slotNumber})</p>
-        </div>
-        <div class="content">
-          <p>Xin chào <strong>toàn thể thành viên đội ${toTeam.name}</strong>,</p>
-          <p>Đội của bạn vừa tiếp nhận thêm <strong>${fromTeam.members.length} thành viên mới</strong> từ đội <strong>${fromTeam.name}</strong>!</p>
-          
-          <div class="card">
-            <h4 style="margin: 0 0 10px; color: #1e40af;">Thông tin đội sau khi gộp:</h4>
-            <ul style="margin: 0; padding-left: 20px; color: #1e3a8a;">
-              <li>Tên đội: <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber})</li>
-              <li>Tổng quân số hiện tại: <strong style="color: #16a34a;">${totalMembers}/5 thành viên</strong></li>
-              <li>Người duyệt: <strong>${responderName}</strong></li>
-            </ul>
-          </div>
-
-          <div style="text-align: center;">
-            <a href="${appUrl}" class="button" target="_blank">Xem Đội Hình Mới Của Bạn</a>
-          </div>
-        </div>
-        <div class="footer">
-          Hệ thống Quản lý Đội thi — HIV/AIDS Team Building Platform
         </div>
       </div>
     </body>
@@ -429,6 +387,7 @@ export async function sendMatchRequestAcceptedEmails({
             <ul style="margin: 0; padding-left: 20px;">
               <li>Đội nguồn đã giải phóng: <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber})</li>
               <li>Đội đích nhận thành viên: <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber})</li>
+              <li>Đã gửi email thông báo kết quả tới Đội trưởng đội A: <em>${fromCaptain.emails.join(', ')}</em></li>
               <li>Sĩ số mới: <strong>${totalMembers}/5 người</strong></li>
             </ul>
           </div>
@@ -443,36 +402,25 @@ export async function sendMatchRequestAcceptedEmails({
 
   if (!transporter) {
     console.log(
-      `[Mail Service: Simulated] SMTP credentials not set in .env. Acceptance emails would be sent to:\n- Team A (Đội xin vào): ${fromTeamEmails.join(', ')}\n- Team B: ${toTeamEmails.join(', ')}\n- Admin: ${adminEmails.join(', ')}`
+      `[Mail Service: Simulated] SMTP credentials not set in .env. Acceptance emails would be sent to:\n- Captain Team A: ${fromCaptain.emails.join(', ')}\n- Admin: ${adminEmails.join(', ')}`
     );
     return {
       success: true,
       simulated: true,
-      fromTeamEmails,
-      toTeamEmails,
+      fromCaptainEmails: fromCaptain.emails,
       adminEmails
     };
   }
 
   try {
     const promises: Promise<any>[] = [];
-    if (fromTeamEmails.length > 0) {
+    if (fromCaptain.emails.length > 0) {
       promises.push(
         transporter.sendMail({
           from: fromSender,
-          to: fromTeamEmails.join(', '),
-          subject: teamASubject,
-          html: teamAHtml
-        })
-      );
-    }
-    if (toTeamEmails.length > 0) {
-      promises.push(
-        transporter.sendMail({
-          from: fromSender,
-          to: toTeamEmails.join(', '),
-          subject: teamBSubject,
-          html: teamBHtml
+          to: fromCaptain.emails.join(', '),
+          subject: captainASubject,
+          html: captainAHtml
         })
       );
     }
@@ -488,13 +436,12 @@ export async function sendMatchRequestAcceptedEmails({
     }
 
     await Promise.all(promises);
-    console.log(`[Mail Service] Sent acceptance emails to Team A (${fromTeamEmails.join(', ')}), Team B (${toTeamEmails.join(', ')}), Admin (${adminEmails.join(', ')})`);
+    console.log(`[Mail Service] Sent acceptance emails to Captain Team A (${fromCaptain.emails.join(', ')}) and Admin (${adminEmails.join(', ')})`);
 
     return {
       success: true,
       simulated: false,
-      fromTeamEmails,
-      toTeamEmails,
+      fromCaptainEmails: fromCaptain.emails,
       adminEmails
     };
   } catch (err) {
@@ -502,15 +449,15 @@ export async function sendMatchRequestAcceptedEmails({
     return {
       success: false,
       error: err,
-      fromTeamEmails,
-      toTeamEmails,
+      fromCaptainEmails: fromCaptain.emails,
       adminEmails
     };
   }
 }
 
 // 3. Khi yêu cầu bị TỪ CHỐI (REJECTED):
-// Gửi tới: Đội A (đội xin được vào) + Admin
+// -> Đội trưởng đội A nhận được mail thông báo kết quả
+// -> Admin nhận được mail thông báo
 export async function sendMatchRequestRejectedEmails({
   fromTeam,
   toTeam,
@@ -520,12 +467,12 @@ export async function sendMatchRequestRejectedEmails({
   const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
   const fromSender = process.env.SMTP_FROM || `"HIV/AIDS Team Building" <${process.env.SMTP_USER || DEFAULT_ADMIN_EMAIL}>`;
 
-  const fromTeamEmails = collectTeamEmails(fromTeam);
+  const fromCaptain = getTeamCaptainRecipient(fromTeam);
   const adminEmails = getAdminEmails();
 
-  // Email content for Team A (đội xin được vào bị từ chối)
-  const teamASubject = `[Thông Báo Kết Quả] Yêu cầu xin tham gia vào đội ${toTeam.name} đã bị TỪ CHỐI`;
-  const teamAHtml = `
+  // Email content for Captain of Team A
+  const captainASubject = `[Thông Báo Kết Quả] Yêu cầu xin tham gia vào đội ${toTeam.name} đã bị TỪ CHỐI`;
+  const captainAHtml = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -547,8 +494,8 @@ export async function sendMatchRequestRejectedEmails({
           <p style="margin: 6px 0 0; opacity: 0.9; font-size: 14px;">Yêu cầu xin tham gia gộp đội</p>
         </div>
         <div class="content">
-          <p>Kính gửi <strong>toàn thể thành viên đội ${fromTeam.name}</strong>,</p>
-          <p>Yêu cầu xin tham gia gộp vào đội <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của các bạn đã bị <strong>TỪ CHỐI</strong> bởi <strong>${responderName}</strong>.</p>
+          <p>Kính gửi <strong>${fromCaptain.name}</strong> (Đại diện <strong>${fromTeam.name}</strong>),</p>
+          <p>Yêu cầu xin tham gia gộp vào đội <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber}) của bạn đã bị <strong>TỪ CHỐI</strong> bởi <strong>${responderName}</strong>.</p>
           
           <div class="card">
             <h4 style="margin: 0 0 10px; color: #991b1b;">Tình trạng đội hiện tại:</h4>
@@ -559,7 +506,7 @@ export async function sendMatchRequestRejectedEmails({
             </ul>
           </div>
 
-          <p>Các bạn hoàn toàn có thể tiếp tục tuyển thêm các thành viên cá nhân đang chờ ghép trên hệ thống hoặc gửi yêu cầu xin tham gia tới các đội thi khác còn slot trống.</p>
+          <p>Bạn và các thành viên hoàn toàn có thể tiếp tục tuyển thêm các thành viên cá nhân đang chờ ghép trên hệ thống hoặc gửi yêu cầu xin tham gia tới các đội thi khác còn slot trống.</p>
 
           <div style="text-align: center;">
             <a href="${appUrl}" class="button" target="_blank">Xem Bảng Danh Sách Đội Thi</a>
@@ -602,6 +549,7 @@ export async function sendMatchRequestRejectedEmails({
             <ul style="margin: 0; padding-left: 20px;">
               <li>Đội xin gia nhập: <strong>${fromTeam.name}</strong> (Slot #${fromTeam.slotNumber} — giữ nguyên)</li>
               <li>Đội nhận: <strong>${toTeam.name}</strong> (Slot #${toTeam.slotNumber} — giữ nguyên)</li>
+              <li>Đã gửi email thông báo kết quả tới Đội trưởng đội A: <em>${fromCaptain.emails.join(', ')}</em></li>
               <li>Người xử lý: <strong>${responderName}</strong></li>
             </ul>
           </div>
@@ -616,25 +564,25 @@ export async function sendMatchRequestRejectedEmails({
 
   if (!transporter) {
     console.log(
-      `[Mail Service: Simulated] SMTP credentials not set in .env. Rejection emails would be sent to:\n- Team A (Đội xin vào): ${fromTeamEmails.join(', ')}\n- Admin: ${adminEmails.join(', ')}`
+      `[Mail Service: Simulated] SMTP credentials not set in .env. Rejection emails would be sent to:\n- Captain Team A: ${fromCaptain.emails.join(', ')}\n- Admin: ${adminEmails.join(', ')}`
     );
     return {
       success: true,
       simulated: true,
-      fromTeamEmails,
+      fromCaptainEmails: fromCaptain.emails,
       adminEmails
     };
   }
 
   try {
     const promises: Promise<any>[] = [];
-    if (fromTeamEmails.length > 0) {
+    if (fromCaptain.emails.length > 0) {
       promises.push(
         transporter.sendMail({
           from: fromSender,
-          to: fromTeamEmails.join(', '),
-          subject: teamASubject,
-          html: teamAHtml
+          to: fromCaptain.emails.join(', '),
+          subject: captainASubject,
+          html: captainAHtml
         })
       );
     }
@@ -650,12 +598,12 @@ export async function sendMatchRequestRejectedEmails({
     }
 
     await Promise.all(promises);
-    console.log(`[Mail Service] Sent rejection emails to Team A (${fromTeamEmails.join(', ')}) and Admin (${adminEmails.join(', ')})`);
+    console.log(`[Mail Service] Sent rejection emails to Captain Team A (${fromCaptain.emails.join(', ')}) and Admin (${adminEmails.join(', ')})`);
 
     return {
       success: true,
       simulated: false,
-      fromTeamEmails,
+      fromCaptainEmails: fromCaptain.emails,
       adminEmails
     };
   } catch (err) {
@@ -663,7 +611,7 @@ export async function sendMatchRequestRejectedEmails({
     return {
       success: false,
       error: err,
-      fromTeamEmails,
+      fromCaptainEmails: fromCaptain.emails,
       adminEmails
     };
   }
