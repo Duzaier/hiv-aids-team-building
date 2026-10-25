@@ -1,0 +1,23 @@
+{
+  "name": "HIV Admin & Team Building",
+  "short_name": "HIV Admin",
+  "description": "Nền tảng đăng ký và quản lý Team Building 2026",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
