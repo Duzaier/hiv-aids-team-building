@@ -19,6 +19,10 @@ export async function GET(req: NextRequest) {
         },
         owner: {
           select: { id: true, name: true, email: true, image: true }
+        },
+        individualRequests: {
+          where: { status: 'PENDING' },
+          orderBy: { createdAt: 'desc' }
         }
       },
       orderBy: { slotNumber: 'asc' }
@@ -68,7 +72,17 @@ export async function GET(req: NextRequest) {
             isCaptain: canViewFull ? m.isCaptain : false,
             isFromIndividual: canViewFull ? (m.isFromIndividual || false) : false,
             individualId: canViewFull ? (m.individualId || null) : null
-          }))
+          })),
+          individualRequests: canViewFull ? (t.individualRequests || []).map((r) => ({
+            id: r.id,
+            teamId: r.teamId,
+            name: r.name,
+            studentId: r.studentId || '',
+            email: r.email,
+            phone: r.phone || '',
+            status: r.status,
+            createdAt: r.createdAt.toISOString().replace('T', ' ').substring(0, 16)
+          })) : []
         };
       })
     });

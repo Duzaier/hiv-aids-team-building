@@ -1,4 +1,6 @@
 ﻿import nodemailer from 'nodemailer';
+import { getAdminEmails as getAllAdminEmails } from './roles';
+import { getAdminEmails as getRolesAdminEmails } from './roles';
 
 export interface TeamMemberInfo {
   id: string;
@@ -84,12 +86,7 @@ function getSender(): { name: string; address: string } {
 }
 
 function getAdminEmails(): string[] {
-  const adminEmailsRaw = process.env.ADMIN_EMAILS || DEFAULT_ADMIN_EMAIL;
-  const emails = adminEmailsRaw
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  return Array.from(new Set(emails));
+  return getAllAdminEmails();
 }
 
 function getTeamCaptainRecipient(team: TeamInfo): { name: string; emails: string[] } {
@@ -458,5 +455,290 @@ export async function sendMatchRequestRejectedEmails({
   } catch (err) {
     console.error('[Mail Service Error] Failed to send rejection emails:', err);
     return { success: false, error: err, fromCaptainEmails: fromCaptain.emails, adminEmails };
+  }
+}
+
+
+// ==========================================
+// INDIVIDUAL JOIN REQUEST EMAILS
+// ==========================================
+
+export interface IndividualJoinRequestEmailParams {
+  team: TeamInfo;
+  individual: {
+    name: string;
+    studentId?: string | null;
+    email: string;
+    phone?: string | null;
+  };
+}
+
+export interface IndividualJoinAcceptedEmailParams {
+  team: TeamInfo;
+  individual: {
+    name: string;
+    email: string;
+  };
+  totalMembers: number;
+  responderName: string;
+}
+
+export interface IndividualJoinRejectedEmailParams {
+  team: TeamInfo;
+  individual: {
+    name: string;
+    email: string;
+  };
+  responderName: string;
+}
+
+// 4. KHI CÁ NHÂN XIN GIA NHẬP VÀO ĐỘI CÒN TRỐNG SLOT
+export async function sendIndividualJoinRequestEmails({
+  team,
+  individual
+}: IndividualJoinRequestEmailParams) {
+  const transporter = getTransporter();
+  const appUrl = process.env.NEXTAUTH_URL || 'https://hiv-aids-team-building.vercel.app';
+  const fromSender = getSender();
+
+  const toCaptain = getTeamCaptainRecipient(team);
+  const adminEmails = getAdminEmails();
+
+  const remainingSlots = Math.max(0, 5 - team.members.length);
+
+  // 4A. Gửi Đội trưởng đội đích
+  const captainSubject = `Yêu Cầu Xin Gia Nhập: ${individual.name} xin vào ${team.name}`;
+  const captainHtml = renderDarkEmail({
+    title: 'Cá Nhân Xin Gia Nhập Đội',
+    titleColor: '#c084fc',
+    recipientGreeting: `Xin chào <strong>${toCaptain.name}</strong> (Đại diện <strong>${team.name}</strong>),`,
+    introText: `Bạn <strong>${individual.name}</strong> vừa gửi yêu cầu xin gia nhập vào vị trí còn trống của <strong>${team.name}</strong> (Slot #${team.slotNumber}).`,
+    detailsHtml: `
+      <div style="margin-bottom: 8px; font-size: 15px; color: #e2e8f0;"><strong>Họ và tên ứng viên:</strong> ${individual.name}</div>
+      ${individual.studentId ? `<div style="margin-bottom: 8px; font-size: 14px; color: #cbd5e1;"><strong>MSSV:</strong> <code style="background: #272832; color: #93c5fd; padding: 2px 6px; border-radius: 4px; font-family: monospace;">${individual.studentId}</code></div>` : ''}
+      <div style="margin-bottom: 8px; font-size: 14px; color: #cbd5e1;"><strong>Gmail nhận phản hồi:</strong> ${individual.email}</div>
+      ${individual.phone ? `<div style="margin-bottom: 8px; font-size: 14px; color: #cbd5e1;"><strong>Số điện thoại:</strong> ${individual.phone}</div>` : ''}
+      <div style="margin-top: 10px; font-size: 14px; color: #94a3b8;">Đội của bạn hiện có <strong>${team.members.length}/5</strong> thành viên (còn trống <strong>${remainingSlots}</strong> slot). Bạn hoặc Admin có thể duyệt yêu cầu này trên website.</div>
+    `,
+    ctaText: 'Xem Và Duyệt Yêu Cầu Trên Website',
+    ctaUrl: appUrl,
+    ctaBg: '#a78bfa'
+  });
+
+  // 4B. Gửi Admin
+  const adminSubject = `[Admin] Cá nhân ${individual.name} xin gia nhập ${team.name}`;
+  const adminHtml = renderDarkEmail({
+    title: 'Cá Nhân Xin Gia Nhập Đội (Admin Log)',
+    titleColor: '#c084fc',
+    recipientGreeting: 'Kính gửi <strong>Ban Quản Trị</strong>,',
+    introText: `Hệ thống vừa nhận được yêu cầu xin gia nhập từ cá nhân <strong>${individual.name}</strong> vào <strong>${team.name}</strong> (Slot #${team.slotNumber}).`,
+    detailsHtml: `
+      <div style="margin-bottom: 8px; font-size: 14px; color: #e2e8f0;"><strong>Ứng viên:</strong> ${individual.name} (${individual.studentId || 'Chưa có MSSV'})</div>
+      <div style="margin-bottom: 8px; font-size: 14px; color: #cbd5e1;"><strong>Gmail:</strong> ${individual.email} - <strong>SĐT:</strong> ${individual.phone || 'N/A'}</div>
+      <div style="margin-bottom: 8px; font-size: 14px; color: #e2e8f0;"><strong>Đội xin vào:</strong> ${team.name} (Slot #${team.slotNumber} - hiện có ${team.members.length}/5 người)</div>
+      <div style="font-size: 13px; color: #94a3b8;">Admin hoặc Đội trưởng ${team.name} có thể duyệt chấp thuận hoặc từ chối yêu cầu này.</div>
+    `,
+    ctaText: 'Mở Bảng Quản Trị Website',
+    ctaUrl: appUrl,
+    ctaBg: '#a78bfa'
+  });
+
+  if (!transporter) {
+    return { success: true, simulated: true, toCaptainEmails: toCaptain.emails, adminEmails };
+  }
+
+  try {
+    const promises: Promise<any>[] = [];
+    if (toCaptain.emails.length > 0) {
+      promises.push(
+        transporter.sendMail({
+          from: fromSender,
+          to: toCaptain.emails.join(', '),
+          subject: captainSubject,
+          html: captainHtml
+        })
+      );
+    }
+    if (adminEmails.length > 0) {
+      promises.push(
+        transporter.sendMail({
+          from: fromSender,
+          to: adminEmails.join(', '),
+          subject: adminSubject,
+          html: adminHtml
+        })
+      );
+    }
+
+    await Promise.all(promises);
+    return { success: true, simulated: false, toCaptainEmails: toCaptain.emails, adminEmails };
+  } catch (err) {
+    console.error('[Mail Service Error] Failed to send individual join request emails:', err);
+    return { success: false, error: err, toCaptainEmails: toCaptain.emails, adminEmails };
+  }
+}
+
+// 5. KHI ĐỘI TRƯỞNG HOẶC ADMIN CHẤP THUẬN CÁ NHÂN VÀO ĐỘI
+export async function sendIndividualJoinAcceptedEmails({
+  team,
+  individual,
+  totalMembers,
+  responderName
+}: IndividualJoinAcceptedEmailParams) {
+  const transporter = getTransporter();
+  const appUrl = process.env.NEXTAUTH_URL || 'https://hiv-aids-team-building.vercel.app';
+  const fromSender = getSender();
+  const adminEmails = getAdminEmails();
+
+  const toCaptain = getTeamCaptainRecipient(team);
+  const membersHtml = renderMembersListHtml(team.members);
+
+  // 5A. Gửi Cá nhân được nhận
+  const individualSubject = `[Chúc Mừng] Bạn đã được chấp thuận gia nhập ${team.name}!`;
+  const individualHtml = renderDarkEmail({
+    title: 'Chúc Mừng! Bạn Đã Gia Nhập Đội Thành Công',
+    titleColor: '#4ade80',
+    recipientGreeting: `Xin chào <strong>${individual.name}</strong>,`,
+    introText: `Yêu cầu xin gia nhập vào đội <strong>${team.name}</strong> (Slot #${team.slotNumber}) của bạn đã được <strong>${responderName}</strong> chấp thuận! Bạn chính thức là thành viên của đội.`,
+    detailsHtml: `
+      <div style="margin-bottom: 8px; font-size: 15px; color: #e2e8f0;"><strong>Đội thi chính thức:</strong> ${team.name} (Slot #${team.slotNumber})</div>
+      <div style="margin-bottom: 8px; font-size: 15px; color: #e2e8f0;"><strong>Quân số hiện tại:</strong> ${totalMembers}/5 thành viên</div>
+      <div style="margin-bottom: 8px; font-size: 14px; color: #cbd5e1;"><strong>Người đại diện/Đội trưởng:</strong> ${toCaptain.name}</div>
+      <div style="font-size: 13px; color: #94a3b8;">Hãy kết nối cùng đồng đội và chuẩn bị thật tốt cho giải đấu Team Building sắp tới nhé!</div>
+    `,
+    membersHtml,
+    ctaText: 'Xem Đội Thi Của Bạn Trên Website',
+    ctaUrl: appUrl,
+    ctaBg: '#a78bfa'
+  });
+
+  // 5B. Gửi Admin
+  const adminSubject = `[Admin Kết Quả] Đã chấp thuận cá nhân ${individual.name} vào ${team.name}`;
+  const adminHtml = renderDarkEmail({
+    title: 'Cá Nhân Đã Gia Nhập Đội (Admin Log)',
+    titleColor: '#4ade80',
+    recipientGreeting: 'Kính gửi <strong>Ban Quản Trị</strong>,',
+    introText: `Yêu cầu gia nhập của cá nhân <strong>${individual.name}</strong> vào <strong>${team.name}</strong> đã được chấp thuận bởi <strong>${responderName}</strong>.`,
+    detailsHtml: `
+      <div style="margin-bottom: 8px; font-size: 14px; color: #e2e8f0;"><strong>Cá nhân gia nhập:</strong> ${individual.name} (${individual.email})</div>
+      <div style="margin-bottom: 8px; font-size: 14px; color: #e2e8f0;"><strong>Đội tiếp nhận:</strong> ${team.name} (Slot #${team.slotNumber} - hiện có ${totalMembers}/5 người)</div>
+      <div style="font-size: 14px; color: #cbd5e1;"><strong>Người xử lý:</strong> ${responderName}</div>
+    `,
+    ctaText: 'Xem Bảng Quản Trị Admin',
+    ctaUrl: appUrl,
+    ctaBg: '#a78bfa'
+  });
+
+  if (!transporter) {
+    return { success: true, simulated: true, individualEmail: individual.email, adminEmails };
+  }
+
+  try {
+    const promises: Promise<any>[] = [];
+    if (individual.email) {
+      promises.push(
+        transporter.sendMail({
+          from: fromSender,
+          to: individual.email,
+          subject: individualSubject,
+          html: individualHtml
+        })
+      );
+    }
+    if (adminEmails.length > 0) {
+      promises.push(
+        transporter.sendMail({
+          from: fromSender,
+          to: adminEmails.join(', '),
+          subject: adminSubject,
+          html: adminHtml
+        })
+      );
+    }
+
+    await Promise.all(promises);
+    return { success: true, simulated: false, individualEmail: individual.email, adminEmails };
+  } catch (err) {
+    console.error('[Mail Service Error] Failed to send individual join accepted emails:', err);
+    return { success: false, error: err, individualEmail: individual.email, adminEmails };
+  }
+}
+
+// 6. KHI ĐỘI TRƯỞNG HOẶC ADMIN TỪ CHỐI CÁ NHÂN
+export async function sendIndividualJoinRejectedEmails({
+  team,
+  individual,
+  responderName
+}: IndividualJoinRejectedEmailParams) {
+  const transporter = getTransporter();
+  const appUrl = process.env.NEXTAUTH_URL || 'https://hiv-aids-team-building.vercel.app';
+  const fromSender = getSender();
+  const adminEmails = getAdminEmails();
+
+  // 6A. Gửi Cá nhân bị từ chối
+  const individualSubject = `[Thông Báo] Kết quả yêu cầu tham gia ${team.name}`;
+  const individualHtml = renderDarkEmail({
+    title: 'Yêu Cầu Tham Gia Chưa Được Chấp Thuận',
+    titleColor: '#f87171',
+    recipientGreeting: `Xin chào <strong>${individual.name}</strong>,`,
+    introText: `Rất tiếc, yêu cầu xin gia nhập vào đội <strong>${team.name}</strong> (Slot #${team.slotNumber}) của bạn chưa được <strong>${responderName}</strong> chấp thuận lần này.`,
+    detailsHtml: `
+      <div style="margin-bottom: 8px; font-size: 15px; color: #e2e8f0;"><strong>Đội thi:</strong> ${team.name} (Slot #${team.slotNumber})</div>
+      <div style="font-size: 14px; color: #cbd5e1;">Bạn vẫn có thể tiếp tục gửi yêu cầu xin tham gia vào các đội thi khác còn trống slot hoặc đăng ký vào danh sách ghép ngẫu nhiên.</div>
+    `,
+    ctaText: 'Xem Danh Sách Đội Còn Chỗ Trống',
+    ctaUrl: appUrl,
+    ctaBg: '#a78bfa'
+  });
+
+  // 6B. Gửi Admin
+  const adminSubject = `[Admin Kết Quả] Đã TỪ CHỐI cá nhân ${individual.name} vào ${team.name}`;
+  const adminHtml = renderDarkEmail({
+    title: 'Từ Chối Yêu Cầu Cá Nhân (Admin Log)',
+    titleColor: '#f87171',
+    recipientGreeting: 'Kính gửi <strong>Ban Quản Trị</strong>,',
+    introText: `Yêu cầu xin gia nhập từ cá nhân <strong>${individual.name}</strong> vào <strong>${team.name}</strong> đã bị từ chối bởi <strong>${responderName}</strong>.`,
+    detailsHtml: `
+      <div style="margin-bottom: 8px; font-size: 14px; color: #e2e8f0;"><strong>Ứng viên:</strong> ${individual.name} (${individual.email})</div>
+      <div style="margin-bottom: 8px; font-size: 14px; color: #e2e8f0;"><strong>Đội thi:</strong> ${team.name} (Slot #${team.slotNumber})</div>
+      <div style="font-size: 14px; color: #cbd5e1;"><strong>Người xử lý:</strong> ${responderName}</div>
+    `,
+    ctaText: 'Xem Bảng Quản Trị Admin',
+    ctaUrl: appUrl,
+    ctaBg: '#a78bfa'
+  });
+
+  if (!transporter) {
+    return { success: true, simulated: true, individualEmail: individual.email, adminEmails };
+  }
+
+  try {
+    const promises: Promise<any>[] = [];
+    if (individual.email) {
+      promises.push(
+        transporter.sendMail({
+          from: fromSender,
+          to: individual.email,
+          subject: individualSubject,
+          html: individualHtml
+        })
+      );
+    }
+    if (adminEmails.length > 0) {
+      promises.push(
+        transporter.sendMail({
+          from: fromSender,
+          to: adminEmails.join(', '),
+          subject: adminSubject,
+          html: adminHtml
+        })
+      );
+    }
+
+    await Promise.all(promises);
+    return { success: true, simulated: false, individualEmail: individual.email, adminEmails };
+  } catch (err) {
+    console.error('[Mail Service Error] Failed to send individual rejection emails:', err);
+    return { success: false, error: err, individualEmail: individual.email, adminEmails };
   }
 }

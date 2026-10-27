@@ -24,6 +24,9 @@ interface TeamGridProps {
   onAcceptMatch?: (matchId: string) => void;
   onRejectMatch?: (matchId: string) => void;
   onCancelMatch?: (matchId: string) => void;
+  onOpenIndividualJoinModal?: (team: Team) => void;
+  onAcceptIndividualRequest?: (requestId: string) => void;
+  onRejectIndividualRequest?: (requestId: string) => void;
 }
 
 export const TeamGrid: React.FC<TeamGridProps> = ({
@@ -45,7 +48,10 @@ export const TeamGrid: React.FC<TeamGridProps> = ({
   onOpenMatchModal,
   onAcceptMatch,
   onRejectMatch,
-  onCancelMatch
+  onCancelMatch,
+  onOpenIndividualJoinModal,
+  onAcceptIndividualRequest,
+  onRejectIndividualRequest
 }) => {
   // Always 6 slots (1 to 6)
   const slots = [1, 2, 3, 4, 5, 6];
@@ -76,6 +82,9 @@ export const TeamGrid: React.FC<TeamGridProps> = ({
             onAcceptMatch={onAcceptMatch}
             onRejectMatch={onRejectMatch}
             onCancelMatch={onCancelMatch}
+            onOpenIndividualJoinModal={onOpenIndividualJoinModal}
+            onAcceptIndividualRequest={onAcceptIndividualRequest}
+            onRejectIndividualRequest={onRejectIndividualRequest}
             isCapacityFull={isCapacityFull}
           />
         );

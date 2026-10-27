@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Team, User, Role, TeamMatchRequest } from '@/types';
+import { Team, User, Role, TeamMatchRequest, IndividualJoinRequest } from '@/types';
 import { SLOT_METADATA } from '@/data/initialData';
 import { Badge } from '@/components/ui/Badge';
 import {
@@ -17,7 +17,10 @@ import {
   X,
   Eye,
   Trash2,
-  Lock
+  Lock,
+  UserPlus,
+  Mail,
+  Phone
 } from 'lucide-react';
 
 interface TeamCardProps {
@@ -41,6 +44,9 @@ interface TeamCardProps {
   onAcceptMatch?: (matchId: string) => void;
   onRejectMatch?: (matchId: string) => void;
   onCancelMatch?: (matchId: string) => void;
+  onOpenIndividualJoinModal?: (team: Team) => void;
+  onAcceptIndividualRequest?: (requestId: string) => void;
+  onRejectIndividualRequest?: (requestId: string) => void;
 }
 
 export const TeamCard: React.FC<TeamCardProps> = ({
@@ -63,11 +69,17 @@ export const TeamCard: React.FC<TeamCardProps> = ({
   onOpenMatchModal,
   onAcceptMatch,
   onRejectMatch,
-  onCancelMatch
+  onCancelMatch,
+  onOpenIndividualJoinModal,
+  onAcceptIndividualRequest,
+  onRejectIndividualRequest
 }) => {
   const meta = SLOT_METADATA.find((m) => m.slotNumber === slotNumber) || SLOT_METADATA[0];
   const [processingMatchId, setProcessingMatchId] = useState<string | null>(null);
   const [processingAction, setProcessingAction] = useState<'ACCEPT' | 'REJECT' | 'CANCEL' | null>(null);
+
+  const [processingIndivId, setProcessingIndivId] = useState<string | null>(null);
+  const [processingIndivAction, setProcessingIndivAction] = useState<'ACCEPT' | 'REJECT' | null>(null);
 
   const handleAcceptMatch = async (matchId: string) => {
     if (!onAcceptMatch || processingMatchId) return;
@@ -104,6 +116,31 @@ export const TeamCard: React.FC<TeamCardProps> = ({
       setProcessingAction(null);
     }
   };
+
+  const handleAcceptIndividual = async (requestId: string) => {
+    if (!onAcceptIndividualRequest || processingIndivId) return;
+    try {
+      setProcessingIndivId(requestId);
+      setProcessingIndivAction('ACCEPT');
+      await onAcceptIndividualRequest(requestId);
+    } finally {
+      setProcessingIndivId(null);
+      setProcessingIndivAction(null);
+    }
+  };
+
+  const handleRejectIndividual = async (requestId: string) => {
+    if (!onRejectIndividualRequest || processingIndivId) return;
+    try {
+      setProcessingIndivId(requestId);
+      setProcessingIndivAction('REJECT');
+      await onRejectIndividualRequest(requestId);
+    } finally {
+      setProcessingIndivId(null);
+      setProcessingIndivAction(null);
+    }
+  };
+
   const isRegistered = !!team;
   const isTeamCaptain = isRegistered && (team.ownerId === currentUser?.id || team.id === ownedTeamId);
   const isTeamMember =
@@ -126,7 +163,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
     : '';
   const userAlreadyOwnsTeam = !!ownedTeamId || (currentRole === 'OWNER') || isTeamMember;
 
-  const remainingSlots = isRegistered ? 5 - team.members.length : 5;
+  const remainingSlots = isRegistered ? Math.max(0, 5 - team.members.length) : 5;
 
   // Incoming matches waiting for this team to accept
   const incomingMatches = isRegistered
@@ -138,12 +175,24 @@ export const TeamCard: React.FC<TeamCardProps> = ({
     ? matches.find((m) => m.fromTeamId === team.id && m.status === 'PENDING')
     : null;
 
+  // Pending individual requests for this team
+  const individualRequests = isRegistered && (isMyTeam || currentRole === 'ADMIN')
+    ? (team.individualRequests || [])
+    : [];
+
   // Can the current user's team merge into this team?
   const canMyTeamFitHere =
     isRegistered &&
     !isMyTeam &&
     myOwnedTeam &&
     myOwnedTeam.members.length + team.members.length <= 5;
+
+  // Can an individual join this team?
+  const canIndividualJoin =
+    isRegistered &&
+    !isMyTeam &&
+    remainingSlots > 0 &&
+    !myOwnedTeam;
 
   return (
     <div
@@ -206,7 +255,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
           <div className="flex-1 flex flex-col justify-between">
             {isMyTeam || currentRole === 'ADMIN' ? (
               <div>
-                {/* Member count & Owner info (chỉ hiển thị cho đội của mình hoặc Admin) */}
+                {/* Member count & Owner info */}
                 <div className="flex items-center justify-between gap-2 mb-2.5">
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate">
                     <UserIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -214,12 +263,17 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                   </div>
                 </div>
 
-                {/* Members Section (chỉ hiển thị cho đội của mình hoặc Admin) */}
+                {/* Members Section */}
                 <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800 mb-3">
                   <div className="flex items-center justify-between mb-2 text-xs">
                     <span className="font-medium text-slate-300">
                       Danh sách thành viên ({team.members.length}/5)
                     </span>
+                    {remainingSlots > 0 && (
+                      <span className="text-[11px] font-semibold text-emerald-400">
+                        Còn {remainingSlots} chỗ trống
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-1.5">
@@ -248,55 +302,58 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                   </div>
                 </div>
 
-                {/* Outgoing Match Request Alert */}
+                {/* OUTGOING MATCH REQUEST (Đang chờ đội khác duyệt) */}
                 {outgoingMatch && (
-                  <div className="mb-3 p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <span className="font-semibold text-amber-200 block truncate">
-                        Đang gửi yêu cầu xin tham gia sang {outgoingMatch.toTeamName}
+                  <div className="mb-3 p-3 rounded-xl bg-purple-950/40 border border-purple-500/30 text-xs space-y-2">
+                    <div className="flex items-center justify-between text-purple-300 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <HeartHandshake className="w-4 h-4 text-purple-400" />
+                        <span>Đã gửi yêu cầu ghép vào {outgoingMatch.toTeamName}</span>
                       </span>
-                      <span className="text-[10px] text-amber-400/80 block">
-                        Đang chờ đại diện {outgoingMatch.toTeamName} hoặc Admin xác nhận
+                      <span className="text-[11px] px-2 py-0.5 rounded bg-purple-900/60 text-purple-200 border border-purple-500/30">
+                        Chờ duyệt
                       </span>
                     </div>
-                    {isMyTeam && onCancelMatch && (
-                      <button
-                        onClick={() => handleCancelMatch(outgoingMatch.id)}
-                        disabled={processingMatchId === outgoingMatch.id}
-                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 text-[10px] border border-rose-500/30 font-semibold shrink-0 transition-colors disabled:opacity-50 flex items-center gap-1 cursor-pointer"
-                      >
-                        {processingMatchId === outgoingMatch.id && processingAction === 'CANCEL' ? (
-                          <>
-                            <span className="w-2.5 h-2.5 border-2 border-rose-300/30 border-t-rose-300 rounded-full animate-spin" />
+                    {(isTeamCaptain || currentRole === 'ADMIN') && onCancelMatch && (
+                      <div className="flex justify-end pt-1">
+                        <button
+                          onClick={() => handleCancelMatch(outgoingMatch.id)}
+                          disabled={!!processingMatchId}
+                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        >
+                          {processingMatchId === outgoingMatch.id && processingAction === 'CANCEL' ? (
                             <span>Đang hủy...</span>
-                          </>
-                        ) : (
-                          <span>Hủy</span>
-                        )}
-                      </button>
+                          ) : (
+                            <>
+                              <X className="w-3 h-3" />
+                              <span>Hủy yêu cầu</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
 
-                {/* Incoming Match Requests (Visible to Team Owner & Admin) */}
-                {incomingMatches.length > 0 && isMyTeam && currentRole !== 'ADMIN' && (
+                {/* INCOMING TEAM MATCH REQUESTS (Đội khác xin ghép vào đội này) */}
+                {incomingMatches.length > 0 && (
                   <div className="mb-3 space-y-2">
                     {incomingMatches.map((m) => (
                       <div
                         key={m.id}
-                        className="p-3 rounded-xl bg-purple-950/60 border border-purple-500/50 text-xs animate-fade-in"
+                        className="p-3 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs space-y-2 animate-in fade-in"
                       >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="font-bold text-purple-300 flex items-center gap-1.5 truncate">
-                            <HeartHandshake className="w-4 h-4 text-purple-400 shrink-0" />
-                            <span>Yêu cầu xin tham gia từ {m.fromTeamName}</span>
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                            <HeartHandshake className="w-4 h-4 text-amber-400" />
+                            <span>{m.fromTeamName} xin ghép vào ({m.fromMembersCount} người)</span>
                           </span>
-                          <span className="text-[10px] text-purple-200 bg-purple-900/80 px-2 py-0.5 rounded font-bold shrink-0">
-                            +{m.fromMembersCount} người
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 border border-amber-500/30">
+                            Cần duyệt
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-300 leading-relaxed mb-2.5">
-                          {m.fromTeamName} muốn chuyển <strong>{m.fromMembersCount} người</strong> sang {team.name} (đạt tổng <strong>{team.members.length + m.fromMembersCount}/5</strong> thành viên). Slot #{m.fromSlotNumber} sẽ được giải phóng thành 5 slot trống.
+                        <p className="text-[11px] text-slate-300">
+                          Nếu chấp thuận, {m.fromTeamName} sẽ sáp nhập vào đội này (tổng {m.fromMembersCount + team.members.length}/5 người).
                         </p>
                         <div className="flex gap-2">
                           <button
@@ -322,6 +379,83 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                             className="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
                           >
                             {processingMatchId === m.id && processingAction === 'REJECT' ? (
+                              <>
+                                <span className="w-3.5 h-3.5 border-2 border-slate-300/30 border-t-slate-300 rounded-full animate-spin" />
+                                <span>Đang từ chối...</span>
+                              </>
+                            ) : (
+                              <>
+                                <X className="w-3.5 h-3.5" />
+                                <span>Từ chối</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* INCOMING INDIVIDUAL JOIN REQUESTS (Cá nhân xin gia nhập vào đội còn slot) */}
+                {individualRequests.length > 0 && (
+                  <div className="mb-3 space-y-2">
+                    <div className="text-[11px] font-bold text-purple-300 flex items-center gap-1.5">
+                      <UserPlus className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Cá nhân xin gia nhập ({individualRequests.length})</span>
+                    </div>
+                    {individualRequests.map((req) => (
+                      <div
+                        key={req.id}
+                        className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/40 text-xs space-y-2 animate-in fade-in"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-white text-sm">
+                            {req.name}
+                          </span>
+                          {req.studentId && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono border border-slate-700">
+                              {req.studentId}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="space-y-0.5 text-[11px] text-slate-300">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="truncate">{req.email}</span>
+                          </div>
+                          {req.phone && (
+                            <div className="flex items-center gap-1.5">
+                              <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span>{req.phone}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => handleAcceptIndividual(req.id)}
+                            disabled={!!processingIndivId}
+                            className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-colors text-center flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                          >
+                            {processingIndivId === req.id && processingIndivAction === 'ACCEPT' ? (
+                              <>
+                                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span>Đang duyệt...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Chấp thuận</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleRejectIndividual(req.id)}
+                            disabled={!!processingIndivId}
+                            className="py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors shrink-0 flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                          >
+                            {processingIndivId === req.id && processingIndivAction === 'REJECT' ? (
                               <>
                                 <span className="w-3.5 h-3.5 border-2 border-slate-300/30 border-t-slate-300 rounded-full animate-spin" />
                                 <span>Đang từ chối...</span>
@@ -373,10 +507,21 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                     <span>Tối đa: <strong className="text-slate-300 font-semibold">5 thành viên</strong></span>
                   </div>
                 </div>
+
+                {/* NÚT XIN THAM GIA CHO CÁ NHÂN (khi còn trống slot) */}
+                {canIndividualJoin && onOpenIndividualJoinModal && (
+                  <button
+                    onClick={() => onOpenIndividualJoinModal(team)}
+                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-[0.99] text-white font-bold text-xs shadow-md shadow-purple-900/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <UserPlus className="w-4 h-4 shrink-0" />
+                    <span>Xin Tham Gia Đội Này (Còn {remainingSlots} Chỗ)</span>
+                  </button>
+                )}
               </div>
             )}
 
-            {/* Bottom Meta & Actions (only rendered if there is content/actions) */}
+            {/* Bottom Meta & Actions */}
             {(isMyTeam || currentRole === 'ADMIN' || (canMyTeamFitHere && onOpenMatchModal && myOwnedTeam) || (isTeamMember && !isTeamCaptain)) && (
             <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
               {(isMyTeam || currentRole === 'ADMIN') ? (
@@ -391,7 +536,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                     className="px-2.5 py-1.5 rounded-lg bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-500/50 font-semibold text-xs transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <HeartHandshake className="w-3.5 h-3.5 text-purple-300" />
-                    <span>Xin Tham Gia</span>
+                    <span>Ghép Đội Của Tôi Vào</span>
                   </button>
                 )}
 
@@ -416,7 +561,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                         title="Gửi yêu cầu xin tham gia đội khác"
                       >
                         <HeartHandshake className="w-3.5 h-3.5 text-purple-300" />
-                        <span>Xin tham gia</span>
+                        <span>Xin ghép đội</span>
                       </button>
                     )}
                     {onViewDetails && (
@@ -455,10 +600,10 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                       <button
                         onClick={() => onAdminDirectMerge(team)}
                         className="group px-2.5 py-1.5 rounded-lg bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 hover:text-purple-100 border border-purple-500/30 active:scale-95 font-semibold text-xs transition-all shrink-0 flex items-center gap-1 cursor-pointer"
-                        title="Gộp đội này sang đội khác trực tiếp"
+                        title="Ghép đội này sang đội khác trực tiếp"
                       >
                         <HeartHandshake className="w-3.5 h-3.5 text-purple-300 group-hover:scale-110 group-hover:rotate-6 transition-all duration-200" />
-                        <span>Gộp</span>
+                        <span>Ghép</span>
                       </button>
                     )}
                     <button
@@ -481,8 +626,6 @@ export const TeamCard: React.FC<TeamCardProps> = ({
                     )}
                   </div>
                 )}
-
-
               </div>
             </div>
             )}

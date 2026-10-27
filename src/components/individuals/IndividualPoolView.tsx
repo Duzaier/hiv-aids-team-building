@@ -30,6 +30,7 @@ interface IndividualPoolViewProps {
   onOpenRegisterIndividual: () => void;
   onOpenEditIndividual?: (ind: IndividualRegistration) => void;
   onViewTeam?: (teamId: string) => void;
+  onSwitchToTeamsTab?: () => void;
   onRefresh: () => void;
   onShowNotice: (type: 'success' | 'error' | 'info', message: string) => void;
 }
@@ -43,6 +44,7 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
   onOpenRegisterIndividual,
   onOpenEditIndividual,
   onViewTeam,
+  onSwitchToTeamsTab,
   onRefresh,
   onShowNotice
 }) => {
@@ -217,6 +219,19 @@ export const IndividualPoolView: React.FC<IndividualPoolViewProps> = ({
             <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
               Dành cho các bạn chưa có đội. Ban tổ chức sẽ tự động chia đều người vào các đội còn thiếu trước giờ thi đấu.
             </p>
+            <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-purple-300 bg-purple-950/40 border border-purple-500/30 px-3 py-1.5 rounded-lg max-w-2xl">
+              <span className="font-semibold text-purple-200">💡 Không muốn ghép ngẫu nhiên?</span>
+              <span>Bạn có thể chọn đội còn trống slot và nhấn <strong>Xin tham gia</strong> để đội trưởng hoặc Admin duyệt.</span>
+              {onSwitchToTeamsTab && (
+                <button
+                  type="button"
+                  onClick={onSwitchToTeamsTab}
+                  className="text-purple-300 underline hover:text-white font-medium cursor-pointer transition-colors ml-1"
+                >
+                  Xem danh sách đội ➔
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Action CTAs */}

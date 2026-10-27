@@ -30,6 +30,7 @@ export interface Team {
   ownerName: string;   // Name of the account holder
   ownerEmail: string;
   members: TeamMember[];
+  individualRequests?: IndividualJoinRequest[];
   registeredAt: string;
   accentColor: string;
   badgeTitle: string;
@@ -71,4 +72,19 @@ export interface Persona {
   user: User | null;
   description: string;
   ownedTeamId?: string;
+}
+
+export interface IndividualJoinRequest {
+  id: string;
+  teamId: string;
+  teamName?: string;
+  teamSlotNumber?: number;
+  userId?: string | null;
+  name: string;
+  studentId?: string;
+  email: string;
+  phone?: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED';
+  createdAt: string;
+  updatedAt?: string;
 }

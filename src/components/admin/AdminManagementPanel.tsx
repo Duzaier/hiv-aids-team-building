@@ -9,6 +9,7 @@ import {
   GraduationCap,
   FileSpreadsheet,
   HeartHandshake,
+  UserPlus,
   LayoutGrid,
   Table as TableIcon,
   Pencil,
@@ -26,6 +27,8 @@ interface AdminManagementPanelProps {
   onDeleteTeam: (team: Team) => void;
   onAcceptMatch?: (matchId: string) => void;
   onRejectMatch?: (matchId: string) => void;
+  onAcceptIndividualRequest?: (requestId: string) => void;
+  onRejectIndividualRequest?: (requestId: string) => void;
   showTeamGrid?: boolean;
   onToggleTeamGrid?: () => void;
   onShowNotice?: (type: 'success' | 'error' | 'info', message: string) => void;
@@ -38,6 +41,8 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
   onDeleteTeam,
   onAcceptMatch,
   onRejectMatch,
+  onAcceptIndividualRequest,
+  onRejectIndividualRequest,
   showTeamGrid = false,
   onToggleTeamGrid,
   onShowNotice,
@@ -71,6 +76,41 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
       setProcessingAction(null);
     }
   };
+
+  
+  const [processingIndivId, setProcessingIndivId] = useState<string | null>(null);
+  const [processingIndivAction, setProcessingIndivAction] = useState<'ACCEPT' | 'REJECT' | null>(null);
+
+  const handleAcceptIndividual = async (requestId: string) => {
+    if (!onAcceptIndividualRequest || processingIndivId) return;
+    try {
+      setProcessingIndivId(requestId);
+      setProcessingIndivAction('ACCEPT');
+      await onAcceptIndividualRequest(requestId);
+    } finally {
+      setProcessingIndivId(null);
+      setProcessingIndivAction(null);
+    }
+  };
+
+  const handleRejectIndividual = async (requestId: string) => {
+    if (!onRejectIndividualRequest || processingIndivId) return;
+    try {
+      setProcessingIndivId(requestId);
+      setProcessingIndivAction('REJECT');
+      await onRejectIndividualRequest(requestId);
+    } finally {
+      setProcessingIndivId(null);
+      setProcessingIndivAction(null);
+    }
+  };
+
+  const pendingIndividualRequests = teams.flatMap((t) =>
+    (t.individualRequests || []).filter((r) => r.status === 'PENDING').map((r) => ({
+      ...r,
+      targetTeam: t
+    }))
+  );
 
   const pendingMatches = matches.filter((m) => m.status === 'PENDING');
 
@@ -129,6 +169,80 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
           )}
         </div>
       </div>
+
+      
+      {/* Pending Individual Join Requests */}
+      {pendingIndividualRequests.length > 0 && (
+        <div className="p-3.5 rounded-xl bg-purple-950/30 border border-purple-500/40 space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-purple-300 flex items-center gap-1.5">
+              <UserPlus className="w-3.5 h-3.5 text-purple-400" />
+              <span>Cá nhân xin gia nhập đội chờ duyệt</span>
+              <span className="px-1.5 py-0.2 rounded bg-purple-500/30 text-purple-200 text-[10px]">
+                {pendingIndividualRequests.length}
+              </span>
+            </h4>
+          </div>
+
+          <div className="space-y-2">
+            {pendingIndividualRequests.map((req) => (
+              <div
+                key={req.id}
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs"
+              >
+                <div>
+                  <div className="font-bold text-white flex items-center gap-2">
+                    <span>{req.name}</span>
+                    {req.studentId && (
+                      <span className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono text-[10px] border border-slate-700">
+                        {req.studentId}
+                      </span>
+                    )}
+                    <span className="text-slate-400 font-normal">➔ Xin vào</span>
+                    <strong className="text-purple-300">{req.targetTeam.name} (Slot #{req.targetTeam.slotNumber})</strong>
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="flex items-center gap-1 text-slate-300">
+                      <Mail className="w-3 h-3 text-slate-500" />
+                      {req.email}
+                    </span>
+                    {req.phone && (
+                      <span className="flex items-center gap-1 text-slate-300">
+                        <Phone className="w-3 h-3 text-slate-500" />
+                        {req.phone}
+                      </span>
+                    )}
+                    <span>
+                      Đội hiện có: <strong className="text-emerald-400">{req.targetTeam.members.length}/5 người</strong> (còn {Math.max(0, 5 - req.targetTeam.members.length)} slot)
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                  {onAcceptIndividualRequest && (
+                    <button
+                      onClick={() => handleAcceptIndividual(req.id)}
+                      disabled={Boolean(processingIndivId)}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
+                    >
+                      {processingIndivId === req.id && processingIndivAction === 'ACCEPT' ? 'Đang duyệt...' : 'Chấp thuận'}
+                    </button>
+                  )}
+                  {onRejectIndividualRequest && (
+                    <button
+                      onClick={() => handleRejectIndividual(req.id)}
+                      disabled={Boolean(processingIndivId)}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
+                    >
+                      {processingIndivId === req.id && processingIndivAction === 'REJECT' ? 'Đang từ chối...' : 'Từ chối'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Pending Match Requests (if any) */}
       {pendingMatches.length > 0 && (

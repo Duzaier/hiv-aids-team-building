@@ -22,18 +22,19 @@ model User {
 }
 
 model Team {
-  id              String             @id @default(cuid())
-  slotNumber      Int                @unique
-  name            String
-  captainName     String?            @default("")
-  ownerId         String             @unique
-  owner           User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members         TeamMember[]
-  outgoingMatches TeamMatchRequest[] @relation("OutgoingMatches")
-  incomingMatches TeamMatchRequest[] @relation("IncomingMatches")
-  version         Int                @default(1)
-  registeredAt    DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  id                 String                  @id @default(cuid())
+  slotNumber         Int                     @unique
+  name               String
+  captainName        String?                 @default("")
+  ownerId            String                  @unique
+  owner              User                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members            TeamMember[]
+  outgoingMatches    TeamMatchRequest[]      @relation("OutgoingMatches")
+  incomingMatches    TeamMatchRequest[]      @relation("IncomingMatches")
+  individualRequests IndividualJoinRequest[]
+  version            Int                     @default(1)
+  registeredAt       DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
 }
 
 model TeamMember {
@@ -60,6 +61,20 @@ model TeamMatchRequest {
   requestedBy String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model IndividualJoinRequest {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String?
+  name      String
+  studentId String?  @default("")
+  email     String
+  phone     String?  @default("")
+  status    String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, CANCELLED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model IndividualRegistration {

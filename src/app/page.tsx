@@ -9,7 +9,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { TeamGrid } from '@/components/teams/TeamGrid';
 import { TeamGridSkeleton } from '@/components/ui/TeamGridSkeleton';
-import { X, Users, UserCheck, HeartHandshake, Lock } from 'lucide-react';
+import { X, Users, UserCheck, HeartHandshake, Lock, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { isAdminEmail } from '@/lib/roles';
 
 // Lazy loading overlays & tabs for optimal initial bundle & performance
@@ -53,6 +53,11 @@ const IndividualRegistrationModal = dynamic(
   { ssr: false }
 );
 
+const IndividualJoinTeamModal = dynamic(
+  () => import('@/components/individuals/IndividualJoinTeamModal').then((m) => m.IndividualJoinTeamModal),
+  { ssr: false }
+);
+
 const AdminDirectMergeModal = dynamic(
   () => import('@/components/admin/AdminDirectMergeModal').then((m) => m.AdminDirectMergeModal),
   { ssr: false }
@@ -76,6 +81,10 @@ export default function Home() {
   const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
   const [teamToMatch, setTeamToMatch] = useState<Team | null>(null);
   const [targetTeamForMatch, setTargetTeamForMatch] = useState<Team | null>(null);
+
+  // Individual Join Team modal state
+  const [isIndividualJoinTeamModalOpen, setIsIndividualJoinTeamModalOpen] = useState(false);
+  const [teamForIndividualJoin, setTeamForIndividualJoin] = useState<Team | null>(null);
 
   // Individuals state
   const [individuals, setIndividuals] = useState<IndividualRegistration[]>([]);
@@ -143,7 +152,8 @@ export default function Home() {
               registeredAt: t.registeredAt,
               accentColor: meta.accentColor,
               badgeTitle: meta.badgeTitle,
-              members: t.members || []
+              members: t.members || [],
+              individualRequests: t.individualRequests || []
             };
           });
           setTeams(merged);
@@ -336,7 +346,7 @@ export default function Home() {
   };
 
   const handleEditSubmit = async (updatedData: { teamName: string; captainName: string; members: any[] }) => {
-    if (!teamToEdit) return;
+    if (!teamToEdit) return { success: false, error: 'Không tìm thấy đội để cập nhật' };
 
     try {
       const endpoint = isAdminEdit
@@ -362,12 +372,16 @@ export default function Home() {
         setIsEditOpen(false);
         showNotice('success', 'Đã lưu thay đổi thông tin đội thành công');
         await refreshAll();
+        return { success: true };
       } else {
-        showNotice('error', result.error || 'Cập nhật thất bại');
+        const errorMsg = result.error || 'Cập nhật thất bại';
+        showNotice('error', errorMsg);
+        return { success: false, error: errorMsg };
       }
-    } catch {
-      await refreshAll();
-      setIsEditOpen(false);
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Có lỗi kết nối máy chủ khi lưu thông tin';
+      showNotice('error', errorMsg);
+      return { success: false, error: errorMsg };
     }
   };
 
@@ -442,6 +456,46 @@ export default function Home() {
     }
   };
 
+  // Individual Join Team Handlers
+  const handleOpenIndividualJoinModal = (team: Team) => {
+    if (!currentUser) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setTeamForIndividualJoin(team);
+    setIsIndividualJoinTeamModalOpen(true);
+  };
+
+  const handleIndividualJoinResponse = async (requestId: string, action: 'ACCEPT' | 'REJECT') => {
+    if (!currentUser) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/individual-requests/${requestId}/respond`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id,
+          'x-user-email': currentUser.email,
+          'x-user-name': encodeURIComponent(currentUser.name),
+          'x-user-role': currentUser.role
+        },
+        body: JSON.stringify({ action })
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        showNotice('success', result.message || 'Đã xử lý yêu cầu gia nhập thành công!');
+        await refreshAll();
+      } else {
+        showNotice('error', result.error || 'Xử lý yêu cầu gia nhập thất bại');
+      }
+    } catch (err: any) {
+      showNotice('error', err?.message || 'Có lỗi kết nối khi xử lý yêu cầu.');
+    }
+  };
+
   const handleMatchResponse = async (matchId: string, action: 'ACCEPT' | 'REJECT' | 'CANCEL') => {
     if (!currentUser) {
       setIsLoginModalOpen(true);
@@ -477,26 +531,45 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-red-600 selection:text-white">
       {/* Global Toast Notification */}
       {notification && (
-        <div className="bg-slate-900/95 border-b border-slate-800 px-4 py-2 text-xs flex items-center justify-between gap-3 text-slate-200">
-          <div className="flex items-center gap-2 max-w-5xl mx-auto flex-1">
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                notification.type === 'success'
-                  ? 'bg-emerald-500'
-                  : notification.type === 'error'
-                  ? 'bg-red-500'
-                  : 'bg-blue-500'
-              }`}
-            />
-            <span className="truncate">{notification.message}</span>
-          </div>
-          <button
-            onClick={() => setNotification(null)}
-            className="text-slate-400 hover:text-white p-0.5"
-            aria-label="Đóng thông báo"
+        <div className="fixed top-5 right-5 z-[100] max-w-md w-[calc(100vw-2.5rem)] animate-in slide-in-from-top-4 fade-in duration-300">
+          <div
+            className={`p-4 rounded-2xl shadow-2xl backdrop-blur-xl border flex items-start gap-3 text-xs ${
+              notification.type === 'success'
+                ? 'bg-slate-900/95 border-emerald-500/40 text-emerald-200 shadow-emerald-950/40'
+                : notification.type === 'error'
+                ? 'bg-slate-900/95 border-rose-500/40 text-rose-200 shadow-rose-950/40'
+                : 'bg-slate-900/95 border-blue-500/40 text-blue-200 shadow-blue-950/40'
+            }`}
           >
-            <X className="w-3.5 h-3.5" />
-          </button>
+            {notification.type === 'success' && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            )}
+            {notification.type === 'error' && (
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            )}
+            {notification.type === 'info' && (
+              <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            )}
+            <div className="flex-1 min-w-0 pr-1">
+              <span className="font-bold block text-sm mb-0.5 text-white">
+                {notification.type === 'success'
+                  ? 'Thành công'
+                  : notification.type === 'error'
+                  ? 'Thông báo lỗi'
+                  : 'Thông tin'}
+              </span>
+              <p className="leading-relaxed text-slate-300 break-words whitespace-pre-line">
+                {notification.message}
+              </p>
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+              aria-label="Đóng thông báo"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -564,6 +637,8 @@ export default function Home() {
                 onDirectMerge={handleOpenDirectMerge}
                 onAcceptMatch={(mId) => handleMatchResponse(mId, 'ACCEPT')}
                 onRejectMatch={(mId) => handleMatchResponse(mId, 'REJECT')}
+                onAcceptIndividualRequest={(rId) => handleIndividualJoinResponse(rId, 'ACCEPT')}
+                onRejectIndividualRequest={(rId) => handleIndividualJoinResponse(rId, 'REJECT')}
                 showTeamGrid={showAdminTeamGrid}
                 onToggleTeamGrid={() => setShowAdminTeamGrid((prev) => !prev)}
                 onShowNotice={showNotice}
@@ -602,6 +677,9 @@ export default function Home() {
                     onAcceptMatch={(mId) => handleMatchResponse(mId, 'ACCEPT')}
                     onRejectMatch={(mId) => handleMatchResponse(mId, 'REJECT')}
                     onCancelMatch={(mId) => handleMatchResponse(mId, 'CANCEL')}
+                    onOpenIndividualJoinModal={handleOpenIndividualJoinModal}
+                    onAcceptIndividualRequest={(rId) => handleIndividualJoinResponse(rId, 'ACCEPT')}
+                    onRejectIndividualRequest={(rId) => handleIndividualJoinResponse(rId, 'REJECT')}
                   />
                 )}
               </div>
@@ -624,6 +702,7 @@ export default function Home() {
               setIndividualToEdit(ind);
               setIsIndividualModalOpen(true);
             }}
+            onSwitchToTeamsTab={() => setActiveTab('teams')}
             onViewTeam={(teamId) => {
               const target = teams.find((t) => t.id === teamId);
               if (target) {
@@ -636,6 +715,25 @@ export default function Home() {
           />
         )}
       </main>
+
+      {/* Individual Join Team Modal */}
+      {isIndividualJoinTeamModalOpen && teamForIndividualJoin && (
+        <IndividualJoinTeamModal
+          isOpen={isIndividualJoinTeamModalOpen}
+          team={teamForIndividualJoin}
+          currentUser={currentUser}
+          onClose={() => {
+            setIsIndividualJoinTeamModalOpen(false);
+            setTeamForIndividualJoin(null);
+          }}
+          onSuccess={(msg) => {
+            setIsIndividualJoinTeamModalOpen(false);
+            setTeamForIndividualJoin(null);
+            showNotice('success', msg);
+            refreshAll();
+          }}
+        />
+      )}
 
       {/* Footer */}
       <Footer />
